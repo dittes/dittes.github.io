@@ -1,463 +1,65 @@
-
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<title>Dittes Ventures</title>
-		
-<meta property="og:title" content="Dittes Ventures"/>
-<meta property="og:type" content="cause"/>
-<meta property="og:url" content="http://dittesventures.com/"/>
-<meta property="og:image" content="http://dittesventures.com/dittesventures.jpg"/>
-<meta property="og:site_name" content="Dittes Ventures"/>
-<meta property="fb:admins" content="500108777"/>
-<meta property="og:description" content=""/>
-
-<link href="style.css" rel="stylesheet" type="text/css" />
-		
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-		<style>
-			body {
-				color: #808080;
-				font-family:Monospace;
-				font-size:13px;
-				text-align:center;
-
-				background-color: #ffffff;
-				margin: 0px;
-				overflow: hidden;
-			}
-
-			#info {
-				position: absolute;
-				top: 40px; width: 100%;
-				padding: 5px;
-			}
-		</style>
-	</head>
-	<body>
-
-		<div id="container"></div>
-		<div id="info"><a href="https://www.linkedin.com/in/dittes"><img src="logo.png"></a></div>
-
-		<script src="three.min.js"></script>
-		<script src="Bird.js"></script>
-
-		<script src="stats.min.js"></script>
-
-		<script>
-
-			// Based on http://www.openprocessing.org/visuals/?visualID=6910
-
-			var Boid = function() {
-
-				var vector = new THREE.Vector3(),
-				_acceleration, _width = 500, _height = 500, _depth = 200, _goal, _neighborhoodRadius = 100,
-				_maxSpeed = 4, _maxSteerForce = 0.1, _avoidWalls = false;
-
-				this.position = new THREE.Vector3();
-				this.velocity = new THREE.Vector3();
-				_acceleration = new THREE.Vector3();
-
-				this.setGoal = function ( target ) {
-
-					_goal = target;
-
-				}
-
-				this.setAvoidWalls = function ( value ) {
-
-					_avoidWalls = value;
-
-				}
-
-				this.setWorldSize = function ( width, height, depth ) {
-
-					_width = width;
-					_height = height;
-					_depth = depth;
-
-				}
-
-				this.run = function ( boids ) {
-
-					if ( _avoidWalls ) {
-
-						vector.set( - _width, this.position.y, this.position.z );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-						vector.set( _width, this.position.y, this.position.z );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-						vector.set( this.position.x, - _height, this.position.z );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-						vector.set( this.position.x, _height, this.position.z );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-						vector.set( this.position.x, this.position.y, - _depth );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-						vector.set( this.position.x, this.position.y, _depth );
-						vector = this.avoid( vector );
-						vector.multiplyScalar( 5 );
-						_acceleration.add( vector );
-
-					}/* else {
-
-						this.checkBounds();
-
-					}
-					*/
-
-					if ( Math.random() > 0.5 ) {
-
-						this.flock( boids );
-
-					}
-
-					this.move();
-
-				}
-
-				this.flock = function ( boids ) {
-
-					if ( _goal ) {
-
-						_acceleration.add( this.reach( _goal, 0.005 ) );
-
-					}
-
-					_acceleration.add( this.alignment( boids ) );
-					_acceleration.add( this.cohesion( boids ) );
-					_acceleration.add( this.separation( boids ) );
-
-				}
-
-				this.move = function () {
-
-					this.velocity.add( _acceleration );
-
-					var l = this.velocity.length();
-
-					if ( l > _maxSpeed ) {
-
-						this.velocity.divideScalar( l / _maxSpeed );
-
-					}
-
-					this.position.add( this.velocity );
-					_acceleration.set( 0, 0, 0 );
-
-				}
-
-				this.checkBounds = function () {
-
-					if ( this.position.x >   _width ) this.position.x = - _width;
-					if ( this.position.x < - _width ) this.position.x =   _width;
-					if ( this.position.y >   _height ) this.position.y = - _height;
-					if ( this.position.y < - _height ) this.position.y =  _height;
-					if ( this.position.z >  _depth ) this.position.z = - _depth;
-					if ( this.position.z < - _depth ) this.position.z =  _depth;
-
-				}
-
-				//
-
-				this.avoid = function ( target ) {
-
-					var steer = new THREE.Vector3();
-
-					steer.copy( this.position );
-					steer.sub( target );
-
-					steer.multiplyScalar( 1 / this.position.distanceToSquared( target ) );
-
-					return steer;
-
-				}
-
-				this.repulse = function ( target ) {
-
-					var distance = this.position.distanceTo( target );
-
-					if ( distance < 150 ) {
-
-						var steer = new THREE.Vector3();
-
-						steer.subVectors( this.position, target );
-						steer.multiplyScalar( 0.5 / distance );
-
-						_acceleration.add( steer );
-
-					}
-
-				}
-
-				this.reach = function ( target, amount ) {
-
-					var steer = new THREE.Vector3();
-
-					steer.subVectors( target, this.position );
-					steer.multiplyScalar( amount );
-
-					return steer;
-
-				}
-
-				this.alignment = function ( boids ) {
-
-					var boid, velSum = new THREE.Vector3(),
-					count = 0;
-
-					for ( var i = 0, il = boids.length; i < il; i++ ) {
-
-						if ( Math.random() > 0.6 ) continue;
-
-						boid = boids[ i ];
-
-						distance = boid.position.distanceTo( this.position );
-
-						if ( distance > 0 && distance <= _neighborhoodRadius ) {
-
-							velSum.add( boid.velocity );
-							count++;
-
-						}
-
-					}
-
-					if ( count > 0 ) {
-
-						velSum.divideScalar( count );
-
-						var l = velSum.length();
-
-						if ( l > _maxSteerForce ) {
-
-							velSum.divideScalar( l / _maxSteerForce );
-
-						}
-
-					}
-
-					return velSum;
-
-				}
-
-				this.cohesion = function ( boids ) {
-
-					var boid, distance,
-					posSum = new THREE.Vector3(),
-					steer = new THREE.Vector3(),
-					count = 0;
-
-					for ( var i = 0, il = boids.length; i < il; i ++ ) {
-
-						if ( Math.random() > 0.6 ) continue;
-
-						boid = boids[ i ];
-						distance = boid.position.distanceTo( this.position );
-
-						if ( distance > 0 && distance <= _neighborhoodRadius ) {
-
-							posSum.add( boid.position );
-							count++;
-
-						}
-
-					}
-
-					if ( count > 0 ) {
-
-						posSum.divideScalar( count );
-
-					}
-
-					steer.subVectors( posSum, this.position );
-
-					var l = steer.length();
-
-					if ( l > _maxSteerForce ) {
-
-						steer.divideScalar( l / _maxSteerForce );
-
-					}
-
-					return steer;
-
-				}
-
-				this.separation = function ( boids ) {
-
-					var boid, distance,
-					posSum = new THREE.Vector3(),
-					repulse = new THREE.Vector3();
-
-					for ( var i = 0, il = boids.length; i < il; i ++ ) {
-
-						if ( Math.random() > 0.6 ) continue;
-
-						boid = boids[ i ];
-						distance = boid.position.distanceTo( this.position );
-
-						if ( distance > 0 && distance <= _neighborhoodRadius ) {
-
-							repulse.subVectors( this.position, boid.position );
-							repulse.normalize();
-							repulse.divideScalar( distance );
-							posSum.add( repulse );
-
-						}
-
-					}
-
-					return posSum;
-
-				}
-
-			}
-
-		</script>
-
-		<script>
-
-			var SCREEN_WIDTH = window.innerWidth,
-			SCREEN_HEIGHT = window.innerHeight,
-			SCREEN_WIDTH_HALF = SCREEN_WIDTH  / 2,
-			SCREEN_HEIGHT_HALF = SCREEN_HEIGHT / 2;
-
-			var camera, scene, renderer,
-			birds, bird;
-
-			var boid, boids;
-
-			var stats;
-
-			init();
-			animate();
-
-			function init() {
-
-				camera = new THREE.PerspectiveCamera( 75, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 10000 );
-				camera.position.z = 450;
-
-				scene = new THREE.Scene();
-
-				birds = [];
-				boids = [];
-
-				for ( var i = 0; i < 200; i ++ ) {
-
-					boid = boids[ i ] = new Boid();
-					boid.position.x = Math.random() * 400 - 200;
-					boid.position.y = Math.random() * 400 - 200;
-					boid.position.z = Math.random() * 400 - 200;
-					boid.velocity.x = Math.random() * 2 - 1;
-					boid.velocity.y = Math.random() * 2 - 1;
-					boid.velocity.z = Math.random() * 2 - 1;
-					boid.setAvoidWalls( true );
-					boid.setWorldSize( 500, 500, 400 );
-
-					bird = birds[ i ] = new THREE.Mesh( new Bird(), new THREE.MeshBasicMaterial( { color:Math.random() * 0xffffff, side: THREE.DoubleSide } ) );
-					bird.phase = Math.floor( Math.random() * 62.83 );
-					bird.position = boids[ i ].position;
-					scene.add( bird );
-
-
-				}
-
-				renderer = new THREE.CanvasRenderer();
-				// renderer.autoClear = false;
-				renderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
-
-				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-				document.body.appendChild( renderer.domElement );
-
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.left = '0px';
-				stats.domElement.style.top = '0px';
-
-				document.getElementById( 'container' ).appendChild(stats.domElement);
-
-				//
-
-				window.addEventListener( 'resize', onWindowResize, false );
-
-			}
-
-			function onWindowResize() {
-
-				camera.aspect = window.innerWidth / window.innerHeight;
-				camera.updateProjectionMatrix();
-
-				renderer.setSize( window.innerWidth, window.innerHeight );
-
-			}
-
-			function onDocumentMouseMove( event ) {
-
-				var vector = new THREE.Vector3( event.clientX - SCREEN_WIDTH_HALF, - event.clientY + SCREEN_HEIGHT_HALF, 0 );
-
-				for ( var i = 0, il = boids.length; i < il; i++ ) {
-
-					boid = boids[ i ];
-
-					vector.z = boid.position.z;
-
-					boid.repulse( vector );
-
-				}
-
-			}
-
-			//
-
-			function animate() {
-
-				requestAnimationFrame( animate );
-
-				render();
-				stats.update();
-
-			}
-
-			function render() {
-
-				for ( var i = 0, il = birds.length; i < il; i++ ) {
-
-					boid = boids[ i ];
-					boid.run( boids );
-
-					bird = birds[ i ];
-
-					color = bird.material.color;
-					color.r = color.g = color.b = ( 500 - bird.position.z ) / 1000;
-
-					bird.rotation.y = Math.atan2( - boid.velocity.z, boid.velocity.x );
-					bird.rotation.z = Math.asin( boid.velocity.y / boid.velocity.length() );
-
-					bird.phase = ( bird.phase + ( Math.max( 0, bird.rotation.z ) + 0.1 )  ) % 62.83;
-					bird.geometry.vertices[ 5 ].y = bird.geometry.vertices[ 4 ].y = Math.sin( bird.phase ) * 5;
-
-				}
-
-				renderer.render( scene, camera );
-
-			}
-
-		</script>
-
-	</body>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Andreas Dittes by dittes</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Andreas Dittes</h1>
+        <p>entrepeneur. growth hacker. geek. </p>
+
+
+        <p class="view"><a href="https://github.com/dittes">View My GitHub Profile</a></p>
+
+      </header>
+      <section>
+        <h3>
+<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+
+<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+
+<pre><code>$ cd your_repo_root/repo_name
+$ git fetch origin
+$ git checkout gh-pages
+</code></pre>
+
+<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+
+<h3>
+<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+
+<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+
+<h3>
+<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+
+<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+
+<h3>
+<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+
+<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+
+<h3>
+<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+
+<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+      </section>
+      <footer>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
 </html>
