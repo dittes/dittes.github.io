@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Emoji Clicker — Free Incremental Idle Tap Game | Play Online</title>
+  <meta name="description" content="Emoji Clicker is a free, addictive incremental idle clicker game. Tap emojis, unlock buildings, earn upgrades, prestige with Aura, and discover 120+ achievements. Play online or install as a PWA!">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://emoji-clicker.app/">
+  <meta name="theme-color" content="#0c0e1a">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Emoji Clicker">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Emoji Clicker — Free Incremental Idle Tap Game">
+  <meta property="og:description" content="Tap emojis, build your empire, unlock 120+ achievements, and prestige your way to the top in this addictive idle clicker game.">
+  <meta property="og:url" content="https://emoji-clicker.app/">
+  <meta property="og:image" content="https://emoji-clicker.app/assets/og-image.png">
+  <meta property="og:site_name" content="Emoji Clicker">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Emoji Clicker — Free Idle Clicker Game">
+  <meta name="twitter:description" content="The addictive emoji tapping idle game with 12 buildings, 60+ upgrades, prestige, and 120+ achievements.">
+  <meta name="twitter:image" content="https://emoji-clicker.app/assets/og-image.png">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>😀</text></svg>">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+
+  <!-- JSON-LD: VideoGame -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "Emoji Clicker",
+    "description": "A free incremental idle clicker game where you tap emojis, unlock buildings, earn upgrades, prestige with Aura, and discover 120+ achievements.",
+    "genre": ["Incremental", "Idle", "Clicker"],
+    "operatingSystem": "Web",
+    "applicationCategory": "Game",
+    "gamePlatform": "Web Browser",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock"
+    },
+    "author": {
+      "@type": "Organization",
+      "name": "Emoji Clicker Team"
+    },
+    "url": "https://emoji-clicker.app/",
+    "image": "https://emoji-clicker.app/assets/og-image.png",
+    "playMode": "SinglePlayer",
+    "numberOfPlayers": 1
+  }
+  </script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-tier="0">
+  <div class="app" role="application" aria-label="Emoji Clicker Game">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="header" role="banner">
+      <div class="header-inner">
+        <h1 aria-label="Emoji Clicker">🪙 Emoji Clicker</h1>
+        <div class="header-stats" aria-live="polite">
+          <span id="h-emojis" aria-label="Current emojis">0</span>
+          <span id="h-eps" aria-label="Emojis per second">0 EPS</span>
+        </div>
+        <div class="header-actions">
+          <button id="settings-btn" aria-label="Settings">⚙️</button>
+          <button id="install-btn" aria-label="Install app">📲</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ NEWS TICKER ═══ -->
+    <div class="news-bar" role="marquee" aria-label="News ticker">
+      <span id="news-text">Welcome to Emoji Clicker! Start tapping! 🎉</span>
+    </div>
+
+    <!-- ═══ BUFF BAR ═══ -->
+    <div id="buff-bar" aria-label="Active buffs" role="status"></div>
+
+    <!-- ═══ GAME AREA ═══ -->
+    <main id="game-area" role="main">
+      <button id="big-emoji" aria-label="Click to earn emojis. This is the main game button.">😀</button>
+      <div id="pet" aria-label="Pet companion" role="img">🐣</div>
+    </main>
+
+    <!-- ═══ SKIN SELECTOR ═══ -->
+    <div id="skin-selector" role="radiogroup" aria-label="Choose emoji skin"></div>
+
+    <!-- ═══ TABS ═══ -->
+    <div class="panels-area">
+      <nav class="tabs-bar" role="tablist" aria-label="Game panels">
+        <button class="tab-btn active" data-tab="store" role="tab" aria-selected="true" aria-controls="panel-store">🏪 Store</button>
+        <button class="tab-btn" data-tab="upgrades" role="tab" aria-selected="false" aria-controls="panel-upgrades">⬆️ Upgrades</button>
+        <button class="tab-btn" data-tab="achievements" role="tab" aria-selected="false" aria-controls="panel-achievements">🏆 Achievements</button>
+        <button class="tab-btn" data-tab="aura" role="tab" aria-selected="false" aria-controls="panel-aura">✨ Aura</button>
+        <button class="tab-btn" data-tab="stats" role="tab" aria-selected="false" aria-controls="panel-stats">📊 Stats</button>
+      </nav>
+
+      <!-- STORE PANEL -->
+      <section id="panel-store" class="tab-panel active" role="tabpanel" aria-label="Building store">
+        <div class="bulk-bar" role="group" aria-label="Bulk buy amount">
+          <button class="bulk-btn active" data-bulk="1">×1</button>
+          <button class="bulk-btn" data-bulk="10">×10</button>
+          <button class="bulk-btn" data-bulk="100">×100</button>
+          <button class="bulk-btn" data-bulk="max">MAX</button>
+        </div>
+        <div id="store-list" aria-label="Buildings list"></div>
+      </section>
+
+      <!-- UPGRADES PANEL -->
+      <section id="panel-upgrades" class="tab-panel" role="tabpanel" aria-label="Available upgrades">
+        <div id="upgrade-list"></div>
+      </section>
+
+      <!-- ACHIEVEMENTS PANEL -->
+      <section id="panel-achievements" class="tab-panel" role="tabpanel" aria-label="Achievements">
+        <div id="ach-list"></div>
+      </section>
+
+      <!-- AURA PANEL -->
+      <section id="panel-aura" class="tab-panel" role="tabpanel" aria-label="Aura prestige tree">
+        <div id="aura-tree-list"></div>
+        <div style="padding:12px 4px">
+          <h3 style="font-size:0.9rem;color:var(--accent);margin-bottom:6px">🗓️ Seasons</h3>
+          <div id="season-selector"></div>
+        </div>
+      </section>
+
+      <!-- STATS PANEL -->
+      <section id="panel-stats" class="tab-panel" role="tabpanel" aria-label="Game statistics">
+        <div id="stats-content"></div>
+      </section>
+    </div>
+
+    <!-- ═══ BOTTOM BAR ═══ -->
+    <footer class="bottom-bar" role="contentinfo">
+      <button class="btn btn-gold" id="prestige-btn" aria-label="Prestige: Reboot for Aura">🔄 Reboot</button>
+      <button class="btn" id="settings-btn-bottom" aria-label="Open settings" onclick="document.getElementById('settings-btn').click()">⚙️ Settings</button>
+    </footer>
+  </div>
+
+  <!-- ═══ MODAL ═══ -->
+  <div id="modal" role="dialog" aria-modal="true" aria-label="Dialog">
+    <div id="modal-inner">
+      <button id="modal-close" aria-label="Close dialog">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <!-- ═══ NOTIFICATION ═══ -->
+  <div id="notification" role="alert" aria-live="assertive"></div>
+
+  <!-- ═══ SEO CONTENT ═══ -->
+  <section class="seo-section" aria-label="About Emoji Clicker">
+    <details>
+      <summary>ℹ️ About Emoji Clicker</summary>
+      <div class="content">
+        <h2>Emoji Clicker — The Ultimate Free Idle Clicker Game</h2>
+        <p>
+          Emoji Clicker is a free-to-play incremental idle clicker game that you can enjoy directly in your web browser.
+          Start by tapping the big emoji to earn your first emojis, then invest them in automated buildings that produce
+          emojis for you every second. With 12 unique buildings, over 60 upgrades, and more than 120 achievements to unlock,
+          there's always something new to discover.
+        </p>
+        <p>
+          Like the best idle games and tap games, Emoji Clicker features deep progression systems including a prestige mechanic
+          called "Aura Reboot" that lets you reset your progress for powerful permanent bonuses. The Aura Tree offers 20+
+          permanent upgrades that make each playthrough more rewarding than the last.
+        </p>
+        <p>
+          Whether you're a fan of incremental games, idle clickers, or just looking for a fun tap game to play on your phone
+          or desktop, Emoji Clicker delivers a satisfying experience with charming emoji visuals, Golden Emoji bonus events,
+          seasonal content, and hidden easter eggs. The game works offline as a Progressive Web App (PWA), so you can install
+          it and play anywhere — no internet required.
+        </p>
+        <p>
+          Key features: 12 buildings with exponential scaling, 60+ upgrades with synergy bonuses, 120+ achievements, prestige
+          system with permanent upgrades, random Golden Emoji events, seasonal themes, companion pets, emoji skins, sound effects,
+          and mobile-first responsive design with accessibility features including reduced motion mode and high contrast.
+        </p>
+      </div>
+    </details>
+
+    <details>
+      <summary>❓ Frequently Asked Questions</summary>
+      <div class="content" itemscope itemtype="https://schema.org/FAQPage">
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">What is Emoji Clicker?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Emoji Clicker is a free incremental idle clicker game where you tap emojis to earn currency, buy automated buildings, unlock upgrades, and prestige for permanent bonuses. It's playable in any web browser.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">How do I play Emoji Clicker?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Click or tap the big emoji to earn emojis. Spend emojis on buildings in the Store tab to automate production. Buy upgrades to multiply your output. Eventually, Reboot to earn Aura for permanent bonuses.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">Is Emoji Clicker free?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Yes! Emoji Clicker is completely free to play with no ads, no in-app purchases, and no account required. Your progress saves automatically to your browser.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">Does Emoji Clicker work offline?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Yes. Emoji Clicker is a Progressive Web App (PWA). After your first visit, it caches all assets and works fully offline. You can install it to your home screen on mobile or desktop.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">What is Aura and how does Prestige work?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Once you've earned enough total emojis (1 billion+), you can "Reboot" to reset your buildings and upgrades in exchange for Aura points. Each Aura gives +1% permanent production and can be spent on the Aura Tree for powerful permanent upgrades.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">How do I transfer my save to another device?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Open Settings, click "Export Save" to get a text string, copy it, then on the other device open Settings, click "Import Save", paste the string, and click Load.</p>
+          </div>
+        </div>
+        <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+          <h3 itemprop="name">Are there any Easter Eggs?</h3>
+          <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+            <p itemprop="text">Yes! Emoji Clicker has over 10 hidden easter eggs including secret achievements, hidden modes, and special events. Try exploring unusual interactions to discover them all.</p>
+          </div>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- JSON-LD: FAQPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is Emoji Clicker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Emoji Clicker is a free incremental idle clicker game where you tap emojis to earn currency, buy automated buildings, unlock upgrades, and prestige for permanent bonuses."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I play Emoji Clicker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Click or tap the big emoji to earn emojis. Spend emojis on buildings, buy upgrades to multiply your output, and Reboot to earn Aura for permanent bonuses."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is Emoji Clicker free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! Emoji Clicker is completely free with no ads or in-app purchases."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does it work offline?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes, Emoji Clicker is a PWA and works fully offline after the first visit."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Aura prestige?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "After earning 1 billion+ emojis, Reboot to reset progress and earn Aura for permanent production bonuses and the Aura upgrade tree."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <script src="game.js" defer></script>
+
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

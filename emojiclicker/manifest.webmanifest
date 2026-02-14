@@ -1,0 +1,25 @@
+{
+  "name": "Emoji Clicker",
+  "short_name": "Emoji Clicker",
+  "description": "A free incremental idle clicker game. Tap emojis, unlock buildings, earn upgrades, and prestige!",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0e1a",
+  "theme_color": "#0c0e1a",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "assets/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
