@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>The Quiet Game</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Progress border (visible during running state) -->
+    <svg id="progress-border" class="progress-border" aria-hidden="true">
+      <rect id="progress-rect" x="3" y="3" rx="0" ry="0" />
+    </svg>
+
+    <!-- ===== IDLE SCREEN ===== -->
+    <section id="screen-idle" class="screen active" aria-label="Game setup">
+      <header class="idle-header">
+        <div class="title-row">
+          <h1 class="game-title">The Quiet<br><em>Game</em></h1>
+          <button class="btn-icon btn-info" id="btn-info" aria-label="How it works &amp; About">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          </button>
+        </div>
+        <p class="game-subtitle">Stay silent. Stay still. Win.</p>
+      </header>
+
+      <div class="idle-body">
+        <!-- Duration -->
+        <fieldset class="field-group" role="radiogroup" aria-label="Select duration">
+          <legend class="section-label">Duration</legend>
+          <div class="duration-options">
+            <button class="duration-btn" data-seconds="300" aria-pressed="false">5 min</button>
+            <button class="duration-btn selected" data-seconds="900" aria-pressed="true">15 min</button>
+            <button class="duration-btn" data-seconds="1800" aria-pressed="false">30 min</button>
+            <button class="duration-btn" data-seconds="3600" aria-pressed="false">1 hr</button>
+          </div>
+        </fieldset>
+
+        <!-- Threshold -->
+        <div class="field-group">
+          <label class="section-label" for="threshold-slider">Sensitivity</label>
+          <div class="threshold-row">
+            <input type="range" id="threshold-slider" min="0.005" max="0.15" step="0.001" value="0.035" aria-label="Sound threshold">
+            <span class="threshold-value" id="threshold-display">0.035</span>
+          </div>
+          <div class="threshold-actions">
+            <button class="btn-text" id="btn-calibrate" aria-label="Calibrate room noise for 2 seconds">
+              <span class="calibrate-dot" id="calibrate-dot"></span>Calibrate (2 s)
+            </button>
+            <button class="btn-text" id="btn-reset-threshold">Reset</button>
+          </div>
+          <p id="calibrate-status" class="calibrate-status" aria-live="polite"></p>
+        </div>
+
+        <!-- Start -->
+        <button class="btn-start" id="btn-start" aria-label="Start the quiet game">
+          <span class="btn-start-label">Start</span>
+          <span class="btn-start-sub">microphone required</span>
+        </button>
+      </div>
+
+      <footer class="idle-footer">
+        <p class="privacy-note">All audio is processed locally. Nothing is stored or uploaded.</p>
+      </footer>
+    </section>
+
+    <!-- ===== RUNNING SCREEN ===== -->
+    <section id="screen-running" class="screen" aria-label="Game in progress">
+      <div class="running-top">
+        <div class="timer-display" aria-live="off" aria-label="Time remaining">
+          <span id="timer-text" class="mono">15:00</span>
+        </div>
+        <p class="running-hint" id="running-hint">Remain quiet…</p>
+      </div>
+
+      <div class="running-middle">
+        <div class="viz-wrap" aria-label="Audio level visualization">
+          <canvas id="viz-canvas"></canvas>
+          <div class="viz-center">
+            <span class="viz-level mono" id="viz-level">0.000</span>
+            <span class="viz-unit">RMS</span>
+          </div>
+        </div>
+
+        <div class="running-stats">
+          <div class="stat">
+            <span class="stat-val mono" id="stat-peak">0.000</span>
+            <span class="stat-lbl">peak</span>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat">
+            <span class="stat-val mono" id="stat-threshold">0.035</span>
+            <span class="stat-lbl">threshold</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="running-bottom">
+        <button class="btn-ctrl btn-pause" id="btn-pause" aria-label="Pause">Pause</button>
+        <button class="btn-ctrl btn-stop" id="btn-stop" aria-label="Stop">Stop</button>
+      </div>
+    </section>
+
+    <!-- ===== WIN SCREEN ===== -->
+    <section id="screen-win" class="screen" aria-label="You won">
+      <div class="result-wrap">
+        <div class="result-badge result-badge-win">✦</div>
+        <h2 class="result-title result-title-win">You won!</h2>
+        <p class="result-msg">It stayed quiet the entire time.</p>
+        <div class="result-stats">
+          <div class="result-stat"><span class="rs-label">Duration</span><span class="rs-value mono" id="win-duration">—</span></div>
+          <div class="result-stat"><span class="rs-label">Max level</span><span class="rs-value mono" id="win-max-level">—</span></div>
+          <div class="result-stat"><span class="rs-label">Threshold</span><span class="rs-value mono" id="win-threshold">—</span></div>
+        </div>
+        <button class="btn-again btn-again-win" id="btn-again-win">Play again</button>
+      </div>
+    </section>
+
+    <!-- ===== LOSE SCREEN ===== -->
+    <section id="screen-lose" class="screen" aria-label="You lost">
+      <div class="result-wrap">
+        <div class="result-badge result-badge-lose">✕</div>
+        <h2 class="result-title result-title-lose">You lost!</h2>
+        <p class="result-msg">Sound detected above threshold.</p>
+        <div class="result-stats">
+          <div class="result-stat"><span class="rs-label">Time left</span><span class="rs-value mono" id="lose-time-left">—</span></div>
+          <div class="result-stat"><span class="rs-label">Peak level</span><span class="rs-value mono" id="lose-peak">—</span></div>
+          <div class="result-stat"><span class="rs-label">Threshold</span><span class="rs-value mono" id="lose-threshold">—</span></div>
+        </div>
+        <button class="btn-again btn-again-lose" id="btn-again-lose">Try again</button>
+      </div>
+    </section>
+
+    <!-- ===== MIC ERROR ===== -->
+    <div id="mic-error" class="overlay" role="alert" aria-live="assertive" hidden>
+      <div class="overlay-box">
+        <div class="overlay-icon">🎤</div>
+        <h3>Microphone Required</h3>
+        <p id="mic-error-msg">This game needs microphone access to detect sound.</p>
+        <ol class="mic-steps">
+          <li>Check the address bar for a blocked mic icon</li>
+          <li>Tap it and select "Allow"</li>
+          <li>Refresh the page and try again</li>
+        </ol>
+        <button class="btn-overlay-close" id="btn-dismiss-error">Got it</button>
+      </div>
+    </div>
+
+    <!-- ===== INFO MODAL ===== -->
+    <div id="info-modal" class="overlay" hidden>
+      <div class="overlay-box overlay-box-info">
+        <button class="btn-modal-close" id="btn-close-info" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+
+        <h3 class="info-title">How It Works</h3>
+
+        <div class="info-section">
+          <h4>The Game</h4>
+          <p>Choose a duration and press Start. Your microphone listens for sound — if the room stays quiet below the threshold for the entire time, you win. If sound is detected above the threshold for more than ~200 ms, you lose immediately.</p>
+        </div>
+
+        <div class="info-section">
+          <h4>Threshold &amp; Calibration</h4>
+          <p>The sensitivity slider sets how loud a sound must be to trigger a loss. Use <strong>Calibrate</strong> to sample your room's baseline noise for 2 seconds — the threshold is then set to 30% above the ambient level. You can also adjust manually with the slider.</p>
+        </div>
+
+        <div class="info-section">
+          <h4>The Visualization</h4>
+          <p>The circular display shows a real-time frequency spectrum of what your microphone hears. The dashed ring marks your threshold. The colored glow shows current loudness. All processing happens locally — no audio is recorded, stored, or transmitted.</p>
+        </div>
+
+        <div class="info-section">
+          <h4>Tips</h4>
+          <p>Works best in a quiet environment. Close doors and windows. Put your phone face-down to avoid notification sounds. For long sessions, keep your device plugged in — the game requests a screen wake lock to prevent sleep.</p>
+        </div>
+
+        <hr class="info-divider">
+
+        <div class="info-section imprint">
+          <h4>Imprint</h4>
+          <p>
+            Andreas Dittes<br>
+            Bautzener Str. 35<br>
+            10829 Berlin
+          </p>
+          <p>
+            <a href="mailto:quietgame@dittes.info">quietgame@dittes.info</a>
+          </p>
+        </div>
+
+        <button class="btn-overlay-close" id="btn-close-info-bottom">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
