@@ -1,65 +1,249 @@
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Andreas Dittes by dittes</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- ============================================================
+       ANDREAS DITTES — PORTFOLIO
+       ============================================================ -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>Andreas Dittes</h1>
-        <p>entrepeneur. growth hacker. geek. </p>
+  <title>Andreas Dittes — Full Stack Entrepreneur</title>
+  <meta name="description" content="Andreas Dittes is a full stack entrepreneur building startups and open-source tools across AI, FinTech, and developer tooling. Based in Berlin, operating globally." />
+  <link rel="canonical" href="https://dittes.co/" />
+  <meta property="og:type"         content="website" />
+  <meta property="og:url"          content="https://andreasdittes.com/" />
+  <meta property="og:title"        content="Andreas Dittes — Full Stack Entrepreneur" />
+  <meta property="og:description"  content="Full stack entrepreneur. Based in Berlin, operating globally." />
+  <meta property="og:image"        content="https://dittes.co/andreas-dittes.jpg" />
+  <meta property="og:image:width"  content="1440" />
+  <meta property="og:image:height" content="680" />
+  <meta property="og:site_name"    content="Andreas Dittes" />
 
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="Andreas Dittes — Full Stack Entrepreneur" />
+  <meta name="twitter:description" content="Full stack entrepreneur. Based in Berlin, operating globally." />
+  <meta name="twitter:image"       content="https://dittes.co/andreas-dittes.jpg" />
 
-        <p class="view"><a href="https://github.com/dittes">View My GitHub Profile</a></p>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%233730a3'/><text x='16' y='22' font-family='serif' font-size='14' font-weight='bold' fill='white' text-anchor='middle'>AD</text></svg>" />
 
-      </header>
-      <section>
-        <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Andreas Dittes",
+    "url": "https://dittes.co",
+    "jobTitle": "Full Stack Entrepreneur",
+    "address": { "@type": "PostalAddress", "addressLocality": "Berlin", "addressCountry": "DE" }
+  }
+  </script>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+<body>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+  <!-- ============================================================
+       NAV
+       ============================================================ -->
+  <header>
+    <nav class="nav" aria-label="Primary navigation">
+      <div class="container">
+        <div class="nav__inner">
 
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+          <a href="#home" class="nav__logo" aria-label="Andreas Dittes — Home">
+            <span class="nav__logo-mark" aria-hidden="true">AD</span>
+            Andreas Dittes
+          </a>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+          <ul class="nav__links" role="list">
+            <li><a href="#home"  class="nav__link">Home</a></li>
+            <li><a href="#work"  class="nav__link">Projects</a></li>
+            <li><a href="#work"  class="nav__link">Startups</a></li>
+            <li><a href="#about" class="nav__link">About</a></li>
+          </ul>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+          <a href="mailto:hello@andreasdittes.com" class="nav__cta">Get in Touch</a>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+        </div>
+      </div>
+    </nav>
+  </header>
 
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+  <main>
+    <section id="home" class="hero" aria-labelledby="hero-heading">
+      <div class="container">
+        <div class="hero__inner">
+          <div class="hero__content">
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+            <span class="hero__eyebrow">Full Stack Entrepreneur</span>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+            <h1 class="hero__headline" id="hero-heading">
+              Building things<br>that <em>matter.</em>
+            </h1>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-      <footer>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+            <p class="hero__sub">
+              I found startups, ship open-source software, and explore the
+              edges of what technology can do.
+            </p>
+
+            <p class="hero__location">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Based in Berlin, operating globally.
+            </p>
+
+            <div class="hero__cta">
+              <a href="#work" class="btn btn--primary">View My Work</a>
+              <a href="#about" class="btn btn--ghost">About Me</a>
+            </div>
+
+            <div class="hero__stats" aria-label="Portfolio statistics">
+              <div class="stat">
+                <span class="stat__value" id="stat-projects">—</span>
+                <span class="stat__label">Projects</span>
+              </div>
+              <div class="stat">
+                <span class="stat__value" id="stat-startups">—</span>
+                <span class="stat__label">Startups</span>
+              </div>
+              <div class="stat">
+                <span class="stat__value" id="stat-exited">—</span>
+                <span class="stat__label">Exits</span>
+              </div>
+            </div>
+
+          </div><!-- /hero__content -->
+        </div><!-- /hero__inner -->
+      </div><!-- /container -->
+    </section>
+
+    <div class="divider"></div>
+
+    <!-- ============================================================
+         WORK
+         Card image size: 1280 × 720 px JPEG, ~150–300 KB
+         Edit /data/items.json to add or change items.
+         ============================================================ -->
+    <section id="work" class="section" aria-labelledby="work-heading">
+      <div class="container">
+
+        <div class="section__header">
+          <div>
+            <p class="section__label">Portfolio</p>
+            <h2 class="section__title" id="work-heading">Projects &amp; Startups</h2>
+          </div>
+        </div>
+
+        <!-- Toolbar: tabs · chips · search · sort -->
+        <div class="toolbar" role="toolbar" aria-label="Filter and search controls">
+
+          <div class="tab-group" role="tablist" aria-label="Category">
+            <button class="tab active" role="tab" data-tab="all"     aria-selected="true"  aria-controls="grid">All</button>
+            <button class="tab"        role="tab" data-tab="project" aria-selected="false" aria-controls="grid">Projects</button>
+            <button class="tab"        role="tab" data-tab="startup" aria-selected="false" aria-controls="grid">Startups</button>
+          </div>
+
+          <div class="chips" role="group" aria-label="Filter by status">
+            <button class="chip active" data-filter="all"        aria-pressed="true" >All</button>
+            <button class="chip"        data-filter="active"     aria-pressed="false">Active</button>
+            <button class="chip"        data-filter="exited"     aria-pressed="false">Exited</button>
+            <button class="chip"        data-filter="liquidated" aria-pressed="false">Liquidated</button>
+          </div>
+
+          <div class="toolbar__right">
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input
+                id="search" class="search-input" type="search"
+                placeholder="Search…" aria-label="Search projects and startups"
+                autocomplete="off" spellcheck="false"
+              />
+            </div>
+            <select id="sort" class="sort-select" aria-label="Sort order">
+              <option value="newest">Newest first</option>
+              <option value="az">A – Z</option>
+            </select>
+          </div>
+
+        </div><!-- /toolbar -->
+
+        <!-- Cards populated by app.js from /data/items.json -->
+        <div id="grid" class="grid" role="list" aria-live="polite" aria-label="Portfolio items">
+          <div class="empty-state"><h3>Loading…</h3></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Startups anchor (nav link target) -->
+    <span id="startups" aria-hidden="true" style="display:block;height:0;overflow:hidden;"></span>
+
+    <div class="divider"></div>
+
+    <!-- ============================================================
+         ABOUT
+         ============================================================ -->
+    <section id="about" class="about" aria-labelledby="about-heading">
+      <div class="container">
+
+        <div class="reveal">
+          <p class="section__label">Background</p>
+          <h2 class="section__title" id="about-heading" style="margin-bottom:1.75rem;">About Me</h2>
+        </div>
+
+        <div class="about__body reveal">
+          <p>
+            I'm Andreas — a product-minded marketeer turned serial entrepreneur.
+            I build at the intersection of software, data, and human experience.
+            Over the past decade I've founded, scaled, and exited multiple companies
+            while trying to push the frontier of technological advances.
+          </p>
+          <p>
+            My work spans CleanTech, AI, Marketing, Recruiting and FinTech. I believe that the best products are obsessively
+            simple on the outside and ruthlessly engineered on the inside.
+          </p>
+          <p>
+            When I'm not building, I write about startup strategy, engineering
+            culture, and the art of making good decisions under uncertainty. You can also book me as your <a href="https://andreasdittes.com/keynote-speaker-kuenstliche-intelligenz/">keynote speaker ai</a> or other topics like recruiting and innovation. 
+          </p>
+          <div class="about__actions">
+            <a href="mailto:hello@andreasdittes.com" class="btn btn--primary">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Get in Touch
+            </a>
+            <a href="https://linkedin.com/in/dittes" class="btn btn--ghost" target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer__inner">
+        <p class="footer__copy">&copy; <span id="year"></span> Andreas Dittes · Berlin, Germany</p>
+        <nav class="footer__links" aria-label="Footer navigation">
+          <a href="mailto:hello@andreasdittes.com"       class="footer__link">Email</a>
+          <a href="https://github.com/dittes"      class="footer__link" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://linkedin.com/in/andreasdittes" class="footer__link" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+        </nav>
+      </div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
-  </body>
+  </footer>
+
+  <!-- Modal (content injected by app.js) -->
+  <div id="modal-overlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-hidden="true">
+    <div id="modal" class="modal" tabindex="-1"></div>
+  </div>
+
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+  <script src="app.js" defer></script>
+
+</body>
 </html>
