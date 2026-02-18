@@ -1,0 +1,123 @@
+[
+  {
+    "id": "1",
+    "type": "startup",
+    "status": "active",
+    "title": "Meridian AI",
+    "description": "AI-powered supply chain intelligence platform that reduces logistics costs by 30% through predictive demand forecasting and autonomous procurement. Serving mid-market manufacturers across DACH.",
+    "url": "https://example.com/meridian",
+    "image": "assets/placeholder-1.svg",
+    "tags": ["AI/ML", "B2B SaaS", "Supply Chain", "Series A"],
+    "date": "2024-03-15"
+  },
+  {
+    "id": "2",
+    "type": "startup",
+    "status": "exited",
+    "title": "Coframe",
+    "description": "No-code UI experimentation platform enabling product teams to continuously A/B test every element of their web app without touching code. Acquired by Adobe in 2023 for €42M.",
+    "url": "https://example.com/coframe",
+    "image": "assets/placeholder-2.svg",
+    "tags": ["No-Code", "CRO", "SaaS", "Acquired"],
+    "date": "2021-06-01"
+  },
+  {
+    "id": "3",
+    "type": "project",
+    "status": null,
+    "title": "Chromatic Graph Engine",
+    "description": "Open-source WebGL-powered graph visualization library handling 1M+ nodes with real-time physics simulation. Used by data teams at CERN, Stripe, and 200+ companies worldwide.",
+    "url": "https://example.com/chromatic",
+    "image": "assets/placeholder-3.svg",
+    "tags": ["Open Source", "WebGL", "Data Viz", "TypeScript"],
+    "date": "2024-11-20"
+  },
+  {
+    "id": "4",
+    "type": "startup",
+    "status": "active",
+    "title": "Pulsar Finance",
+    "description": "Real-time treasury management for European startups. Automated FX hedging, yield optimization on idle cash, and CFO-grade reporting — all in a single dashboard built for founders.",
+    "url": "https://example.com/pulsar",
+    "image": "assets/placeholder-4.svg",
+    "tags": ["FinTech", "Treasury", "B2B", "Seed"],
+    "date": "2023-09-10"
+  },
+  {
+    "id": "5",
+    "type": "project",
+    "status": null,
+    "title": "Tessellate Design System",
+    "description": "Production-ready design system with 120+ accessible components, Figma primitives, and a token-first theming engine. Adopted by 15 product teams in Y Combinator's W24 batch.",
+    "url": "https://example.com/tessellate",
+    "image": "assets/placeholder-5.svg",
+    "tags": ["Design System", "Accessibility", "Figma", "React"],
+    "date": "2024-02-28"
+  },
+  {
+    "id": "6",
+    "type": "startup",
+    "status": "liquidated",
+    "title": "Fable Social",
+    "description": "Short-form audio storytelling platform where creators monetized episodic audio dramas via subscriptions. Reached 180K MAU before the market shift to video made scaling unsustainable.",
+    "url": "https://example.com/fable",
+    "image": "assets/placeholder-6.svg",
+    "tags": ["Audio", "Creator Economy", "Consumer", "Sunset"],
+    "date": "2020-04-12"
+  },
+  {
+    "id": "7",
+    "type": "project",
+    "status": null,
+    "title": "Northstar CLI",
+    "description": "Terminal-first project management tool for engineers who hate leaving their editor. Syncs with Linear, GitHub, and Notion. 12K GitHub stars, 3K weekly active users.",
+    "url": "https://example.com/northstar",
+    "image": "assets/placeholder-7.svg",
+    "tags": ["CLI", "Developer Tools", "Go", "Open Source"],
+    "date": "2023-07-04"
+  },
+  {
+    "id": "8",
+    "type": "startup",
+    "status": "exited",
+    "title": "Lantern Health",
+    "description": "Digital therapeutics platform for chronic pain management combining biometric wearables with CBT-based coaching. Raised €8M Series A, acquired by Philips Digital Health in 2022.",
+    "url": "https://example.com/lantern",
+    "image": "assets/placeholder-8.svg",
+    "tags": ["HealthTech", "DTx", "Wearables", "Acquired"],
+    "date": "2019-11-30"
+  },
+  {
+    "id": "9",
+    "type": "project",
+    "status": null,
+    "title": "Void Protocol",
+    "description": "Experimental generative art series exploring emergent complexity through recursive WebGL shaders. Each piece is unique, computed client-side, and minted as a compressed on-chain SVG.",
+    "url": "https://example.com/void",
+    "image": "assets/placeholder-9.svg",
+    "tags": ["Generative Art", "WebGL", "On-chain", "Creative Code"],
+    "date": "2024-08-18"
+  },
+  {
+    "id": "10",
+    "type": "startup",
+    "status": "active",
+    "title": "Sediment",
+    "description": "Geological data platform for mining exploration teams. Transforms raw drill-core data into 3D ore models using computer vision, cutting interpretation time from weeks to hours.",
+    "url": "https://example.com/sediment",
+    "image": "assets/placeholder-10.svg",
+    "tags": ["Mining Tech", "Computer Vision", "B2B", "Pre-Seed"],
+    "date": "2025-01-08"
+  },
+  {
+    "id": "11",
+    "type": "project",
+    "status": null,
+    "title": "Resonance — UX Research Toolkit",
+    "description": "Lightweight, privacy-first session replay and heatmap SDK. Drop-in script under 8KB gzipped, GDPR-compliant by design, self-hosted on any CDN. No vendor lock-in.",
+    "url": "https://example.com/resonance",
+    "image": "assets/placeholder-11.svg",
+    "tags": ["UX Research", "Privacy", "SDK", "JavaScript"],
+    "date": "2023-12-01"
+  }
+]
