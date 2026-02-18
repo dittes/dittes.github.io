@@ -979,403 +979,391 @@ const EFFECTS_PER_PAGE = 9; // 3×3 on mobile, 4-col on desktop shows all
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Vertex shader — fullscreen quad
+// u_mirror is 1.0 to flip U, 0.0 for normal
 const VERT_SRC = `
 attribute vec2 a_pos;
 varying vec2 v_uv;
-uniform bool u_mirror;
+uniform float u_mirror;
 void main() {
-  // UV origin bottom-left in WebGL; video is top-left.
-  // We flip Y here.
   float u = a_pos.x * 0.5 + 0.5;
   float v = 1.0 - (a_pos.y * 0.5 + 0.5);
-  if (u_mirror) u = 1.0 - u;
+  if (u_mirror > 0.5) { u = 1.0 - u; }
   v_uv = vec2(u, v);
   gl_Position = vec4(a_pos, 0.0, 1.0);
 }
 `;
 
-// Fragment shader — all effects
+// Fragment shader — all effects (GLSL ES 1.0 compatible)
+// KEY RULES followed:
+//  • No array indexing with loop variables (GLSL ES 1.0 restriction)
+//  • blur is fully inlined — no arrays, no loops over non-constant indices
+//  • No variable named 'dot' (reserved built-in)
+//  • No 'uniform bool' — use float instead
+//  • Guard normalize() against zero-length vectors
 const FRAG_SRC = `
 precision highp float;
 varying vec2 v_uv;
 uniform sampler2D u_tex;
 uniform vec2 u_res;
 uniform float u_time;
-uniform float u_amount; // 0-1
-uniform vec2 u_center;  // 0-1 focal point
+uniform float u_amount;   // 0..1
+uniform vec2 u_center;    // focal point in UV space (0..1)
 uniform int u_effect;
+// u_mirror is passed as float: 1.0 = mirror, 0.0 = no mirror
+// (handled in vertex shader already, so this uniform is unused in frag)
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-vec3 rgb2hsv(vec3 c) {
-  vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-  float d = q.x - min(q.w, q.y);
-  float e = 1.0e-10;
-  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-vec3 hsv2rgb(vec3 c) {
-  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
-  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
-  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-float luminance(vec3 c) {
+float luma(vec3 c) {
   return dot(c, vec3(0.299, 0.587, 0.114));
 }
 
-// Sobel edge detection
-float sobel(vec2 uv, vec2 px) {
-  float tl = luminance(texture2D(u_tex, uv + vec2(-px.x,  px.y)).rgb);
-  float t  = luminance(texture2D(u_tex, uv + vec2(0.0,    px.y)).rgb);
-  float tr = luminance(texture2D(u_tex, uv + vec2( px.x,  px.y)).rgb);
-  float l  = luminance(texture2D(u_tex, uv + vec2(-px.x,  0.0 )).rgb);
-  float r  = luminance(texture2D(u_tex, uv + vec2( px.x,  0.0 )).rgb);
-  float bl = luminance(texture2D(u_tex, uv + vec2(-px.x, -px.y)).rgb);
-  float b  = luminance(texture2D(u_tex, uv + vec2(0.0,   -px.y)).rgb);
-  float br = luminance(texture2D(u_tex, uv + vec2( px.x, -px.y)).rgb);
-  float Gx = -tl - 2.0*l - bl + tr + 2.0*r + br;
-  float Gy = -tl - 2.0*t - tr + bl + 2.0*b + br;
-  return clamp(sqrt(Gx*Gx + Gy*Gy), 0.0, 1.0);
+vec3 posterize(vec3 c, float lv) {
+  return floor(c * lv) / lv;
 }
 
-// Posterize (quantize to n levels)
-vec3 posterize(vec3 c, float levels) {
-  return floor(c * levels) / levels;
-}
-
-// Thermal color map: black -> blue -> cyan -> green -> yellow -> red -> white
-vec3 thermalGradient(float t) {
-  t = clamp(t, 0.0, 1.0);
-  vec3 a = mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), smoothstep(0.0, 0.2, t));
-  vec3 b = mix(a, vec3(0.0, 1.0, 1.0), smoothstep(0.2, 0.4, t));
-  vec3 c3 = mix(b, vec3(0.0, 1.0, 0.0), smoothstep(0.4, 0.6, t));
-  vec3 d = mix(c3, vec3(1.0, 1.0, 0.0), smoothstep(0.6, 0.8, t));
-  vec3 e = mix(d, vec3(1.0, 0.0, 0.0), smoothstep(0.8, 0.9, t));
-  return mix(e, vec3(1.0, 1.0, 1.0), smoothstep(0.9, 1.0, t));
-}
-
-// ─── Simple approximate gaussian blur (9-tap) ────────────────────────────
-vec4 blur9(vec2 uv, vec2 px, float radius) {
-  vec4 sum = vec4(0.0);
-  float weights[9];
-  weights[0] = 0.0625; weights[1] = 0.125; weights[2] = 0.0625;
-  weights[3] = 0.125;  weights[4] = 0.25;  weights[5] = 0.125;
-  weights[6] = 0.0625; weights[7] = 0.125; weights[8] = 0.0625;
-  vec2 offsets[9];
-  offsets[0] = vec2(-1,-1); offsets[1] = vec2(0,-1); offsets[2] = vec2(1,-1);
-  offsets[3] = vec2(-1, 0); offsets[4] = vec2(0, 0); offsets[5] = vec2(1, 0);
-  offsets[6] = vec2(-1, 1); offsets[7] = vec2(0, 1); offsets[8] = vec2(1, 1);
-  for (int i = 0; i < 9; i++) {
-    sum += texture2D(u_tex, uv + offsets[i] * px * radius) * weights[i];
+// HSV conversion (no arrays, pure math)
+vec3 rgb2hsv(vec3 c) {
+  float mx = max(c.r, max(c.g, c.b));
+  float mn = min(c.r, min(c.g, c.b));
+  float dif = mx - mn;
+  float h = 0.0;
+  if (dif > 0.0001) {
+    if (mx == c.r)      h = mod((c.g - c.b) / dif, 6.0) / 6.0;
+    else if (mx == c.g) h = ((c.b - c.r) / dif + 2.0) / 6.0;
+    else                h = ((c.r - c.g) / dif + 4.0) / 6.0;
   }
-  return sum;
+  float s = (mx < 0.0001) ? 0.0 : dif / mx;
+  return vec3(h, s, mx);
 }
 
-// ─── Noise (hash-based) for paper texture ────────────────────────────────
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
+vec3 hsv2rgb(vec3 c) {
+  float h = c.x * 6.0;
+  float s = c.y;
+  float v = c.z;
+  float i = floor(h);
+  float f = h - i;
+  float p = v * (1.0 - s);
+  float q = v * (1.0 - f * s);
+  float t2 = v * (1.0 - (1.0 - f) * s);
+  if (i < 1.0) return vec3(v, t2, p);
+  if (i < 2.0) return vec3(q, v, p);
+  if (i < 3.0) return vec3(p, v, t2);
+  if (i < 4.0) return vec3(p, q, v);
+  if (i < 5.0) return vec3(t2, p, v);
+  return vec3(v, p, q);
 }
 
-// ─── Distortion helpers ──────────────────────────────────────────────────
+// Thermal gradient: cold (black/blue) -> hot (white)
+vec3 thermalGrad(float t) {
+  t = clamp(t, 0.0, 1.0);
+  vec3 col = vec3(0.0);
+  col = mix(col,  vec3(0.0, 0.0, 1.0), smoothstep(0.0,  0.2,  t));
+  col = mix(col,  vec3(0.0, 1.0, 1.0), smoothstep(0.2,  0.4,  t));
+  col = mix(col,  vec3(0.0, 1.0, 0.0), smoothstep(0.4,  0.6,  t));
+  col = mix(col,  vec3(1.0, 1.0, 0.0), smoothstep(0.6,  0.8,  t));
+  col = mix(col,  vec3(1.0, 0.0, 0.0), smoothstep(0.8,  0.9,  t));
+  col = mix(col,  vec3(1.0, 1.0, 1.0), smoothstep(0.9,  1.0,  t));
+  return col;
+}
 
-// Convert uv to centered coords relative to focal point
-vec2 toCentered(vec2 uv, vec2 center) {
-  return uv - center;
+// Sobel edge detection (fully inlined, no arrays)
+float sobel(vec2 uv, vec2 px) {
+  float tl = luma(texture2D(u_tex, uv + vec2(-px.x,  px.y)).rgb);
+  float tc = luma(texture2D(u_tex, uv + vec2( 0.0,   px.y)).rgb);
+  float tr = luma(texture2D(u_tex, uv + vec2( px.x,  px.y)).rgb);
+  float ml = luma(texture2D(u_tex, uv + vec2(-px.x,  0.0 )).rgb);
+  float mr = luma(texture2D(u_tex, uv + vec2( px.x,  0.0 )).rgb);
+  float bl = luma(texture2D(u_tex, uv + vec2(-px.x, -px.y)).rgb);
+  float bc = luma(texture2D(u_tex, uv + vec2( 0.0,  -px.y)).rgb);
+  float br = luma(texture2D(u_tex, uv + vec2( px.x, -px.y)).rgb);
+  float gx = -tl - 2.0*ml - bl + tr + 2.0*mr + br;
+  float gy = -tl - 2.0*tc - tr + bl + 2.0*bc + br;
+  return clamp(sqrt(gx*gx + gy*gy), 0.0, 1.0);
+}
+
+// Fully inlined 9-tap gaussian blur — no arrays, no loop variable indexing.
+// Each tap is a separate texture fetch with a compile-time-constant offset.
+vec4 blur9(vec2 uv, vec2 px) {
+  vec4 s = vec4(0.0);
+  // 3x3 kernel weights: corners=0.0625, edges=0.125, center=0.25
+  s += texture2D(u_tex, uv + vec2(-px.x,  px.y)) * 0.0625;
+  s += texture2D(u_tex, uv + vec2( 0.0,   px.y)) * 0.1250;
+  s += texture2D(u_tex, uv + vec2( px.x,  px.y)) * 0.0625;
+  s += texture2D(u_tex, uv + vec2(-px.x,  0.0 )) * 0.1250;
+  s += texture2D(u_tex, uv + vec2( 0.0,   0.0 )) * 0.2500;
+  s += texture2D(u_tex, uv + vec2( px.x,  0.0 )) * 0.1250;
+  s += texture2D(u_tex, uv + vec2(-px.x, -px.y)) * 0.0625;
+  s += texture2D(u_tex, uv + vec2( 0.0,  -px.y)) * 0.1250;
+  s += texture2D(u_tex, uv + vec2( px.x, -px.y)) * 0.0625;
+  return s;
+}
+
+// Multi-radius blur for glow: call blur9 with different px scales
+vec4 blurR(vec2 uv, vec2 px, float r) { return blur9(uv, px * r); }
+
+// Hash noise for paper texture
+float nHash(vec2 p) {
+  vec2 q = fract(p * vec2(127.1, 311.7));
+  q += dot(q, q + 19.19);
+  return fract(q.x * q.y);
+}
+
+// Safe normalize: returns zero vector if length is near zero
+vec2 safeNorm(vec2 v) {
+  float len = length(v);
+  return (len > 0.0001) ? v / len : vec2(0.0);
 }
 
 void main() {
-  vec2 uv = v_uv;
-  vec2 px = 1.0 / u_res;
-  float amount = u_amount; // 0-1
-  vec2 center = u_center;  // focal point in UV space
+  vec2 uv     = v_uv;
+  vec2 px     = 1.0 / u_res;
+  float amt   = u_amount;          // 0..1
+  vec2 ctr    = u_center;          // focal point
+  vec2 dv     = uv - ctr;          // vector from focal to pixel
+  float dlen  = length(dv);
+  vec2 duv    = uv;                 // distorted UV (used by distortion effects)
 
-  // ── 0: Normal ──────────────────────────────────────────────────────────
+  // ── 0: Normal ─────────────────────────────────────────────────────────
   if (u_effect == 0) {
     gl_FragColor = texture2D(u_tex, uv);
     return;
   }
 
-  // ── 1: Sepia ───────────────────────────────────────────────────────────
+  // ── 1: Sepia ──────────────────────────────────────────────────────────
   if (u_effect == 1) {
-    vec3 c = texture2D(u_tex, uv).rgb;
-    float l = luminance(c);
-    vec3 sepia = vec3(l * 1.2, l * 1.0, l * 0.72);
-    gl_FragColor = vec4(clamp(sepia, 0.0, 1.0), 1.0);
+    float l = luma(texture2D(u_tex, uv).rgb);
+    gl_FragColor = vec4(clamp(vec3(l*1.2, l*1.0, l*0.72), 0.0, 1.0), 1.0);
     return;
   }
 
-  // ── 2: Black & White ───────────────────────────────────────────────────
+  // ── 2: B & W ──────────────────────────────────────────────────────────
   if (u_effect == 2) {
-    vec3 c = texture2D(u_tex, uv).rgb;
-    float l = luminance(c);
-    // slight contrast boost
-    l = clamp((l - 0.5) * 1.2 + 0.5, 0.0, 1.0);
+    float l = luma(texture2D(u_tex, uv).rgb);
+    l = clamp((l - 0.5) * 1.25 + 0.5, 0.0, 1.0); // contrast boost
     gl_FragColor = vec4(vec3(l), 1.0);
     return;
   }
 
-  // ── 3: Glow (bloom approximation) ─────────────────────────────────────
+  // ── 3: Glow (bloom) ───────────────────────────────────────────────────
+  // Approximate bloom: blend original with wide blurs additively on brights
   if (u_effect == 3) {
     vec4 orig = texture2D(u_tex, uv);
-    // Sample blurred version with varying radii
-    vec4 b1 = blur9(uv, px, 2.0);
-    vec4 b2 = blur9(uv, px, 5.0);
-    vec4 b3 = blur9(uv, px, 10.0);
+    vec4 b1   = blurR(uv, px, 2.0);
+    vec4 b2   = blurR(uv, px, 5.0);
+    vec4 b3   = blurR(uv, px, 10.0);
     vec4 bloom = (b1 + b2 * 0.7 + b3 * 0.4) / 2.1;
-    // Extract bright areas for bloom
     float bright = max(bloom.r, max(bloom.g, bloom.b));
-    float bloomStrength = amount * 1.5;
-    vec4 result = orig + bloom * smoothstep(0.3, 0.8, bright) * bloomStrength;
+    vec4 result  = orig + bloom * smoothstep(0.3, 0.8, bright) * amt * 1.8;
     gl_FragColor = vec4(clamp(result.rgb, 0.0, 1.0), 1.0);
     return;
   }
 
-  // ── 4: Comic Book ──────────────────────────────────────────────────────
+  // ── 4: Comic Book ────────────────────────────────────────────────────
+  // Posterize + Sobel outlines + halftone shadows
   if (u_effect == 4) {
-    // Posterize (thick color bands)
-    vec3 c = texture2D(u_tex, uv).rgb;
-    c = posterize(c, 4.0);
-    // Edge detection
-    float edge = sobel(uv, px * 1.5);
-    // Thicken edges
-    float edgeThresh = 0.35;
-    float outline = step(edgeThresh, edge);
-    // Halftone dots overlay for shadow regions
-    float lum = luminance(c);
-    vec2 dotUV = uv * u_res / 6.0;
-    float dot = length(fract(dotUV) - 0.5) < (0.3 * (1.0 - lum));
-    c = mix(c, c * 0.85, dot * 0.4);
-    // Apply black outlines
+    vec3 c = posterize(texture2D(u_tex, uv).rgb, 4.0);
+    float edge    = sobel(uv, px * 1.5);
+    float outline = step(0.35, edge);
+    // Halftone: dot pattern in shadowed areas
+    // avoid naming variable 'dot' (GLSL built-in)
+    float ld      = luma(c);
+    vec2 hUV      = uv * u_res / 6.0;
+    float dotMask = step(length(fract(hUV) - 0.5), 0.28 * (1.0 - ld));
+    c = mix(c, c * 0.82, dotMask * 0.4);
     c = mix(c, vec3(0.0), outline);
-    // Boost saturation
+    // Saturation boost
     vec3 hsv = rgb2hsv(c);
-    hsv.y = clamp(hsv.y * 1.4, 0.0, 1.0);
-    gl_FragColor = vec4(hsv2rgb(hsv), 1.0);
+    hsv.y = clamp(hsv.y * 1.5, 0.0, 1.0);
+    gl_FragColor = vec4(clamp(hsv2rgb(hsv), 0.0, 1.0), 1.0);
     return;
   }
 
-  // ── 5: Colored Pencil ─────────────────────────────────────────────────
+  // ── 5: Colored Pencil ────────────────────────────────────────────────
+  // Desaturated + edge-as-pencil-lines on warm paper background
   if (u_effect == 5) {
-    vec3 c = texture2D(u_tex, uv).rgb;
-    // Desaturate
-    float l = luminance(c);
-    c = mix(vec3(l), c, 0.25);
-    // Paper texture base (warm cream)
-    vec3 paper = vec3(0.98, 0.95, 0.88);
-    // Pencil strokes = inverted edges
-    float edge = sobel(uv, px * 1.2);
-    // Make edges into dark pencil lines
+    vec3 c  = texture2D(u_tex, uv).rgb;
+    float l = luma(c);
+    c = mix(vec3(l), c, 0.2);
+    vec3 paper  = vec3(0.97, 0.94, 0.87);
+    float edge  = sobel(uv, px * 1.2);
     float pencil = 1.0 - clamp(edge * 3.5, 0.0, 1.0);
-    // Noise for paper grain
-    float grain = hash(uv * u_res * 0.5) * 0.06;
-    // Combine: pencil lines on paper
-    vec3 result = paper * pencil + grain;
-    // Tint slightly with original color
-    result = mix(result, c * 0.8 + result * 0.2, 0.3);
+    float grain  = nHash(uv * u_res * 0.5) * 0.05;
+    vec3 result  = paper * pencil + grain;
+    result = mix(result, c * 0.7 + result * 0.3, 0.25);
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), 1.0);
     return;
   }
 
-  // ── 6: Thermal Camera ─────────────────────────────────────────────────
+  // ── 6: Thermal Camera ────────────────────────────────────────────────
+  // Map luminance to thermal heat palette (blue=cold, red/white=hot)
   if (u_effect == 6) {
-    vec3 c = texture2D(u_tex, uv).rgb;
-    // Invert luminance for body heat (bright = hot, so brighter = warmer)
-    // slight blur to simulate sensor noise
-    vec4 blurred = blur9(uv, px, 1.5);
-    float lum = luminance(blurred.rgb);
-    gl_FragColor = vec4(thermalGradient(lum), 1.0);
+    vec4 blurred = blurR(uv, px, 1.5);
+    float heat   = luma(blurred.rgb);
+    gl_FragColor = vec4(thermalGrad(heat), 1.0);
     return;
   }
 
-  // ── 7: X-Ray ──────────────────────────────────────────────────────────
+  // ── 7: X-Ray ─────────────────────────────────────────────────────────
+  // Inverted high-contrast with cool blue tint
   if (u_effect == 7) {
-    vec3 c = texture2D(u_tex, uv).rgb;
-    float l = luminance(c);
-    // Invert
-    l = 1.0 - l;
-    // High contrast
-    l = clamp((l - 0.5) * 2.2 + 0.5, 0.0, 1.0);
-    // Cool blue-white tint
-    vec3 xray = mix(vec3(0.0, 0.0, 0.1), vec3(0.85, 0.95, 1.0), l);
+    float l = luma(texture2D(u_tex, uv).rgb);
+    l = 1.0 - l;                                        // invert
+    l = clamp((l - 0.5) * 2.2 + 0.5, 0.0, 1.0);       // contrast
+    vec3 xray = mix(vec3(0.0, 0.0, 0.12), vec3(0.85, 0.95, 1.0), l);
     gl_FragColor = vec4(xray, 1.0);
     return;
   }
 
-  // ── 8: Pop Art (Warhol 2x2) ───────────────────────────────────────────
+  // ── 8: Pop Art (Warhol 2×2) ──────────────────────────────────────────
+  // Four tiles each with a different bold colour remap + halftone
   if (u_effect == 8) {
-    // Tile into 2x2 quadrants, each with different color LUT
-    vec2 tile = floor(uv * 2.0); // which tile: (0,0),(1,0),(0,1),(1,1)
     vec2 tileUV = fract(uv * 2.0);
-    vec3 c = texture2D(u_tex, tileUV).rgb;
-    float l = luminance(c);
-    c = posterize(c, 3.0);
-    
-    // Each quadrant swaps/emphasizes different channels
+    float tx    = step(0.5, uv.x);    // 0 = left col, 1 = right col
+    float ty    = step(0.5, uv.y);    // 0 = top row,  1 = bottom row
+    vec3 c      = posterize(texture2D(u_tex, tileUV).rgb, 3.0);
+    float ld    = luma(c);
     vec3 result;
-    int quadrant = int(tile.x) + int(tile.y) * 2;
-    if (quadrant == 0) {
-      // Top-left: high saturation warm
-      result = vec3(c.r * 1.3, c.g * 0.7, c.b * 0.4);
-    } else if (quadrant == 1) {
-      // Top-right: cool blue/purple
-      result = vec3(c.b * 0.5, c.r * 0.6, c.g * 1.4);
-    } else if (quadrant == 2) {
-      // Bottom-left: green/yellow
-      result = vec3(c.g * 1.2, c.r * 1.1, c.b * 0.3);
-    } else {
-      // Bottom-right: pink/magenta
-      result = vec3(c.r * 1.4, c.b * 0.5, c.g * 1.1);
-    }
-    // Halftone dots per quadrant
-    vec2 dotUV = tileUV * u_res * 0.5 / 4.0;
-    float d = step(length(fract(dotUV) - 0.5), 0.28 * (1.0 - l));
-    result = mix(result, result * 0.6, d * 0.5);
+    // Use mix() chains instead of int comparisons (safer on all drivers)
+    // Q0 top-left: warm orange
+    vec3 q0 = vec3(c.r*1.3, c.g*0.7, c.b*0.3);
+    // Q1 top-right: cool blue-purple
+    vec3 q1 = vec3(c.b*0.5, c.r*0.5, c.g*1.5);
+    // Q2 bottom-left: green-yellow
+    vec3 q2 = vec3(c.g*1.2, c.r*1.1, c.b*0.2);
+    // Q3 bottom-right: hot pink-magenta
+    vec3 q3 = vec3(c.r*1.4, c.b*0.4, c.g*1.1);
+    // Blend by tile position
+    result = mix(mix(q0, q1, tx), mix(q2, q3, tx), ty);
+    // Halftone dots in shadows
+    vec2 htUV    = tileUV * u_res * 0.5 / 4.0;
+    float htMask = step(length(fract(htUV) - 0.5), 0.27 * (1.0 - ld));
+    result = mix(result, result * 0.55, htMask * 0.5);
     gl_FragColor = vec4(clamp(result, 0.0, 1.0), 1.0);
     return;
   }
 
-  // ─────────────────────────────────────────────────────────────────────
-  // DISTORTION EFFECTS: remap UV, then sample
-  // ─────────────────────────────────────────────────────────────────────
-
-  // Distortion effects use 'amount' and 'center' uniforms
-  float strength = amount * 2.0 - 0.0; // 0-2 range for distortions
-  vec2 d = uv - center; // offset from focal point
-  float dist = length(d);
-  float angle = atan(d.y, d.x);
-  vec2 distortedUV = uv;
-
-  // ── 9: Bulge (radial bulge outward) ───────────────────────────────────
+  // ── 9: Bulge ─────────────────────────────────────────────────────────
+  // Radial barrel warp — pixels pushed outward from centre.
+  // r_new = r ^ exponent; exponent < 1 → bulge outward
   if (u_effect == 9) {
-    // Bulge: pixels near center are pushed outward
-    // r_new = r^(1/(1+strength)) maps to barrel distortion
-    float radius = 0.5;
-    float normDist = dist / radius;
-    if (normDist < 1.0) {
-      float bulge = pow(normDist, 1.0 + (1.0 - amount) * 2.0);
-      distortedUV = center + normalize(d) * bulge * radius;
+    float radius   = 0.5;
+    float normDist = dlen / radius;
+    if (normDist < 1.0 && dlen > 0.0001) {
+      float expo  = 0.3 + (1.0 - amt) * 0.8; // 0.3..1.1; lower = more bulge
+      float rNew  = pow(normDist, expo) * radius;
+      duv = ctr + safeNorm(dv) * rNew;
     }
-    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    gl_FragColor = texture2D(u_tex, clamp(duv, 0.0, 1.0));
     return;
   }
 
-  // ── 10: Dent (radial pinch inward) ────────────────────────────────────
+  // ── 10: Dent ─────────────────────────────────────────────────────────
+  // Opposite of bulge — pixels pulled inward (pinch).
   if (u_effect == 10) {
-    float radius = 0.5;
-    float normDist = dist / radius;
-    if (normDist < 1.0) {
-      // Inverse of bulge — pull pixels toward center
-      float dent = pow(normDist, 0.3 + amount * 1.5);
-      distortedUV = center + normalize(d) * dent * radius;
+    float radius   = 0.5;
+    float normDist = dlen / radius;
+    if (normDist < 1.0 && dlen > 0.0001) {
+      float expo  = 1.2 + amt * 2.0; // >1 → pinch inward
+      float rNew  = pow(normDist, expo) * radius;
+      duv = ctr + safeNorm(dv) * rNew;
     }
-    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    gl_FragColor = texture2D(u_tex, clamp(duv, 0.0, 1.0));
     return;
   }
 
-  // ── 11: Twirl (rotate pixels around focal point) ──────────────────────
+  // ── 11: Twirl ────────────────────────────────────────────────────────
+  // Rotate pixels around focal point; rotation angle decays with distance.
   if (u_effect == 11) {
-    // Pixels within radius get rotated, more at center
-    float radius = 0.45;
-    float normDist = dist / radius;
-    float maxAngle = (amount - 0.5) * 6.28318; // -π to π
-    float twistAngle = maxAngle * max(0.0, 1.0 - normDist);
-    float cosA = cos(twistAngle);
-    float sinA = sin(twistAngle);
-    vec2 rotD = vec2(d.x * cosA - d.y * sinA, d.x * sinA + d.y * cosA);
-    distortedUV = center + rotD;
-    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    float radius    = 0.45;
+    float normDist  = dlen / radius;
+    float maxAngle  = (amt - 0.5) * 6.2832; // -π..π full twirl range
+    float tAngle    = maxAngle * max(0.0, 1.0 - normDist);
+    float ca = cos(tAngle);
+    float sa = sin(tAngle);
+    duv = ctr + vec2(dv.x*ca - dv.y*sa, dv.x*sa + dv.y*ca);
+    gl_FragColor = texture2D(u_tex, clamp(duv, 0.0, 1.0));
     return;
   }
 
-  // ── 12: Squeeze (pinch/squeeze toward focal point on both axes) ────────
+  // ── 12: Squeeze ──────────────────────────────────────────────────────
+  // Compress both axes toward centre within a radius; creates pinch/squeeze.
   if (u_effect == 12) {
-    float radius = 0.5;
-    float normDist = dist / radius;
-    float sq = 1.0 - smoothstep(0.0, 1.0, normDist);
-    // Squeeze: compress toward center using power function
-    float squeezeStrength = amount * 2.0;
-    // Horizontal squeeze
-    float dx = d.x * (1.0 - sq * squeezeStrength * 0.5);
-    float dy = d.y * (1.0 - sq * squeezeStrength * 0.5);
-    distortedUV = center + vec2(dx, dy);
-    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    float radius   = 0.5;
+    float normDist = dlen / radius;
+    float sq       = (1.0 - smoothstep(0.0, 1.0, normDist)) * amt * 1.6;
+    duv = ctr + dv * (1.0 - sq);
+    gl_FragColor = texture2D(u_tex, clamp(duv, 0.0, 1.0));
     return;
   }
 
-  // ── 13: Mirror ────────────────────────────────────────────────────────
+  // ── 13: Mirror ───────────────────────────────────────────────────────
+  // amt < 0.5 → simple horizontal flip; amt >= 0.5 → split-mirror symmetry
   if (u_effect == 13) {
-    vec2 mirrorUV = uv;
-    if (amount > 0.5) {
-      // Split mirror: both left+right fold in
-      mirrorUV.x = abs(uv.x - 0.5) + 0.0;
-      mirrorUV.x = mirrorUV.x * 2.0; // stretch to fill
-      mirrorUV.x = clamp(mirrorUV.x, 0.0, 1.0);
+    vec2 muv = uv;
+    if (amt >= 0.5) {
+      // Split mirror: fold left half onto right and vice-versa
+      muv.x = 1.0 - abs(uv.x * 2.0 - 1.0); // maps [0..1] to [0..1..0]
     } else {
-      // Simple horizontal flip
-      mirrorUV.x = 1.0 - uv.x;
+      muv.x = 1.0 - uv.x;
     }
-    gl_FragColor = texture2D(u_tex, mirrorUV);
+    gl_FragColor = texture2D(u_tex, clamp(muv, 0.0, 1.0));
     return;
   }
 
-  // ── 14: Light Tunnel (radial zoom toward focal point) ─────────────────
+  // ── 14: Light Tunnel ─────────────────────────────────────────────────
+  // Radial zoom-blur toward focal point; 8 inlined samples (no loop array).
+  // Each sample is pulled progressively closer to centre.
   if (u_effect == 14) {
-    // Sample from progressively closer to center (radial zoom blur)
-    // Creates a tunnel/vortex effect
+    float pull = amt * 0.55;
+    // 8 samples, all inlined as constant-index taps:
     vec4 acc = vec4(0.0);
-    int steps = 8;
-    float pullAmount = amount * 0.6;
-    for (int i = 0; i < 8; i++) {
-      float t = float(i) / 8.0;
-      vec2 sampleUV = mix(uv, center, t * pullAmount);
-      acc += texture2D(u_tex, sampleUV);
-    }
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.125));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.250));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.375));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.500));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.625));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.750));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 0.875));
+    acc += texture2D(u_tex, mix(uv, ctr, pull * 1.000));
     acc /= 8.0;
-    // Vignette toward edges
-    float vigDist = length(uv - 0.5);
-    float vig = 1.0 - smoothstep(0.3, 0.7, vigDist * (1.0 + amount));
+    // Vignette to darken edges
+    float vigR = length(uv - 0.5);
+    float vig  = 1.0 - smoothstep(0.25, 0.65, vigR * (1.0 + amt * 0.8));
     gl_FragColor = vec4(acc.rgb * vig, 1.0);
     return;
   }
 
-  // ── 15: Fisheye (barrel distortion) ───────────────────────────────────
+  // ── 15: Fisheye ──────────────────────────────────────────────────────
+  // Barrel distortion: r_new = r * (1 + k*r²), applied globally.
   if (u_effect == 15) {
-    // Barrel distortion formula: r_new = r * (1 + k * r^2)
-    vec2 centered = (uv - 0.5) * 2.0; // -1 to 1
-    float r2 = dot(centered, centered);
-    float k = amount * 0.8; // barrel coefficient
-    vec2 distorted = centered * (1.0 + k * r2);
-    distortedUV = distorted * 0.5 + 0.5;
-    if (distortedUV.x < 0.0 || distortedUV.x > 1.0 || distortedUV.y < 0.0 || distortedUV.y > 1.0) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // black outside
+    vec2 cv  = (uv - 0.5) * 2.0;     // centred –1..1
+    float r2 = dot(cv, cv);
+    float k  = amt * 0.85;
+    vec2 dw  = cv * (1.0 + k * r2);  // barrel-distorted
+    duv = dw * 0.5 + 0.5;
+    if (duv.x < 0.0 || duv.x > 1.0 || duv.y < 0.0 || duv.y > 1.0) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
-      gl_FragColor = texture2D(u_tex, distortedUV);
+      gl_FragColor = texture2D(u_tex, duv);
     }
     return;
   }
 
-  // ── 16: Stretch (directional warp around focal point) ─────────────────
+  // ── 16: Stretch ──────────────────────────────────────────────────────
+  // Directional horizontal stretch around focal point.
   if (u_effect == 16) {
-    float radius = 0.5;
-    float normDist = dist / radius;
+    float radius    = 0.5;
+    float normDist  = dlen / radius;
     float influence = max(0.0, 1.0 - normDist);
-    // Stretch horizontally with some vertical compression
-    float stretchX = 1.0 + (amount - 0.5) * 2.0 * influence * d.x;
-    float stretchY = 1.0 - (amount - 0.5) * 1.0 * influence * abs(d.y);
-    distortedUV = vec2(
-      center.x + d.x / max(0.1, stretchX),
-      center.y + d.y * stretchY
-    );
-    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    float strX      = 1.0 + (amt - 0.5) * 2.5 * influence;
+    float strY      = 1.0 - (amt - 0.5) * 1.0 * influence;
+    duv = ctr + vec2(dv.x / max(0.05, strX), dv.y * strY);
+    gl_FragColor = texture2D(u_tex, clamp(duv, 0.0, 1.0));
     return;
   }
 
-  // Fallback
+  // Fallback — should never reach here
   gl_FragColor = texture2D(u_tex, uv);
 }
 `;
@@ -1387,24 +1375,35 @@ let gl, program, uniforms, quadBuffer, texture;
 const canvas = document.getElementById('preview-canvas');
 const video = document.getElementById('video-source');
 
+function compileShaderWithLog(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    const info = gl.getShaderInfoLog(sh);
+    console.error('Shader compile error:', info);
+    // Show first error line in UI so it's visible
+    const errDiv = document.createElement('div');
+    errDiv.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:red;color:white;padding:8px;font:12px monospace;z-index:9999;white-space:pre-wrap;max-height:150px;overflow:auto;';
+    errDiv.textContent = 'GLSL Error: ' + info;
+    document.body.appendChild(errDiv);
+    gl.deleteShader(sh);
+    return null;
+  }
+  return sh;
+}
+
 function initGL() {
   gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
-  if (!gl) { alert('WebGL not supported'); return false; }
-
-  // Compile shaders
-  function compileShader(type, src) {
-    const sh = gl.createShader(type);
-    gl.shaderSource(sh, src);
-    gl.compileShader(sh);
-    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-      console.error('Shader error:', gl.getShaderInfoLog(sh));
-      return null;
-    }
-    return sh;
+  if (!gl) { 
+    showPermError('WebGL not supported in this browser. Please try Chrome or Firefox.');
+    return false; 
   }
 
-  const vert = compileShader(gl.VERTEX_SHADER, VERT_SRC);
-  const frag = compileShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+  const vert = compileShaderWithLog(gl, gl.VERTEX_SHADER, VERT_SRC);
+  const frag = compileShaderWithLog(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
+  if (!vert || !frag) return false;
+
   program = gl.createProgram();
   gl.attachShader(program, vert);
   gl.attachShader(program, frag);
@@ -1460,7 +1459,7 @@ function renderFrame(effectIndex, amount, center, mirror) {
   gl.uniform1f(uniforms.amount, amount);
   gl.uniform2f(uniforms.center, center.x, center.y);
   gl.uniform1i(uniforms.effect, effectIndex);
-  gl.uniform1i(uniforms.mirror, mirror ? 1 : 0);
+  gl.uniform1f(uniforms.mirror, mirror ? 1.0 : 0.0);  // float, not bool
 
   gl.viewport(0, 0, canvas.width, canvas.height);
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -1483,15 +1482,25 @@ function initTileGL() {
     const sh = tileGL.createShader(type);
     tileGL.shaderSource(sh, src);
     tileGL.compileShader(sh);
+    if (!tileGL.getShaderParameter(sh, tileGL.COMPILE_STATUS)) {
+      console.error('Tile shader error:', tileGL.getShaderInfoLog(sh));
+      return null;
+    }
     return sh;
   }
 
   const v = compileShader(tileGL.VERTEX_SHADER, VERT_SRC);
   const f = compileShader(tileGL.FRAGMENT_SHADER, FRAG_SRC);
+  if (!v || !f) return false;
+
   tileProgram = tileGL.createProgram();
   tileGL.attachShader(tileProgram, v);
   tileGL.attachShader(tileProgram, f);
   tileGL.linkProgram(tileProgram);
+  if (!tileGL.getProgramParameter(tileProgram, tileGL.LINK_STATUS)) {
+    console.error('Tile program error:', tileGL.getProgramInfoLog(tileProgram));
+    return false;
+  }
   tileGL.useProgram(tileProgram);
 
   tileBuffer = tileGL.createBuffer();
@@ -1547,7 +1556,7 @@ function updateEffectTiles() {
   tileGL.uniform1f(tileUniforms.amount, 0.65); // demo amount for tiles
   tileGL.uniform2f(tileUniforms.center, 0.5, 0.5);
   tileGL.uniform1i(tileUniforms.effect, effectIndex);
-  tileGL.uniform1i(tileUniforms.mirror, 0);
+  tileGL.uniform1f(tileUniforms.mirror, 0.0);  // no mirror in tiles
   tileGL.viewport(0, 0, tileCanvas.width, tileCanvas.height);
   tileGL.drawArrays(tileGL.TRIANGLE_STRIP, 0, 4);
 
@@ -1564,6 +1573,13 @@ function updateEffectTiles() {
 let stream = null;
 let mediaRecorder = null;
 let recordedChunks = [];
+
+function showPermError(msg) {
+  document.getElementById('loading-indicator').style.display = 'none';
+  const pe = document.getElementById('permission-error');
+  pe.classList.add('show');
+  if (msg) pe.querySelector('p').textContent = msg;
+}
 
 async function initCamera() {
   document.getElementById('permission-error').classList.remove('show');
@@ -1599,8 +1615,11 @@ async function initCamera() {
     startLoop();
   } catch (err) {
     console.error('Camera error:', err);
-    document.getElementById('loading-indicator').style.display = 'none';
-    document.getElementById('permission-error').classList.add('show');
+    let msg = 'SnapBooth needs camera access to work. Click "Allow Camera Access" and make sure no other app is using your camera.';
+    if (err.name === 'NotAllowedError') msg = 'Camera permission was denied. Click the camera icon in your browser address bar to allow access, then click "Allow Camera Access" below.';
+    else if (err.name === 'NotFoundError') msg = 'No camera found on this device.';
+    else if (err.name === 'NotReadableError') msg = 'Your camera is already in use by another application.';
+    showPermError(msg);
   }
 }
 
