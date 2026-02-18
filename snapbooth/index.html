@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SnapBooth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --surface: #141418;
+  --surface2: #1e1e24;
+  --border: #2a2a35;
+  --accent: #f0a030;
+  --accent2: #e05020;
+  --text: #f0ede8;
+  --text-dim: #7a7880;
+  --red: #e03030;
+  --green: #30c060;
+  --radius: 12px;
+  --film-h: 110px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  position: relative;
+}
+
+/* ─── HEADER ─── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+#logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+#logo span { color: var(--text); }
+#header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.icon-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 16px;
+}
+.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+.icon-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(240,160,48,0.1); }
+
+/* ─── MAIN AREA ─── */
+#main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+#canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#preview-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius);
+  cursor: crosshair;
+  display: block;
+}
+
+#video-source {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ─── OVERLAYS ─── */
+#countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+}
+#countdown-num {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(80px, 20vw, 200px);
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 0 40px rgba(240,160,48,0.8), 0 4px 30px rgba(0,0,0,0.5);
+  transform: scale(0.5);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+#countdown-overlay.show { opacity: 1; }
+#countdown-overlay.show #countdown-num { transform: scale(1); }
+
+#flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: white;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: var(--radius);
+}
+#flash-overlay.flash { animation: doFlash 0.35s ease-out forwards; }
+@keyframes doFlash {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* 4-up grid overlay during capture */
+#fourUp-indicator {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--accent);
+  display: none;
+  z-index: 25;
+}
+#fourUp-indicator.show { display: block; }
+
+/* Focal point indicator */
+#focal-point {
+  position: absolute;
+  width: 40px; height: 40px;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 15;
+  display: none;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+}
+#focal-point::before, #focal-point::after {
+  content: '';
+  position: absolute;
+  background: rgba(255,255,255,0.6);
+}
+#focal-point::before { width: 1px; height: 12px; left: 50%; top: -14px; transform: translateX(-50%); }
+#focal-point::after { width: 12px; height: 1px; top: 50%; left: -14px; transform: translateY(-50%); }
+#focal-point.show { display: block; }
+
+/* Distortion slider overlay */
+#distortion-slider-wrap {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: none;
+  background: rgba(10,10,12,0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 10px 20px;
+  align-items: center;
+  gap: 12px;
+  min-width: 240px;
+}
+#distortion-slider-wrap.show { display: flex; }
+#distortion-slider-wrap label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+#distortion-amount {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+#distortion-amount::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+#distortion-amount::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* ─── EFFECTS PANEL ─── */
+#effects-panel {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,12,0.95);
+  backdrop-filter: blur(12px);
+  z-index: 40;
+  display: none;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  overflow: hidden;
+}
+#effects-panel.open { display: flex; }
+
+#effects-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#effects-header h2 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+#close-effects {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+#close-effects:hover { color: var(--text); border-color: var(--text); }
+
+#effects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.effect-tile {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, transform 0.15s;
+  aspect-ratio: 4/3;
+  background: var(--surface2);
+}
+.effect-tile:hover { transform: scale(1.03); }
+.effect-tile.selected { border-color: var(--accent); }
+.effect-tile canvas {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.effect-tile-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding: 16px 6px 5px;
+  font-size: 10px;
+  color: white;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+#effects-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.nav-arrow {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 50%;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+}
+.nav-arrow:hover { border-color: var(--accent); color: var(--accent); }
+.nav-arrow:disabled { opacity: 0.3; cursor: default; }
+#page-dots { display: flex; gap: 6px; }
+.page-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.page-dot.active { background: var(--accent); }
+
+/* ─── VIEWER OVERLAY ─── */
+#viewer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,12,0.97);
+  z-index: 50;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 16px;
+}
+#viewer-overlay.open { display: flex; }
+#viewer-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+#viewer-img {
+  max-width: 100%; max-height: 100%;
+  border-radius: var(--radius);
+  object-fit: contain;
+  cursor: pointer;
+}
+#viewer-fourUp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  max-height: 100%;
+  max-width: 100%;
+  width: 100%;
+}
+#viewer-fourUp img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+#viewer-fourUp img:hover { transform: scale(1.02); }
+#viewer-bottom {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.viewer-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.viewer-btn:hover { border-color: var(--accent); color: var(--accent); }
+.viewer-btn.primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+.viewer-btn.primary:hover { background: #d08820; }
+.viewer-btn.danger { border-color: var(--red); color: var(--red); }
+.viewer-btn.danger:hover { background: rgba(224,48,48,0.1); }
+
+/* ─── BOTTOM BAR ─── */
+#bottom-bar {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 10px 16px 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Mode buttons */
+#mode-group {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.mode-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  letter-spacing: 0.04em;
+}
+.mode-btn:not(:last-child) { border-right: 1px solid var(--border); }
+.mode-btn.active {
+  background: var(--accent);
+  color: #000;
+  font-weight: 500;
+}
+
+/* Shutter button */
+#shutter-btn {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  border: 3px solid white;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.1s, background 0.1s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.15);
+}
+#shutter-btn:hover { transform: scale(1.05); }
+#shutter-btn:active { transform: scale(0.95); }
+#shutter-btn .shutter-inner {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: white;
+  transition: background 0.15s;
+}
+#shutter-btn.recording { border-color: var(--red); box-shadow: 0 0 0 4px rgba(224,48,48,0.25); }
+#shutter-btn.recording .shutter-inner {
+  background: var(--red);
+  border-radius: 6px;
+  width: 22px; height: 22px;
+}
+
+/* Effects toggle */
+#effects-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#effects-btn:hover { color: var(--text); border-color: var(--accent); }
+#effects-btn.active { color: var(--accent); border-color: var(--accent); background: rgba(240,160,48,0.1); }
+
+/* Current effect indicator */
+#current-effect-name {
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  height: 12px;
+}
+
+/* ─── FILMSTRIP ─── */
+#filmstrip {
+  height: var(--film-h);
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  flex-shrink: 0;
+}
+#filmstrip::-webkit-scrollbar { height: 3px; }
+#filmstrip::-webkit-scrollbar-track { background: transparent; }
+#filmstrip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+#filmstrip-empty {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.film-item {
+  position: relative;
+  flex-shrink: 0;
+  height: calc(var(--film-h) - 8px);
+  aspect-ratio: 4/3;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: border-color 0.2s, transform 0.2s;
+  background: var(--surface2);
+}
+.film-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+.film-item img, .film-item video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.film-item-badge {
+  position: absolute;
+  top: 3px; right: 3px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 8px;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+}
+.film-item-new {
+  animation: slideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes slideIn {
+  from { transform: scale(0.6) translateY(20px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* ─── PERMISSION ERROR ─── */
+#permission-error {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 60;
+  background: var(--bg);
+  padding: 32px;
+  text-align: center;
+}
+#permission-error.show { display: flex; }
+#permission-error .err-icon { font-size: 48px; margin-bottom: 8px; }
+#permission-error h2 { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 700; }
+#permission-error p { color: var(--text-dim); font-size: 13px; line-height: 1.6; max-width: 360px; }
+#retry-btn {
+  background: var(--accent);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#retry-btn:hover { background: #d08820; }
+
+/* ─── SETTINGS PANEL ─── */
+#settings-panel {
+  position: absolute;
+  top: 52px; right: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  z-index: 45;
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+#settings-panel.open { display: flex; }
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.setting-row label { cursor: pointer; color: var(--text); }
+/* Toggle switch */
+.toggle {
+  position: relative;
+  width: 36px; height: 20px;
+  flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: white;
+  top: 3px; left: 3px;
+  transition: transform 0.2s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+/* ─── RECORDING INDICATOR ─── */
+#rec-indicator {
+  position: absolute;
+  top: 12px; left: 12px;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0,0,0,0.7);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--red);
+  letter-spacing: 0.06em;
+  z-index: 15;
+}
+#rec-indicator.show { display: flex; }
+#rec-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1s ease-in-out infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+/* ─── FPS MONITOR ─── */
+#fps-monitor {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.5);
+  padding: 2px 6px;
+  border-radius: 4px;
+  z-index: 15;
+  display: none;
+}
+
+/* ─── ABOUT SECTION ─── */
+#about-toggle {
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 10px;
+  padding: 4px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 0.15s;
+  text-align: center;
+}
+#about-toggle:hover { color: var(--text); }
+
+#about-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: 20px;
+  z-index: 35;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 75vh;
+  overflow-y: auto;
+}
+#about-panel.open { transform: translateY(0); }
+#about-panel h3 { font-family: 'Syne', sans-serif; font-weight: 700; margin-bottom: 10px; font-size: 1rem; }
+#about-panel p, #about-panel li { font-size: 12px; line-height: 1.7; color: var(--text-dim); margin-bottom: 8px; }
+#about-panel ul { padding-left: 16px; }
+#about-panel strong { color: var(--text); }
+#about-close {
+  float: right;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 480px) {
+  :root { --film-h: 85px; }
+  #logo { font-size: 1.1rem; }
+  .mode-btn { padding: 6px 8px; font-size: 10px; }
+  #shutter-btn { width: 52px; height: 52px; }
+  #shutter-btn .shutter-inner { width: 38px; height: 38px; }
+  #effects-btn span { display: none; }
+}
+
+@media (min-width: 768px) {
+  #effects-grid { grid-template-columns: repeat(4, 1fr); }
+  #distortion-slider-wrap { display: none !important; }
+}
+
+/* Loading spinner */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-direction: column;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Permission Error -->
+  <div id="permission-error" role="alert" aria-live="polite">
+    <div class="err-icon">📷</div>
+    <h2>Camera Access Required</h2>
+    <p>SnapBooth needs access to your camera to work. Please allow camera permission in your browser settings and try again.</p>
+    <button id="retry-btn" onclick="initCamera()">Allow Camera Access</button>
+  </div>
+
+  <!-- Header -->
+  <header id="header">
+    <div id="logo">Snap<span>Booth</span></div>
+    <div id="header-right">
+      <button class="icon-btn" id="fps-toggle-btn" aria-label="Toggle FPS monitor" title="FPS" onclick="toggleFPS()">◈</button>
+      <button class="icon-btn" id="settings-btn" aria-label="Settings" title="Settings" onclick="toggleSettings()">⚙</button>
+    </div>
+  </header>
+
+  <!-- Settings Panel -->
+  <div id="settings-panel" role="dialog" aria-label="Settings">
+    <div class="setting-row">
+      <label for="countdown-toggle">Countdown (3s)</label>
+      <label class="toggle">
+        <input type="checkbox" id="countdown-toggle" checked onchange="state.countdownEnabled = this.checked">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <label for="flash-toggle">Flash</label>
+      <label class="toggle">
+        <input type="checkbox" id="flash-toggle" checked onchange="state.flashEnabled = this.checked">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <label for="mirror-preview">Mirror Preview</label>
+      <label class="toggle">
+        <input type="checkbox" id="mirror-preview" checked onchange="state.mirrorPreview = this.checked">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Main Preview Area -->
+  <main id="main">
+    <div class="loading" id="loading-indicator">
+      <div class="spinner"></div>
+      Starting camera…
+    </div>
+
+    <div id="canvas-container" style="display:none;">
+      <video id="video-source" autoplay playsinline muted aria-hidden="true"></video>
+      <canvas id="preview-canvas" aria-label="Live camera preview"></canvas>
+
+      <div id="focal-point" aria-hidden="true"></div>
+      <div id="countdown-overlay" aria-hidden="true"><span id="countdown-num">3</span></div>
+      <div id="flash-overlay" aria-hidden="true"></div>
+      <div id="fourUp-indicator" aria-live="polite"></div>
+      <div id="rec-indicator" aria-live="polite"><div id="rec-dot"></div>REC</div>
+      <div id="fps-monitor" aria-hidden="true"></div>
+
+      <!-- Distortion Slider (mobile) -->
+      <div id="distortion-slider-wrap" role="group" aria-label="Effect intensity">
+        <label>Intensity</label>
+        <input type="range" id="distortion-amount" min="0" max="100" value="50" aria-label="Distortion amount">
+      </div>
+    </div>
+
+    <!-- Effects Panel -->
+    <div id="effects-panel" role="dialog" aria-label="Effects chooser">
+      <div id="effects-header">
+        <h2>Effects</h2>
+        <button id="close-effects" onclick="closeEffects()" aria-label="Close effects panel">Done</button>
+      </div>
+      <div id="effects-grid" role="listbox" aria-label="Camera effects"></div>
+      <div id="effects-nav">
+        <button class="nav-arrow" id="prev-page" onclick="changePage(-1)" aria-label="Previous effects page">‹</button>
+        <div id="page-dots"></div>
+        <button class="nav-arrow" id="next-page" onclick="changePage(1)" aria-label="Next effects page">›</button>
+      </div>
+    </div>
+
+    <!-- Viewer Overlay -->
+    <div id="viewer-overlay" role="dialog" aria-label="Photo viewer" aria-modal="true">
+      <div id="viewer-content">
+        <img id="viewer-img" style="display:none;" alt="Captured photo">
+        <div id="viewer-fourUp" style="display:none;"></div>
+        <video id="viewer-video" style="display:none; max-width:100%; max-height:100%; border-radius:12px;" controls></video>
+      </div>
+      <div id="viewer-bottom">
+        <button class="viewer-btn" onclick="closeViewer()" aria-label="Close viewer">✕ Close</button>
+        <button class="viewer-btn primary" id="viewer-download-btn" onclick="downloadCurrent()" aria-label="Download">⬇ Download</button>
+        <button class="viewer-btn danger" id="viewer-delete-btn" onclick="deleteCurrent()" aria-label="Delete">✕ Delete</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Bar -->
+  <div id="bottom-bar">
+    <div id="controls-row">
+      <!-- Mode Buttons -->
+      <div id="mode-group" role="group" aria-label="Capture mode">
+        <button class="mode-btn active" data-mode="photo" onclick="setMode('photo')" aria-label="Single photo mode" aria-pressed="true">Photo</button>
+        <button class="mode-btn" data-mode="4up" onclick="setMode('4up')" aria-label="Four up photo mode" aria-pressed="false">4-Up</button>
+        <button class="mode-btn" data-mode="video" onclick="setMode('video')" aria-label="Video mode" aria-pressed="false">Video</button>
+      </div>
+
+      <!-- Shutter -->
+      <button id="shutter-btn" onclick="triggerShutter()" aria-label="Take photo" role="button">
+        <div class="shutter-inner"></div>
+      </button>
+
+      <!-- Effects Button -->
+      <button id="effects-btn" onclick="openEffects()" aria-label="Open effects panel" aria-haspopup="true">
+        ✦ <span>Effects</span>
+      </button>
+    </div>
+
+    <div id="current-effect-name">NORMAL</div>
+
+    <!-- Filmstrip -->
+    <div id="filmstrip" role="list" aria-label="Captured photos and videos">
+      <div id="filmstrip-empty">Your captures will appear here</div>
+    </div>
+
+    <button id="about-toggle" onclick="toggleAbout()" aria-label="About SnapBooth and FAQ">? About &amp; FAQ</button>
+  </div>
+
+  <!-- About Panel -->
+  <div id="about-panel" role="complementary" aria-label="About SnapBooth">
+    <button id="about-close" onclick="toggleAbout()">✕</button>
+    <h3>About SnapBooth</h3>
+    <p><strong>Camera Permissions:</strong> SnapBooth uses your device's camera via the browser's secure <code>getUserMedia()</code> API. Your video stream never leaves your device — all processing happens locally in your browser.</p>
+    <p><strong>How Effects Work:</strong> Effects are applied in real-time using WebGL fragment shaders on your GPU. Each camera frame is uploaded as a texture and transformed by math in the shader.</p>
+    <ul>
+      <li><strong>Color effects</strong> (Sepia, B&W, Thermal, X-Ray) use color matrix transformations applied per-pixel.</li>
+      <li><strong>Distortion effects</strong> (Bulge, Dent, Twirl, Fisheye, etc.) remap UV coordinates — instead of changing color values, they change <em>where</em> each pixel is sampled from.</li>
+      <li><strong>Glow</strong> approximates bloom by blending a blurred version of the image with the original using additive blending.</li>
+      <li><strong>Comic Book</strong> uses Sobel edge detection combined with posterization (color quantization).</li>
+      <li><strong>Colored Pencil</strong> desaturates, amplifies edges, and simulates paper texture.</li>
+      <li><strong>Pop Art</strong> tiles the frame 2×2 with different color channel remappings per quadrant.</li>
+    </ul>
+    <p><strong>Video Recording:</strong> When recording video, SnapBooth captures the <em>processed canvas stream</em> — so your recorded video includes the live effect, not just raw camera footage.</p>
+    <p><strong>Storage:</strong> Captures are stored in your browser's IndexedDB. Clearing site data will remove all captures.</p>
+    <p><strong>Keyboard Shortcuts:</strong> Space = shutter, ← / → = browse effects, Esc = close panels.</p>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+const state = {
+  mode: 'photo',        // 'photo' | '4up' | 'video'
+  effect: 0,            // index into EFFECTS array
+  distortionCenter: { x: 0.5, y: 0.5 },
+  distortionAmount: 0.5,
+  countdownEnabled: true,
+  flashEnabled: true,
+  mirrorPreview: true,
+  isRecording: false,
+  isBusy: false,        // during countdown / 4-up sequence
+  effectsPanelOpen: false,
+  settingsPanelOpen: false,
+  effectsPage: 0,
+  galleryItems: [],     // { id, type:'photo'|'4up'|'video', data, thumb, timestamp }
+  viewingIndex: -1,
+  showFPS: false,
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EFFECTS DEFINITIONS
+// ─────────────────────────────────────────────────────────────────────────────
+const EFFECTS = [
+  { name: 'Normal',         isDistortion: false },
+  { name: 'Sepia',          isDistortion: false },
+  { name: 'B & W',          isDistortion: false },
+  { name: 'Glow',           isDistortion: false },
+  { name: 'Comic Book',     isDistortion: false },
+  { name: 'Colored Pencil', isDistortion: false },
+  { name: 'Thermal',        isDistortion: false },
+  { name: 'X-Ray',          isDistortion: false },
+  { name: 'Pop Art',        isDistortion: false },
+  { name: 'Bulge',          isDistortion: true  },
+  { name: 'Dent',           isDistortion: true  },
+  { name: 'Twirl',          isDistortion: true  },
+  { name: 'Squeeze',        isDistortion: true  },
+  { name: 'Mirror',         isDistortion: false },
+  { name: 'Light Tunnel',   isDistortion: true  },
+  { name: 'Fisheye',        isDistortion: false },
+  { name: 'Stretch',        isDistortion: true  },
+];
+
+const EFFECTS_PER_PAGE = 9; // 3×3 on mobile, 4-col on desktop shows all
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBGL SETUP
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Vertex shader — fullscreen quad
+const VERT_SRC = `
+attribute vec2 a_pos;
+varying vec2 v_uv;
+uniform bool u_mirror;
+void main() {
+  // UV origin bottom-left in WebGL; video is top-left.
+  // We flip Y here.
+  float u = a_pos.x * 0.5 + 0.5;
+  float v = 1.0 - (a_pos.y * 0.5 + 0.5);
+  if (u_mirror) u = 1.0 - u;
+  v_uv = vec2(u, v);
+  gl_Position = vec4(a_pos, 0.0, 1.0);
+}
+`;
+
+// Fragment shader — all effects
+const FRAG_SRC = `
+precision highp float;
+varying vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_res;
+uniform float u_time;
+uniform float u_amount; // 0-1
+uniform vec2 u_center;  // 0-1 focal point
+uniform int u_effect;
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+vec3 rgb2hsv(vec3 c) {
+  vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+  vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+  vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+  float d = q.x - min(q.w, q.y);
+  float e = 1.0e-10;
+  return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+float luminance(vec3 c) {
+  return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+// Sobel edge detection
+float sobel(vec2 uv, vec2 px) {
+  float tl = luminance(texture2D(u_tex, uv + vec2(-px.x,  px.y)).rgb);
+  float t  = luminance(texture2D(u_tex, uv + vec2(0.0,    px.y)).rgb);
+  float tr = luminance(texture2D(u_tex, uv + vec2( px.x,  px.y)).rgb);
+  float l  = luminance(texture2D(u_tex, uv + vec2(-px.x,  0.0 )).rgb);
+  float r  = luminance(texture2D(u_tex, uv + vec2( px.x,  0.0 )).rgb);
+  float bl = luminance(texture2D(u_tex, uv + vec2(-px.x, -px.y)).rgb);
+  float b  = luminance(texture2D(u_tex, uv + vec2(0.0,   -px.y)).rgb);
+  float br = luminance(texture2D(u_tex, uv + vec2( px.x, -px.y)).rgb);
+  float Gx = -tl - 2.0*l - bl + tr + 2.0*r + br;
+  float Gy = -tl - 2.0*t - tr + bl + 2.0*b + br;
+  return clamp(sqrt(Gx*Gx + Gy*Gy), 0.0, 1.0);
+}
+
+// Posterize (quantize to n levels)
+vec3 posterize(vec3 c, float levels) {
+  return floor(c * levels) / levels;
+}
+
+// Thermal color map: black -> blue -> cyan -> green -> yellow -> red -> white
+vec3 thermalGradient(float t) {
+  t = clamp(t, 0.0, 1.0);
+  vec3 a = mix(vec3(0.0, 0.0, 0.0), vec3(0.0, 0.0, 1.0), smoothstep(0.0, 0.2, t));
+  vec3 b = mix(a, vec3(0.0, 1.0, 1.0), smoothstep(0.2, 0.4, t));
+  vec3 c3 = mix(b, vec3(0.0, 1.0, 0.0), smoothstep(0.4, 0.6, t));
+  vec3 d = mix(c3, vec3(1.0, 1.0, 0.0), smoothstep(0.6, 0.8, t));
+  vec3 e = mix(d, vec3(1.0, 0.0, 0.0), smoothstep(0.8, 0.9, t));
+  return mix(e, vec3(1.0, 1.0, 1.0), smoothstep(0.9, 1.0, t));
+}
+
+// ─── Simple approximate gaussian blur (9-tap) ────────────────────────────
+vec4 blur9(vec2 uv, vec2 px, float radius) {
+  vec4 sum = vec4(0.0);
+  float weights[9];
+  weights[0] = 0.0625; weights[1] = 0.125; weights[2] = 0.0625;
+  weights[3] = 0.125;  weights[4] = 0.25;  weights[5] = 0.125;
+  weights[6] = 0.0625; weights[7] = 0.125; weights[8] = 0.0625;
+  vec2 offsets[9];
+  offsets[0] = vec2(-1,-1); offsets[1] = vec2(0,-1); offsets[2] = vec2(1,-1);
+  offsets[3] = vec2(-1, 0); offsets[4] = vec2(0, 0); offsets[5] = vec2(1, 0);
+  offsets[6] = vec2(-1, 1); offsets[7] = vec2(0, 1); offsets[8] = vec2(1, 1);
+  for (int i = 0; i < 9; i++) {
+    sum += texture2D(u_tex, uv + offsets[i] * px * radius) * weights[i];
+  }
+  return sum;
+}
+
+// ─── Noise (hash-based) for paper texture ────────────────────────────────
+float hash(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+// ─── Distortion helpers ──────────────────────────────────────────────────
+
+// Convert uv to centered coords relative to focal point
+vec2 toCentered(vec2 uv, vec2 center) {
+  return uv - center;
+}
+
+void main() {
+  vec2 uv = v_uv;
+  vec2 px = 1.0 / u_res;
+  float amount = u_amount; // 0-1
+  vec2 center = u_center;  // focal point in UV space
+
+  // ── 0: Normal ──────────────────────────────────────────────────────────
+  if (u_effect == 0) {
+    gl_FragColor = texture2D(u_tex, uv);
+    return;
+  }
+
+  // ── 1: Sepia ───────────────────────────────────────────────────────────
+  if (u_effect == 1) {
+    vec3 c = texture2D(u_tex, uv).rgb;
+    float l = luminance(c);
+    vec3 sepia = vec3(l * 1.2, l * 1.0, l * 0.72);
+    gl_FragColor = vec4(clamp(sepia, 0.0, 1.0), 1.0);
+    return;
+  }
+
+  // ── 2: Black & White ───────────────────────────────────────────────────
+  if (u_effect == 2) {
+    vec3 c = texture2D(u_tex, uv).rgb;
+    float l = luminance(c);
+    // slight contrast boost
+    l = clamp((l - 0.5) * 1.2 + 0.5, 0.0, 1.0);
+    gl_FragColor = vec4(vec3(l), 1.0);
+    return;
+  }
+
+  // ── 3: Glow (bloom approximation) ─────────────────────────────────────
+  if (u_effect == 3) {
+    vec4 orig = texture2D(u_tex, uv);
+    // Sample blurred version with varying radii
+    vec4 b1 = blur9(uv, px, 2.0);
+    vec4 b2 = blur9(uv, px, 5.0);
+    vec4 b3 = blur9(uv, px, 10.0);
+    vec4 bloom = (b1 + b2 * 0.7 + b3 * 0.4) / 2.1;
+    // Extract bright areas for bloom
+    float bright = max(bloom.r, max(bloom.g, bloom.b));
+    float bloomStrength = amount * 1.5;
+    vec4 result = orig + bloom * smoothstep(0.3, 0.8, bright) * bloomStrength;
+    gl_FragColor = vec4(clamp(result.rgb, 0.0, 1.0), 1.0);
+    return;
+  }
+
+  // ── 4: Comic Book ──────────────────────────────────────────────────────
+  if (u_effect == 4) {
+    // Posterize (thick color bands)
+    vec3 c = texture2D(u_tex, uv).rgb;
+    c = posterize(c, 4.0);
+    // Edge detection
+    float edge = sobel(uv, px * 1.5);
+    // Thicken edges
+    float edgeThresh = 0.35;
+    float outline = step(edgeThresh, edge);
+    // Halftone dots overlay for shadow regions
+    float lum = luminance(c);
+    vec2 dotUV = uv * u_res / 6.0;
+    float dot = length(fract(dotUV) - 0.5) < (0.3 * (1.0 - lum));
+    c = mix(c, c * 0.85, dot * 0.4);
+    // Apply black outlines
+    c = mix(c, vec3(0.0), outline);
+    // Boost saturation
+    vec3 hsv = rgb2hsv(c);
+    hsv.y = clamp(hsv.y * 1.4, 0.0, 1.0);
+    gl_FragColor = vec4(hsv2rgb(hsv), 1.0);
+    return;
+  }
+
+  // ── 5: Colored Pencil ─────────────────────────────────────────────────
+  if (u_effect == 5) {
+    vec3 c = texture2D(u_tex, uv).rgb;
+    // Desaturate
+    float l = luminance(c);
+    c = mix(vec3(l), c, 0.25);
+    // Paper texture base (warm cream)
+    vec3 paper = vec3(0.98, 0.95, 0.88);
+    // Pencil strokes = inverted edges
+    float edge = sobel(uv, px * 1.2);
+    // Make edges into dark pencil lines
+    float pencil = 1.0 - clamp(edge * 3.5, 0.0, 1.0);
+    // Noise for paper grain
+    float grain = hash(uv * u_res * 0.5) * 0.06;
+    // Combine: pencil lines on paper
+    vec3 result = paper * pencil + grain;
+    // Tint slightly with original color
+    result = mix(result, c * 0.8 + result * 0.2, 0.3);
+    gl_FragColor = vec4(clamp(result, 0.0, 1.0), 1.0);
+    return;
+  }
+
+  // ── 6: Thermal Camera ─────────────────────────────────────────────────
+  if (u_effect == 6) {
+    vec3 c = texture2D(u_tex, uv).rgb;
+    // Invert luminance for body heat (bright = hot, so brighter = warmer)
+    // slight blur to simulate sensor noise
+    vec4 blurred = blur9(uv, px, 1.5);
+    float lum = luminance(blurred.rgb);
+    gl_FragColor = vec4(thermalGradient(lum), 1.0);
+    return;
+  }
+
+  // ── 7: X-Ray ──────────────────────────────────────────────────────────
+  if (u_effect == 7) {
+    vec3 c = texture2D(u_tex, uv).rgb;
+    float l = luminance(c);
+    // Invert
+    l = 1.0 - l;
+    // High contrast
+    l = clamp((l - 0.5) * 2.2 + 0.5, 0.0, 1.0);
+    // Cool blue-white tint
+    vec3 xray = mix(vec3(0.0, 0.0, 0.1), vec3(0.85, 0.95, 1.0), l);
+    gl_FragColor = vec4(xray, 1.0);
+    return;
+  }
+
+  // ── 8: Pop Art (Warhol 2x2) ───────────────────────────────────────────
+  if (u_effect == 8) {
+    // Tile into 2x2 quadrants, each with different color LUT
+    vec2 tile = floor(uv * 2.0); // which tile: (0,0),(1,0),(0,1),(1,1)
+    vec2 tileUV = fract(uv * 2.0);
+    vec3 c = texture2D(u_tex, tileUV).rgb;
+    float l = luminance(c);
+    c = posterize(c, 3.0);
+    
+    // Each quadrant swaps/emphasizes different channels
+    vec3 result;
+    int quadrant = int(tile.x) + int(tile.y) * 2;
+    if (quadrant == 0) {
+      // Top-left: high saturation warm
+      result = vec3(c.r * 1.3, c.g * 0.7, c.b * 0.4);
+    } else if (quadrant == 1) {
+      // Top-right: cool blue/purple
+      result = vec3(c.b * 0.5, c.r * 0.6, c.g * 1.4);
+    } else if (quadrant == 2) {
+      // Bottom-left: green/yellow
+      result = vec3(c.g * 1.2, c.r * 1.1, c.b * 0.3);
+    } else {
+      // Bottom-right: pink/magenta
+      result = vec3(c.r * 1.4, c.b * 0.5, c.g * 1.1);
+    }
+    // Halftone dots per quadrant
+    vec2 dotUV = tileUV * u_res * 0.5 / 4.0;
+    float d = step(length(fract(dotUV) - 0.5), 0.28 * (1.0 - l));
+    result = mix(result, result * 0.6, d * 0.5);
+    gl_FragColor = vec4(clamp(result, 0.0, 1.0), 1.0);
+    return;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  // DISTORTION EFFECTS: remap UV, then sample
+  // ─────────────────────────────────────────────────────────────────────
+
+  // Distortion effects use 'amount' and 'center' uniforms
+  float strength = amount * 2.0 - 0.0; // 0-2 range for distortions
+  vec2 d = uv - center; // offset from focal point
+  float dist = length(d);
+  float angle = atan(d.y, d.x);
+  vec2 distortedUV = uv;
+
+  // ── 9: Bulge (radial bulge outward) ───────────────────────────────────
+  if (u_effect == 9) {
+    // Bulge: pixels near center are pushed outward
+    // r_new = r^(1/(1+strength)) maps to barrel distortion
+    float radius = 0.5;
+    float normDist = dist / radius;
+    if (normDist < 1.0) {
+      float bulge = pow(normDist, 1.0 + (1.0 - amount) * 2.0);
+      distortedUV = center + normalize(d) * bulge * radius;
+    }
+    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    return;
+  }
+
+  // ── 10: Dent (radial pinch inward) ────────────────────────────────────
+  if (u_effect == 10) {
+    float radius = 0.5;
+    float normDist = dist / radius;
+    if (normDist < 1.0) {
+      // Inverse of bulge — pull pixels toward center
+      float dent = pow(normDist, 0.3 + amount * 1.5);
+      distortedUV = center + normalize(d) * dent * radius;
+    }
+    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    return;
+  }
+
+  // ── 11: Twirl (rotate pixels around focal point) ──────────────────────
+  if (u_effect == 11) {
+    // Pixels within radius get rotated, more at center
+    float radius = 0.45;
+    float normDist = dist / radius;
+    float maxAngle = (amount - 0.5) * 6.28318; // -π to π
+    float twistAngle = maxAngle * max(0.0, 1.0 - normDist);
+    float cosA = cos(twistAngle);
+    float sinA = sin(twistAngle);
+    vec2 rotD = vec2(d.x * cosA - d.y * sinA, d.x * sinA + d.y * cosA);
+    distortedUV = center + rotD;
+    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    return;
+  }
+
+  // ── 12: Squeeze (pinch/squeeze toward focal point on both axes) ────────
+  if (u_effect == 12) {
+    float radius = 0.5;
+    float normDist = dist / radius;
+    float sq = 1.0 - smoothstep(0.0, 1.0, normDist);
+    // Squeeze: compress toward center using power function
+    float squeezeStrength = amount * 2.0;
+    // Horizontal squeeze
+    float dx = d.x * (1.0 - sq * squeezeStrength * 0.5);
+    float dy = d.y * (1.0 - sq * squeezeStrength * 0.5);
+    distortedUV = center + vec2(dx, dy);
+    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    return;
+  }
+
+  // ── 13: Mirror ────────────────────────────────────────────────────────
+  if (u_effect == 13) {
+    vec2 mirrorUV = uv;
+    if (amount > 0.5) {
+      // Split mirror: both left+right fold in
+      mirrorUV.x = abs(uv.x - 0.5) + 0.0;
+      mirrorUV.x = mirrorUV.x * 2.0; // stretch to fill
+      mirrorUV.x = clamp(mirrorUV.x, 0.0, 1.0);
+    } else {
+      // Simple horizontal flip
+      mirrorUV.x = 1.0 - uv.x;
+    }
+    gl_FragColor = texture2D(u_tex, mirrorUV);
+    return;
+  }
+
+  // ── 14: Light Tunnel (radial zoom toward focal point) ─────────────────
+  if (u_effect == 14) {
+    // Sample from progressively closer to center (radial zoom blur)
+    // Creates a tunnel/vortex effect
+    vec4 acc = vec4(0.0);
+    int steps = 8;
+    float pullAmount = amount * 0.6;
+    for (int i = 0; i < 8; i++) {
+      float t = float(i) / 8.0;
+      vec2 sampleUV = mix(uv, center, t * pullAmount);
+      acc += texture2D(u_tex, sampleUV);
+    }
+    acc /= 8.0;
+    // Vignette toward edges
+    float vigDist = length(uv - 0.5);
+    float vig = 1.0 - smoothstep(0.3, 0.7, vigDist * (1.0 + amount));
+    gl_FragColor = vec4(acc.rgb * vig, 1.0);
+    return;
+  }
+
+  // ── 15: Fisheye (barrel distortion) ───────────────────────────────────
+  if (u_effect == 15) {
+    // Barrel distortion formula: r_new = r * (1 + k * r^2)
+    vec2 centered = (uv - 0.5) * 2.0; // -1 to 1
+    float r2 = dot(centered, centered);
+    float k = amount * 0.8; // barrel coefficient
+    vec2 distorted = centered * (1.0 + k * r2);
+    distortedUV = distorted * 0.5 + 0.5;
+    if (distortedUV.x < 0.0 || distortedUV.x > 1.0 || distortedUV.y < 0.0 || distortedUV.y > 1.0) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0); // black outside
+    } else {
+      gl_FragColor = texture2D(u_tex, distortedUV);
+    }
+    return;
+  }
+
+  // ── 16: Stretch (directional warp around focal point) ─────────────────
+  if (u_effect == 16) {
+    float radius = 0.5;
+    float normDist = dist / radius;
+    float influence = max(0.0, 1.0 - normDist);
+    // Stretch horizontally with some vertical compression
+    float stretchX = 1.0 + (amount - 0.5) * 2.0 * influence * d.x;
+    float stretchY = 1.0 - (amount - 0.5) * 1.0 * influence * abs(d.y);
+    distortedUV = vec2(
+      center.x + d.x / max(0.1, stretchX),
+      center.y + d.y * stretchY
+    );
+    gl_FragColor = texture2D(u_tex, clamp(distortedUV, 0.0, 1.0));
+    return;
+  }
+
+  // Fallback
+  gl_FragColor = texture2D(u_tex, uv);
+}
+`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WEBGL RENDERER
+// ─────────────────────────────────────────────────────────────────────────────
+let gl, program, uniforms, quadBuffer, texture;
+const canvas = document.getElementById('preview-canvas');
+const video = document.getElementById('video-source');
+
+function initGL() {
+  gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+  if (!gl) { alert('WebGL not supported'); return false; }
+
+  // Compile shaders
+  function compileShader(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error('Shader error:', gl.getShaderInfoLog(sh));
+      return null;
+    }
+    return sh;
+  }
+
+  const vert = compileShader(gl.VERTEX_SHADER, VERT_SRC);
+  const frag = compileShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+  program = gl.createProgram();
+  gl.attachShader(program, vert);
+  gl.attachShader(program, frag);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.error('Program link error:', gl.getProgramInfoLog(program));
+    return false;
+  }
+  gl.useProgram(program);
+
+  // Fullscreen quad
+  quadBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+  const a_pos = gl.getAttribLocation(program, 'a_pos');
+  gl.enableVertexAttribArray(a_pos);
+  gl.vertexAttribPointer(a_pos, 2, gl.FLOAT, false, 0, 0);
+
+  // Uniforms
+  uniforms = {
+    tex:    gl.getUniformLocation(program, 'u_tex'),
+    res:    gl.getUniformLocation(program, 'u_res'),
+    time:   gl.getUniformLocation(program, 'u_time'),
+    amount: gl.getUniformLocation(program, 'u_amount'),
+    center: gl.getUniformLocation(program, 'u_center'),
+    effect: gl.getUniformLocation(program, 'u_effect'),
+    mirror: gl.getUniformLocation(program, 'u_mirror'),
+  };
+
+  // Video texture
+  texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.uniform1i(uniforms.tex, 0);
+
+  return true;
+}
+
+function renderFrame(effectIndex, amount, center, mirror) {
+  if (!gl || !video || video.readyState < 2) return;
+
+  // Upload video frame to texture
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+  // Set uniforms
+  gl.uniform2f(uniforms.res, canvas.width, canvas.height);
+  gl.uniform1f(uniforms.time, performance.now() * 0.001);
+  gl.uniform1f(uniforms.amount, amount);
+  gl.uniform2f(uniforms.center, center.x, center.y);
+  gl.uniform1i(uniforms.effect, effectIndex);
+  gl.uniform1i(uniforms.mirror, mirror ? 1 : 0);
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EFFECT TILE RENDERER (for effects panel)
+// ─────────────────────────────────────────────────────────────────────────────
+// Use a small secondary WebGL canvas to render tiles
+let tileGL, tileProgram, tileUniforms, tileBuffer, tileTexture;
+let tileCanvas;
+
+function initTileGL() {
+  tileCanvas = document.createElement('canvas');
+  tileCanvas.width = 160; tileCanvas.height = 120;
+  tileGL = tileCanvas.getContext('webgl', { preserveDrawingBuffer: true });
+  if (!tileGL) return false;
+
+  function compileShader(type, src) {
+    const sh = tileGL.createShader(type);
+    tileGL.shaderSource(sh, src);
+    tileGL.compileShader(sh);
+    return sh;
+  }
+
+  const v = compileShader(tileGL.VERTEX_SHADER, VERT_SRC);
+  const f = compileShader(tileGL.FRAGMENT_SHADER, FRAG_SRC);
+  tileProgram = tileGL.createProgram();
+  tileGL.attachShader(tileProgram, v);
+  tileGL.attachShader(tileProgram, f);
+  tileGL.linkProgram(tileProgram);
+  tileGL.useProgram(tileProgram);
+
+  tileBuffer = tileGL.createBuffer();
+  tileGL.bindBuffer(tileGL.ARRAY_BUFFER, tileBuffer);
+  tileGL.bufferData(tileGL.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,1,1]), tileGL.STATIC_DRAW);
+  const a = tileGL.getAttribLocation(tileProgram, 'a_pos');
+  tileGL.enableVertexAttribArray(a);
+  tileGL.vertexAttribPointer(a, 2, tileGL.FLOAT, false, 0, 0);
+
+  tileUniforms = {
+    tex:    tileGL.getUniformLocation(tileProgram, 'u_tex'),
+    res:    tileGL.getUniformLocation(tileProgram, 'u_res'),
+    time:   tileGL.getUniformLocation(tileProgram, 'u_time'),
+    amount: tileGL.getUniformLocation(tileProgram, 'u_amount'),
+    center: tileGL.getUniformLocation(tileProgram, 'u_center'),
+    effect: tileGL.getUniformLocation(tileProgram, 'u_effect'),
+    mirror: tileGL.getUniformLocation(tileProgram, 'u_mirror'),
+  };
+
+  tileTexture = tileGL.createTexture();
+  tileGL.bindTexture(tileGL.TEXTURE_2D, tileTexture);
+  tileGL.texParameteri(tileGL.TEXTURE_2D, tileGL.TEXTURE_WRAP_S, tileGL.CLAMP_TO_EDGE);
+  tileGL.texParameteri(tileGL.TEXTURE_2D, tileGL.TEXTURE_WRAP_T, tileGL.CLAMP_TO_EDGE);
+  tileGL.texParameteri(tileGL.TEXTURE_2D, tileGL.TEXTURE_MIN_FILTER, tileGL.LINEAR);
+  tileGL.texParameteri(tileGL.TEXTURE_2D, tileGL.TEXTURE_MAG_FILTER, tileGL.LINEAR);
+  tileGL.uniform1i(tileUniforms.tex, 0);
+
+  return true;
+}
+
+let tileUpdateIndex = 0;
+let tileDOMs = []; // canvas elements per tile
+
+function updateEffectTiles() {
+  if (!state.effectsPanelOpen || !tileGL || !video || video.readyState < 2) return;
+
+  // Update one tile per call (cycle through all)
+  const pageStart = state.effectsPage * EFFECTS_PER_PAGE;
+  const count = Math.min(EFFECTS_PER_PAGE, EFFECTS.length - pageStart);
+  
+  if (count <= 0) return;
+  
+  const tileIndex = tileUpdateIndex % count;
+  const effectIndex = pageStart + tileIndex;
+  const tileCanvas2D = tileDOMs[tileIndex];
+  if (!tileCanvas2D) { tileUpdateIndex++; return; }
+  
+  // Render this effect to tileCanvas
+  tileGL.bindTexture(tileGL.TEXTURE_2D, tileTexture);
+  tileGL.texImage2D(tileGL.TEXTURE_2D, 0, tileGL.RGBA, tileGL.RGBA, tileGL.UNSIGNED_BYTE, video);
+  tileGL.uniform2f(tileUniforms.res, tileCanvas.width, tileCanvas.height);
+  tileGL.uniform1f(tileUniforms.time, performance.now() * 0.001);
+  tileGL.uniform1f(tileUniforms.amount, 0.65); // demo amount for tiles
+  tileGL.uniform2f(tileUniforms.center, 0.5, 0.5);
+  tileGL.uniform1i(tileUniforms.effect, effectIndex);
+  tileGL.uniform1i(tileUniforms.mirror, 0);
+  tileGL.viewport(0, 0, tileCanvas.width, tileCanvas.height);
+  tileGL.drawArrays(tileGL.TRIANGLE_STRIP, 0, 4);
+
+  // Copy to tile's 2D canvas
+  const ctx = tileCanvas2D.getContext('2d');
+  ctx.drawImage(tileCanvas, 0, 0, tileCanvas2D.width, tileCanvas2D.height);
+
+  tileUpdateIndex++;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMERA
+// ─────────────────────────────────────────────────────────────────────────────
+let stream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+
+async function initCamera() {
+  document.getElementById('permission-error').classList.remove('show');
+  document.getElementById('loading-indicator').style.display = 'flex';
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    });
+
+    video.srcObject = stream;
+    await new Promise(r => video.addEventListener('loadedmetadata', r, { once: true }));
+    await video.play();
+
+    // Size canvas to video aspect ratio
+    const vw = video.videoWidth || 1280;
+    const vh = video.videoHeight || 720;
+    const aspect = vw / vh;
+
+    // Determine target resolution (lower on mobile)
+    const isMobile = window.innerWidth < 600;
+    const targetW = isMobile ? 640 : 1280;
+    canvas.width = targetW;
+    canvas.height = Math.round(targetW / aspect);
+
+    if (!initGL()) return;
+    initTileGL();
+
+    document.getElementById('loading-indicator').style.display = 'none';
+    document.getElementById('canvas-container').style.display = 'flex';
+
+    startLoop();
+  } catch (err) {
+    console.error('Camera error:', err);
+    document.getElementById('loading-indicator').style.display = 'none';
+    document.getElementById('permission-error').classList.add('show');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RENDER LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+let lastTime = 0;
+let frameCount = 0;
+let fpsDisplay = 0;
+let loopId = null;
+
+function startLoop() {
+  if (loopId) cancelAnimationFrame(loopId);
+  loop(0);
+}
+
+function loop(ts) {
+  loopId = requestAnimationFrame(loop);
+
+  const dt = ts - lastTime;
+  lastTime = ts;
+
+  // FPS
+  frameCount++;
+  if (frameCount % 30 === 0) {
+    fpsDisplay = Math.round(1000 / dt);
+    if (state.showFPS) {
+      document.getElementById('fps-monitor').textContent = `${fpsDisplay} fps`;
+    }
+  }
+
+  // Main render
+  renderFrame(
+    state.effect,
+    state.distortionAmount,
+    state.distortionCenter,
+    state.mirrorPreview
+  );
+
+  // Effect tiles (one per frame, cycling)
+  updateEffectTiles();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAPTURE: PHOTO
+// ─────────────────────────────────────────────────────────────────────────────
+async function capturePhoto() {
+  if (state.isBusy) return;
+  state.isBusy = true;
+
+  if (state.countdownEnabled) await countdown();
+  triggerFlash();
+
+  const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+  const thumb = await makeThumbnail(dataURL);
+  const item = {
+    id: Date.now(),
+    type: 'photo',
+    data: dataURL,
+    thumb,
+    timestamp: Date.now(),
+    effect: EFFECTS[state.effect].name,
+  };
+  addToGallery(item);
+
+  state.isBusy = false;
+}
+
+async function captureFourUp() {
+  if (state.isBusy) return;
+  state.isBusy = true;
+
+  const images = [];
+  const indicator = document.getElementById('fourUp-indicator');
+  indicator.classList.add('show');
+
+  for (let i = 0; i < 4; i++) {
+    indicator.textContent = `Shot ${i + 1} of 4`;
+    if (state.countdownEnabled) await countdown();
+    triggerFlash();
+
+    images.push(canvas.toDataURL('image/jpeg', 0.92));
+
+    if (i < 3) {
+      await sleep(600);
+    }
+  }
+
+  indicator.classList.remove('show');
+
+  // Composite 2×2
+  const composite = await make4UpComposite(images);
+  const thumb = await makeThumbnail(composite);
+  const item = {
+    id: Date.now(),
+    type: '4up',
+    data: composite,
+    images,
+    thumb,
+    timestamp: Date.now(),
+    effect: EFFECTS[state.effect].name,
+  };
+  addToGallery(item);
+  state.isBusy = false;
+}
+
+async function make4UpComposite(images) {
+  const W = canvas.width * 2 + 4;
+  const H = canvas.height * 2 + 4;
+  const offscreen = Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const ctx = offscreen.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, W, H);
+  for (let i = 0; i < 4; i++) {
+    const img = await loadImg(images[i]);
+    const col = i % 2, row = Math.floor(i / 2);
+    ctx.drawImage(img, col * (canvas.width + 2), row * (canvas.height + 2), canvas.width, canvas.height);
+  }
+  return offscreen.toDataURL('image/jpeg', 0.92);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CAPTURE: VIDEO
+// ─────────────────────────────────────────────────────────────────────────────
+function startRecording() {
+  recordedChunks = [];
+
+  // Capture processed canvas stream
+  const canvasStream = canvas.captureStream(30);
+
+  // Add audio from original stream
+  const audioTracks = stream ? stream.getAudioTracks() : [];
+  audioTracks.forEach(t => canvasStream.addTrack(t));
+
+  // Pick supported codec
+  const mimeTypes = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  const mime = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+  mediaRecorder = new MediaRecorder(canvasStream, mime ? { mimeType: mime } : {});
+
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = saveRecording;
+  mediaRecorder.start(100);
+
+  state.isRecording = true;
+  document.getElementById('shutter-btn').classList.add('recording');
+  document.getElementById('shutter-btn').setAttribute('aria-label', 'Stop recording');
+  document.getElementById('rec-indicator').classList.add('show');
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  state.isRecording = false;
+  document.getElementById('shutter-btn').classList.remove('recording');
+  document.getElementById('shutter-btn').setAttribute('aria-label', 'Start recording');
+  document.getElementById('rec-indicator').classList.remove('show');
+}
+
+function saveRecording() {
+  const blob = new Blob(recordedChunks, { type: recordedChunks[0]?.type || 'video/webm' });
+  const url = URL.createObjectURL(blob);
+  const thumb = '🎬'; // video thumbnail placeholder
+
+  // Generate video thumbnail
+  const thumbVideo = document.createElement('video');
+  thumbVideo.src = url;
+  thumbVideo.muted = true;
+  thumbVideo.currentTime = 0.5;
+
+  thumbVideo.addEventListener('seeked', () => {
+    const tc = document.createElement('canvas');
+    tc.width = 160; tc.height = 120;
+    tc.getContext('2d').drawImage(thumbVideo, 0, 0, 160, 120);
+    const thumbURL = tc.toDataURL('image/jpeg', 0.7);
+
+    const item = {
+      id: Date.now(),
+      type: 'video',
+      data: url,
+      blob,
+      thumb: thumbURL,
+      timestamp: Date.now(),
+      effect: EFFECTS[state.effect].name,
+    };
+    addToGallery(item);
+  }, { once: true });
+
+  thumbVideo.load();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COUNTDOWN + FLASH
+// ─────────────────────────────────────────────────────────────────────────────
+async function countdown() {
+  const overlay = document.getElementById('countdown-overlay');
+  const num = document.getElementById('countdown-num');
+
+  for (let i = 3; i >= 1; i--) {
+    num.textContent = i;
+    overlay.classList.remove('show');
+    void overlay.offsetWidth; // force reflow
+    overlay.classList.add('show');
+    await sleep(900);
+  }
+  overlay.classList.remove('show');
+  await sleep(100);
+}
+
+function triggerFlash() {
+  if (!state.flashEnabled) return;
+  const f = document.getElementById('flash-overlay');
+  f.classList.remove('flash');
+  void f.offsetWidth;
+  f.classList.add('flash');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GALLERY
+// ─────────────────────────────────────────────────────────────────────────────
+const DB_NAME = 'snapbooth';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('items')) {
+        d.createObjectStore('items', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+async function saveItemToDB(item) {
+  if (!db) return;
+  const dbItem = { ...item };
+  if (dbItem.blob) delete dbItem.blob; // blobs are stored via URL already
+  try {
+    const tx = db.transaction('items', 'readwrite');
+    tx.objectStore('items').put(dbItem);
+  } catch (e) { console.warn('DB save failed', e); }
+}
+
+async function loadFromDB() {
+  if (!db) return;
+  try {
+    const tx = db.transaction('items', 'readonly');
+    const req = tx.objectStore('items').getAll();
+    req.onsuccess = () => {
+      const items = req.result || [];
+      items.sort((a, b) => a.timestamp - b.timestamp);
+      items.forEach(item => addToGallery(item, false));
+    };
+  } catch (e) { console.warn('DB load failed', e); }
+}
+
+async function deleteItemFromDB(id) {
+  if (!db) return;
+  try {
+    const tx = db.transaction('items', 'readwrite');
+    tx.objectStore('items').delete(id);
+  } catch (e) {}
+}
+
+function addToGallery(item, save = true) {
+  state.galleryItems.push(item);
+  renderFilmItem(item, true);
+  if (save) saveItemToDB(item);
+}
+
+function renderFilmItem(item, animate = false) {
+  const strip = document.getElementById('filmstrip');
+  const empty = document.getElementById('filmstrip-empty');
+  if (empty) empty.style.display = 'none';
+
+  const el = document.createElement('div');
+  el.className = 'film-item' + (animate ? ' film-item-new' : '');
+  el.setAttribute('role', 'listitem');
+  el.setAttribute('tabindex', '0');
+  el.setAttribute('aria-label', `${item.type} captured with ${item.effect} effect`);
+  el.dataset.id = item.id;
+
+  if (item.type === 'video') {
+    const img = document.createElement('img');
+    img.src = item.thumb;
+    img.alt = 'Video thumbnail';
+    el.appendChild(img);
+    const badge = document.createElement('div');
+    badge.className = 'film-item-badge';
+    badge.textContent = '▶ VID';
+    el.appendChild(badge);
+  } else {
+    const img = document.createElement('img');
+    img.src = item.thumb;
+    img.alt = item.type === '4up' ? 'Four-up photo' : 'Photo';
+    el.appendChild(img);
+    if (item.type === '4up') {
+      const badge = document.createElement('div');
+      badge.className = 'film-item-badge';
+      badge.textContent = '4×';
+      el.appendChild(badge);
+    }
+  }
+
+  el.onclick = () => openViewer(item.id);
+  el.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openViewer(item.id); } };
+
+  strip.appendChild(el);
+  strip.scrollLeft = strip.scrollWidth;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEWER
+// ─────────────────────────────────────────────────────────────────────────────
+function openViewer(id) {
+  const item = state.galleryItems.find(i => i.id === id);
+  if (!item) return;
+
+  state.viewingIndex = state.galleryItems.indexOf(item);
+  const overlay = document.getElementById('viewer-overlay');
+  const img = document.getElementById('viewer-img');
+  const fourUp = document.getElementById('viewer-fourUp');
+  const vid = document.getElementById('viewer-video');
+
+  img.style.display = 'none';
+  fourUp.style.display = 'none';
+  vid.style.display = 'none';
+  fourUp.innerHTML = '';
+
+  if (item.type === 'photo') {
+    img.src = item.data;
+    img.style.display = 'block';
+  } else if (item.type === '4up') {
+    fourUp.style.display = 'grid';
+    (item.images || [item.data]).forEach((src, i) => {
+      const subImg = document.createElement('img');
+      subImg.src = src;
+      subImg.alt = `Shot ${i + 1}`;
+      subImg.onclick = e => {
+        e.stopPropagation();
+        // Zoom in: show as full image
+        img.src = src;
+        img.style.display = 'block';
+        fourUp.style.display = 'none';
+      };
+      fourUp.appendChild(subImg);
+    });
+  } else if (item.type === 'video') {
+    vid.src = item.data;
+    vid.style.display = 'block';
+  }
+
+  overlay.classList.add('open');
+  document.getElementById('viewer-download-btn').dataset.id = id;
+  document.getElementById('viewer-delete-btn').dataset.id = id;
+}
+
+function closeViewer() {
+  const overlay = document.getElementById('viewer-overlay');
+  overlay.classList.remove('open');
+  const vid = document.getElementById('viewer-video');
+  vid.pause();
+  vid.src = '';
+  state.viewingIndex = -1;
+}
+
+function downloadCurrent() {
+  const item = state.galleryItems[state.viewingIndex];
+  if (!item) return;
+
+  const a = document.createElement('a');
+  a.href = item.data;
+  const ext = item.type === 'video' ? 'webm' : 'jpg';
+  a.download = `snapbooth_${item.type}_${item.id}.${ext}`;
+  a.click();
+}
+
+function deleteCurrent() {
+  const item = state.galleryItems[state.viewingIndex];
+  if (!item) return;
+
+  // Remove from state
+  state.galleryItems.splice(state.viewingIndex, 1);
+
+  // Remove from DOM
+  const el = document.querySelector(`.film-item[data-id="${item.id}"]`);
+  if (el) el.remove();
+
+  // Delete from DB
+  deleteItemFromDB(item.id);
+
+  // Show empty message if needed
+  if (state.galleryItems.length === 0) {
+    const empty = document.getElementById('filmstrip-empty');
+    if (empty) empty.style.display = 'flex';
+  }
+
+  closeViewer();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EFFECTS PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+const PAGES = Math.ceil(EFFECTS.length / EFFECTS_PER_PAGE);
+
+function buildEffectsGrid() {
+  const grid = document.getElementById('effects-grid');
+  grid.innerHTML = '';
+  tileDOMs = [];
+
+  const pageStart = state.effectsPage * EFFECTS_PER_PAGE;
+  const count = Math.min(EFFECTS_PER_PAGE, EFFECTS.length - pageStart);
+
+  for (let i = 0; i < count; i++) {
+    const effectIndex = pageStart + i;
+    const eff = EFFECTS[effectIndex];
+
+    const tile = document.createElement('div');
+    tile.className = 'effect-tile' + (effectIndex === state.effect ? ' selected' : '');
+    tile.setAttribute('role', 'option');
+    tile.setAttribute('aria-selected', effectIndex === state.effect ? 'true' : 'false');
+    tile.setAttribute('aria-label', eff.name);
+    tile.setAttribute('tabindex', '0');
+    tile.dataset.effect = effectIndex;
+
+    const c = document.createElement('canvas');
+    c.width = 160; c.height = 120;
+    tile.appendChild(c);
+    tileDOMs.push(c);
+
+    const label = document.createElement('div');
+    label.className = 'effect-tile-label';
+    label.textContent = eff.name;
+    tile.appendChild(label);
+
+    tile.onclick = () => selectEffect(effectIndex);
+    tile.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectEffect(effectIndex); } };
+
+    grid.appendChild(tile);
+  }
+
+  buildPageDots();
+  tileUpdateIndex = 0;
+}
+
+function buildPageDots() {
+  const dotsEl = document.getElementById('page-dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < PAGES; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'page-dot' + (i === state.effectsPage ? ' active' : '');
+    dot.onclick = () => goToPage(i);
+    dot.setAttribute('aria-label', `Effects page ${i + 1}`);
+    dotsEl.appendChild(dot);
+  }
+  document.getElementById('prev-page').disabled = state.effectsPage === 0;
+  document.getElementById('next-page').disabled = state.effectsPage >= PAGES - 1;
+}
+
+function changePage(dir) {
+  goToPage(state.effectsPage + dir);
+}
+
+function goToPage(p) {
+  if (p < 0 || p >= PAGES) return;
+  state.effectsPage = p;
+  buildEffectsGrid();
+}
+
+function selectEffect(idx) {
+  state.effect = idx;
+  // Update tile selected states
+  document.querySelectorAll('.effect-tile').forEach(t => {
+    const isSelected = parseInt(t.dataset.effect) === idx;
+    t.classList.toggle('selected', isSelected);
+    t.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+  });
+  // Show/hide distortion controls
+  updateDistortionUI();
+  // Update effect name
+  document.getElementById('current-effect-name').textContent = EFFECTS[idx].name.toUpperCase();
+}
+
+function openEffects() {
+  state.effectsPanelOpen = true;
+  document.getElementById('effects-panel').classList.add('open');
+  document.getElementById('effects-btn').classList.add('active');
+  buildEffectsGrid();
+  tileUpdateIndex = 0;
+}
+
+function closeEffects() {
+  state.effectsPanelOpen = false;
+  document.getElementById('effects-panel').classList.remove('open');
+  document.getElementById('effects-btn').classList.remove('active');
+}
+
+function updateDistortionUI() {
+  const isDistortion = EFFECTS[state.effect].isDistortion;
+  const focalPoint = document.getElementById('focal-point');
+  const sliderWrap = document.getElementById('distortion-slider-wrap');
+
+  focalPoint.classList.toggle('show', isDistortion);
+  sliderWrap.classList.toggle('show', isDistortion);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODE + SHUTTER
+// ─────────────────────────────────────────────────────────────────────────────
+function setMode(mode) {
+  if (state.isRecording) stopRecording();
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    const isActive = b.dataset.mode === mode;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+
+  const shutter = document.getElementById('shutter-btn');
+  shutter.setAttribute('aria-label',
+    mode === 'video' ? 'Start recording' : 'Take photo'
+  );
+}
+
+function triggerShutter() {
+  if (state.mode === 'photo') capturePhoto();
+  else if (state.mode === '4up') captureFourUp();
+  else if (state.mode === 'video') {
+    if (state.isRecording) stopRecording();
+    else startRecording();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SETTINGS + UI HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSettings() {
+  state.settingsPanelOpen = !state.settingsPanelOpen;
+  const panel = document.getElementById('settings-panel');
+  panel.classList.toggle('open', state.settingsPanelOpen);
+  document.getElementById('settings-btn').classList.toggle('active', state.settingsPanelOpen);
+}
+
+function toggleFPS() {
+  state.showFPS = !state.showFPS;
+  const mon = document.getElementById('fps-monitor');
+  mon.style.display = state.showFPS ? 'block' : 'none';
+  document.getElementById('fps-toggle-btn').classList.toggle('active', state.showFPS);
+}
+
+let aboutOpen = false;
+function toggleAbout() {
+  aboutOpen = !aboutOpen;
+  document.getElementById('about-panel').classList.toggle('open', aboutOpen);
+}
+
+// Click outside to close panels
+document.addEventListener('click', e => {
+  const settings = document.getElementById('settings-panel');
+  const settingsBtn = document.getElementById('settings-btn');
+  if (state.settingsPanelOpen && !settings.contains(e.target) && !settingsBtn.contains(e.target)) {
+    toggleSettings();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FOCAL POINT (DISTORTION CENTER)
+// ─────────────────────────────────────────────────────────────────────────────
+canvas.addEventListener('click', e => {
+  if (!EFFECTS[state.effect].isDistortion) return;
+  updateFocalPoint(e);
+});
+
+canvas.addEventListener('pointermove', e => {
+  if (e.buttons !== 1 || !EFFECTS[state.effect].isDistortion) return;
+  updateFocalPoint(e);
+});
+
+function updateFocalPoint(e) {
+  const canvasRect = canvas.getBoundingClientRect();
+  const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+  // Normalized within canvas DOM element
+  const nx = (e.clientX - canvasRect.left) / canvasRect.width;
+  const ny = (e.clientY - canvasRect.top) / canvasRect.height;
+
+  // Mirror preview flips X
+  state.distortionCenter.x = state.mirrorPreview ? (1 - nx) : nx;
+  state.distortionCenter.y = ny;
+
+  // Position focal point indicator relative to canvas-container
+  const fp = document.getElementById('focal-point');
+  fp.style.left = (e.clientX - containerRect.left) + 'px';
+  fp.style.top = (e.clientY - containerRect.top) + 'px';
+}
+
+// Distortion amount slider
+document.getElementById('distortion-amount').addEventListener('input', e => {
+  state.distortionAmount = parseInt(e.target.value) / 100;
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  // Ignore when typing in inputs
+  if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    if (!state.effectsPanelOpen && !state.viewingIndex >= 0) triggerShutter();
+  } else if (e.key === 'ArrowLeft') {
+    if (state.effectsPanelOpen) changePage(-1);
+    else { state.effect = (state.effect - 1 + EFFECTS.length) % EFFECTS.length; updateDistortionUI(); document.getElementById('current-effect-name').textContent = EFFECTS[state.effect].name.toUpperCase(); }
+  } else if (e.key === 'ArrowRight') {
+    if (state.effectsPanelOpen) changePage(1);
+    else { state.effect = (state.effect + 1) % EFFECTS.length; updateDistortionUI(); document.getElementById('current-effect-name').textContent = EFFECTS[state.effect].name.toUpperCase(); }
+  } else if (e.key === 'Escape') {
+    if (document.getElementById('viewer-overlay').classList.contains('open')) closeViewer();
+    else if (state.effectsPanelOpen) closeEffects();
+    else if (state.settingsPanelOpen) toggleSettings();
+    else if (aboutOpen) toggleAbout();
+  } else if (e.key === 'e' || e.key === 'E') {
+    if (state.effectsPanelOpen) closeEffects();
+    else openEffects();
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────────────────────────────────────
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function loadImg(src) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+async function makeThumbnail(dataURL) {
+  const img = await loadImg(dataURL);
+  const c = document.createElement('canvas');
+  c.width = 160; c.height = 120;
+  c.getContext('2d').drawImage(img, 0, 0, 160, 120);
+  return c.toDataURL('image/jpeg', 0.7);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+async function init() {
+  // Open IndexedDB
+  try {
+    await openDB();
+    await loadFromDB();
+  } catch (e) {
+    console.warn('IndexedDB not available:', e);
+  }
+
+  // Set initial effect name
+  document.getElementById('current-effect-name').textContent = EFFECTS[0].name.toUpperCase();
+
+  // Start camera
+  await initCamera();
+}
+
+// Add about toggle to header-right (already in HTML via onclick=toggleAbout())
+init();
+</script>
+</body>
+</html>
