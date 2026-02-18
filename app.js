@@ -1,7 +1,7 @@
 /**
  * Andreas Dittes — Portfolio App
  * ─────────────────────────────────────────────────────────────
- * To add/edit items: update /data/items.json
+ * To add/edit items: update items.json
  *
  * Recommended image size for project/startup cards:
  *   1280 × 720 px JPEG, optimised to ~150–300 KB
@@ -52,7 +52,7 @@ function cacheDOM() {
    ============================================================ */
 async function loadData() {
   try {
-    const res = await fetch('./data/items.json');
+    const res = await fetch('./items.json');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     state.items = await res.json();
     updateStats();
