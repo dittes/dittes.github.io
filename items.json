@@ -2,57 +2,57 @@
   {
     "id": "1",
     "type": "startup",
-    "status": "active",
-    "title": "Meridian AI",
-    "description": "AI-powered supply chain intelligence platform that reduces logistics costs by 30% through predictive demand forecasting and autonomous procurement. Serving mid-market manufacturers across DACH.",
-    "url": "https://example.com/meridian",
+    "status": "exited",
+    "title": "Talentwunder",
+    "description": "Talentwunder is Google for recruitment - it leverage ai, big data and social network analysis to help companies find the best talent.",
+    "url": "https://talentwunder.com",
     "image": "assets/placeholder-1.svg",
-    "tags": ["AI/ML", "B2B SaaS", "Supply Chain", "Series A"],
-    "date": "2024-03-15"
+    "tags": ["Recruiting", "SaaS", "AI/ML", "B2B"],
+    "date": "2014-10-01"
   },
   {
     "id": "2",
     "type": "startup",
     "status": "exited",
-    "title": "Coframe",
-    "description": "No-code UI experimentation platform enabling product teams to continuously A/B test every element of their web app without touching code. Acquired by Adobe in 2023 for €42M.",
-    "url": "https://example.com/coframe",
+    "title": "telewebber",
+    "description": "Social layer for linear tv - connecting people watching the same tv-shows. Business model was market research and a matching ad format on the second screen called realtime crossmedia advertising. Acquired by Zattoo.",
+    "url": "https://zattoo.com",
     "image": "assets/placeholder-2.svg",
-    "tags": ["No-Code", "CRO", "SaaS", "Acquired"],
-    "date": "2021-06-01"
+    "tags": ["SaaS", "B2B2C", "Media", "Ads"],
+    "date": "2008-04-01"
   },
   {
     "id": "3",
-    "type": "project",
-    "status": null,
-    "title": "Chromatic Graph Engine",
-    "description": "Open-source WebGL-powered graph visualization library handling 1M+ nodes with real-time physics simulation. Used by data teams at CERN, Stripe, and 200+ companies worldwide.",
-    "url": "https://example.com/chromatic",
+    "type": "startup",
+    "status": "liquidated",
+    "title": "Fachangebot",
+    "description": "Algorithmically optimized and personalized landingpage and Google ads to reach a massive perfomance lift for lead generation of high-involvement product.",
+    "url": "https://fachangebot.de",
     "image": "assets/placeholder-3.svg",
-    "tags": ["Open Source", "WebGL", "Data Viz", "TypeScript"],
-    "date": "2024-11-20"
+    "tags": ["B2B", "SaaS", "Ads", "Social Network"],
+    "date": "2013-01-01"
   },
   {
     "id": "4",
     "type": "startup",
-    "status": "active",
-    "title": "Pulsar Finance",
-    "description": "Real-time treasury management for European startups. Automated FX hedging, yield optimization on idle cash, and CFO-grade reporting — all in a single dashboard built for founders.",
-    "url": "https://example.com/pulsar",
+    "status": "exited",
+    "title": "KlickHelden",
+    "description": "Internet marketing agency specializing on Google ads optimization and social media marketing.",
+    "url": "https://klickhelden.de",
     "image": "assets/placeholder-4.svg",
-    "tags": ["FinTech", "Treasury", "B2B", "Seed"],
-    "date": "2023-09-10"
+    "tags": ["Ads", "Agency", "Marketing", "Google"],
+    "date": "2010-02-01"
   },
   {
     "id": "5",
-    "type": "project",
-    "status": null,
-    "title": "Tessellate Design System",
-    "description": "Production-ready design system with 120+ accessible components, Figma primitives, and a token-first theming engine. Adopted by 15 product teams in Y Combinator's W24 batch.",
-    "url": "https://example.com/tessellate",
+    "type": "startup",
+    "status": "exited",
+    "title": "hack.institute",
+    "description": "Innovation agency that organized hackathons for corporates and the communtiy. This helped with recruiting as well as product- and partner development. Customers included Bosch, Postbank, HRS and many more. Acquired by Quadriga Hochschule.",
+    "url": "https://hack.institute",
     "image": "assets/placeholder-5.svg",
-    "tags": ["Design System", "Accessibility", "Figma", "React"],
-    "date": "2024-02-28"
+    "tags": ["Hackathons", "Innovation", "Developers", "Events"],
+    "date": "2014-04-01"
   },
   {
     "id": "6",
@@ -68,24 +68,24 @@
   {
     "id": "7",
     "type": "project",
-    "status": null,
-    "title": "Northstar CLI",
-    "description": "Terminal-first project management tool for engineers who hate leaving their editor. Syncs with Linear, GitHub, and Notion. 12K GitHub stars, 3K weekly active users.",
-    "url": "https://example.com/northstar",
+    "status":"active",
+    "title": "Goldesel Trading & Investing",
+    "description": "Goldesel is one of the most active community for stock traders in Germany with its own mobile App. Supporting the founder on his journey.",
+    "url": "https://goldesel.de",
     "image": "assets/placeholder-7.svg",
-    "tags": ["CLI", "Developer Tools", "Go", "Open Source"],
-    "date": "2023-07-04"
+    "tags": ["Stocks", "Community", "Apps", "Social Network"],
+    "date": "2020-08-01"
   },
   {
     "id": "8",
     "type": "startup",
-    "status": "exited",
-    "title": "Lantern Health",
-    "description": "Digital therapeutics platform for chronic pain management combining biometric wearables with CBT-based coaching. Raised €8M Series A, acquired by Philips Digital Health in 2022.",
-    "url": "https://example.com/lantern",
+    "status": "active",
+    "title": "Humify",
+    "description": "Humify is transforming biomass into humic substance to capture and store carbon while reversing soil degradation on a global scale. Max-Planck Innovation deep-tech spin-off.",
+    "url": "https://humify.earth",
     "image": "assets/placeholder-8.svg",
-    "tags": ["HealthTech", "DTx", "Wearables", "Acquired"],
-    "date": "2019-11-30"
+    "tags": ["DeepTech", "Innovation", "AgTech", "ClimateTech"],
+    "date": "2023-02-01"
   },
   {
     "id": "9",
