@@ -17,7 +17,7 @@
     "title": "telewebber",
     "description": "Social layer for linear tv - connecting people watching the same tv-shows. Business model was market research and a matching ad format on the second screen called realtime crossmedia advertising. Acquired by Zattoo.",
     "url": "https://zattoo.com",
-    "image": "assets/talewebber.jpeg",
+    "image": "assets/telewebber.jpeg",
     "tags": ["SaaS", "B2B2C", "Media", "Ads"],
     "date": "2008-04-01"
   },
@@ -62,7 +62,7 @@
     "description": "The digital equivalent of the makeup mirror. First of its kind and still out there.",
     "url": "https://fullscreenmirror.com",
     "image": "assets/fullscreenmirror.jpeg",
-    "tags": ["Video", "Creator", "Tool", "Mirror"],
+    "tags": ["Video", "Consumer", "Tool", "Mirror"],
     "date": "2020-04-12"
   },
   {
@@ -83,7 +83,7 @@
     "title": "Humify",
     "description": "Humify is transforming biomass into humic substance to capture and store carbon while reversing soil degradation on a global scale. Max-Planck Innovation deep-tech spin-off.",
     "url": "https://humify.earth",
-    "image": "assets/placeholder-8.svg",
+    "image": "assets/humify.jpeg",
     "tags": ["DeepTech", "Innovation", "AgTech", "ClimateTech"],
     "date": "2023-02-01"
   },
@@ -91,33 +91,33 @@
     "id": "9",
     "type": "project",
     "status": null,
-    "title": "Void Protocol",
-    "description": "Experimental generative art series exploring emergent complexity through recursive WebGL shaders. Each piece is unique, computed client-side, and minted as a compressed on-chain SVG.",
-    "url": "https://example.com/void",
-    "image": "assets/placeholder-9.svg",
-    "tags": ["Generative Art", "WebGL", "On-chain", "Creative Code"],
-    "date": "2024-08-18"
+    "title": "Active Sourcing Award",
+    "description": "The award for active sourcing in Germany, Austria and Switzerland. Awarded at the largest HR fair in Europe, Zukunft Personal.",
+    "url": "https://activesourcingaward.de",
+    "image": "assets/activesourcingaward.jpeg",
+    "tags": ["Award", "Recruiting", "Event", "HR"],
+    "date": "2018-10-01"
   },
   {
     "id": "10",
     "type": "startup",
-    "status": "active",
-    "title": "Sediment",
-    "description": "Geological data platform for mining exploration teams. Transforms raw drill-core data into 3D ore models using computer vision, cutting interpretation time from weeks to hours.",
-    "url": "https://example.com/sediment",
-    "image": "assets/placeholder-10.svg",
-    "tags": ["Mining Tech", "Computer Vision", "B2B", "Pre-Seed"],
-    "date": "2025-01-08"
+    "status": "liquidated",
+    "title": "Clipsay",
+    "description": "Mobile phone app to record and send short video clips to each other and the public. Sort of an early version of TikTok.",
+    "url": "https://clipsay.comt",
+    "image": "assets/clipsay.jpeg",
+    "tags": ["Mobile", "Video", "Shorts", "Consumer"],
+    "date": "2009-09-01"
   },
   {
     "id": "11",
     "type": "project",
-    "status": null,
-    "title": "Resonance — UX Research Toolkit",
-    "description": "Lightweight, privacy-first session replay and heatmap SDK. Drop-in script under 8KB gzipped, GDPR-compliant by design, self-hosted on any CDN. No vendor lock-in.",
-    "url": "https://example.com/resonance",
-    "image": "assets/placeholder-11.svg",
-    "tags": ["UX Research", "Privacy", "SDK", "JavaScript"],
-    "date": "2023-12-01"
+    "status": "active",
+    "title": "Insiderkauf",
+    "description": "Free website that analyzes and visually displays the stock trades of company insiders who are obligated to report those.",
+    "url": "https://insiderkauf.de",
+    "image": "assets/insiderkauf.jpeg",
+    "tags": ["Stocks", "Analysis", "Insider", "Data"],
+    "date": "2020-04-01"
   }
 ]
