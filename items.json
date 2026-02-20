@@ -6,7 +6,7 @@
     "title": "Talentwunder",
     "description": "Talentwunder is Google for recruitment - it leverage ai, big data and social network analysis to help companies find the best talent.",
     "url": "https://talentwunder.com",
-    "image": "assets/placeholder-1.svg",
+    "image": "assets/talentwunder.jpeg",
     "tags": ["Recruiting", "SaaS", "AI/ML", "B2B"],
     "date": "2014-10-01"
   },
@@ -17,7 +17,7 @@
     "title": "telewebber",
     "description": "Social layer for linear tv - connecting people watching the same tv-shows. Business model was market research and a matching ad format on the second screen called realtime crossmedia advertising. Acquired by Zattoo.",
     "url": "https://zattoo.com",
-    "image": "assets/placeholder-2.svg",
+    "image": "assets/talewebber.jpeg",
     "tags": ["SaaS", "B2B2C", "Media", "Ads"],
     "date": "2008-04-01"
   },
@@ -28,7 +28,7 @@
     "title": "Fachangebot",
     "description": "Algorithmically optimized and personalized landingpage and Google ads to reach a massive perfomance lift for lead generation of high-involvement product.",
     "url": "https://fachangebot.de",
-    "image": "assets/placeholder-3.svg",
+    "image": "assets/fachangebot.jpeg",
     "tags": ["B2B", "SaaS", "Ads", "Social Network"],
     "date": "2013-01-01"
   },
@@ -39,7 +39,7 @@
     "title": "KlickHelden",
     "description": "Internet marketing agency specializing on Google ads optimization and social media marketing.",
     "url": "https://klickhelden.de",
-    "image": "assets/placeholder-4.svg",
+    "image": "assets/klickhelden.jpeg",
     "tags": ["Ads", "Agency", "Marketing", "Google"],
     "date": "2010-02-01"
   },
@@ -50,19 +50,19 @@
     "title": "hack.institute",
     "description": "Innovation agency that organized hackathons for corporates and the communtiy. This helped with recruiting as well as product- and partner development. Customers included Bosch, Postbank, HRS and many more. Acquired by Quadriga Hochschule.",
     "url": "https://hack.institute",
-    "image": "assets/placeholder-5.svg",
+    "image": "assets/hackinstitute.jpeg",
     "tags": ["Hackathons", "Innovation", "Developers", "Events"],
     "date": "2014-04-01"
   },
   {
     "id": "6",
-    "type": "startup",
-    "status": "liquidated",
-    "title": "Fable Social",
-    "description": "Short-form audio storytelling platform where creators monetized episodic audio dramas via subscriptions. Reached 180K MAU before the market shift to video made scaling unsustainable.",
-    "url": "https://example.com/fable",
-    "image": "assets/placeholder-6.svg",
-    "tags": ["Audio", "Creator Economy", "Consumer", "Sunset"],
+    "type": "project",
+    "status": "active",
+    "title": "Full Screen Mirror",
+    "description": "The digital equivalent of the makeup mirror. First of its kind and still out there.",
+    "url": "https://fullscreenmirror.com",
+    "image": "assets/fullscreenmirror.jpeg",
+    "tags": ["Video", "Creator", "Tool", "Mirror"],
     "date": "2020-04-12"
   },
   {
@@ -72,7 +72,7 @@
     "title": "Goldesel Trading & Investing",
     "description": "Goldesel is one of the most active community for stock traders in Germany with its own mobile App. Supporting the founder on his journey.",
     "url": "https://goldesel.de",
-    "image": "assets/placeholder-7.svg",
+    "image": "assets/goldesel.jpeg",
     "tags": ["Stocks", "Community", "Apps", "Social Network"],
     "date": "2020-08-01"
   },
