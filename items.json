@@ -69,12 +69,12 @@
     "id": "7",
     "type": "project",
     "status":"active",
-    "title": "Goldesel Trading & Investing",
-    "description": "Goldesel is one of the most active communities for stock traders in Germany with its own mobile App. Supporting the founder on his journey.",
-    "url": "https://goldesel.de",
-    "image": "assets/goldesel.jpeg",
-    "tags": ["Stocks", "Community", "Apps", "Social Network"],
-    "date": "2020-08-01"
+    "title": "Silvester Countdown",
+    "description": "Countdown to New Years. up to 300 visitors per Second visit this site in the monitues before midnight on the year change in Germany.",
+    "url": "https://silvestercountdown.de",
+    "image": "assets/silvestercountdown.jpeg",
+    "tags": ["Countdown", "Webapp", "Clock", "Time"],
+    "date": "2010-11-01"
   },
   {
     "id": "8",
