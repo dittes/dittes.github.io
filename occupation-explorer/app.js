@@ -1,878 +1,906 @@
-(() => {
-  const DATA_URL = './data/occupations.json';
-  const STORAGE_KEYS = {
-    recent: 'occupation-explorer:recent',
-    favorites: 'occupation-explorer:favorites',
-    theme: 'occupation-explorer:theme',
-    compare: 'occupation-explorer:compare'
-  };
+const state = {
+  occupations: [],
+  filtered: [],
+  selected: null,
+  compare: [],
+  favorites: loadLocal('occupation-favorites', []),
+  recent: loadLocal('occupation-recent', []),
+  theme: loadLocal('occupation-theme', 'dark'),
+  filters: {
+    risk: 'All',
+    speed: 'All',
+    confidence: 'All',
+  },
+  query: '',
+  suggestionIndex: -1,
+};
 
-  const SCORE_FIELDS = [
-    { key: 'old_frey_osborne_style_score', label: 'Old Frey/Osborne score' },
-    { key: 'theoretical_ai_coverage', label: 'Theoretical AI coverage' },
-    { key: 'observed_ai_coverage', label: 'Observed AI coverage' },
-    { key: 'probability_of_computerisation', label: 'Probability of computerisation' },
-    { key: 'speed_of_replacement_score', label: 'Replacement speed' }
-  ];
+const SCORE_FIELDS = [
+  { key: 'old_frey_osborne_style_score', label: 'Old Frey/Osborne score' },
+  { key: 'theoretical_ai_coverage', label: 'Theoretical AI coverage' },
+  { key: 'observed_ai_coverage', label: 'Observed AI coverage' },
+  { key: 'probability_of_computerisation', label: 'Automation risk' },
+  { key: 'speed_of_replacement_score', label: 'Replacement speed' },
+];
 
-  const state = {
-    occupations: [],
-    filtered: [],
-    searchValue: '',
-    suggestions: [],
-    activeSuggestion: -1,
-    filters: {
-      risk_band: 'All',
-      speed_category: 'All',
-      confidence: 'All'
-    },
-    sortBy: 'probability_of_computerisation',
-    sortDir: 'desc',
-    currentSlug: null,
-    recent: readStorage(STORAGE_KEYS.recent, []),
-    favorites: readStorage(STORAGE_KEYS.favorites, []),
-    compare: readStorage(STORAGE_KEYS.compare, [])
-  };
+const els = {};
 
-  const app = document.getElementById('app');
-  const themeToggle = document.getElementById('themeToggle');
-  const sharePageButton = document.getElementById('sharePageButton');
+document.addEventListener('DOMContentLoaded', init);
 
-  boot();
+async function init() {
+  cacheElements();
+  bindEvents();
+  applyTheme(state.theme);
+  renderShellLoading();
 
-  async function boot() {
-    applyTheme(readStorage(STORAGE_KEYS.theme, detectPreferredTheme()));
-    renderSkeleton();
-    wireGlobalEvents();
+  try {
+    state.occupations = await loadOccupations();
+    state.filtered = [...state.occupations];
 
-    try {
-      const raw = await fetch(DATA_URL).then((r) => {
-        if (!r.ok) throw new Error(`Failed to load dataset (${r.status})`);
-        return r.json();
-      });
+    populateFilterOptions();
+    renderFeatured();
+    applyFiltersAndRender();
+    restoreRoute();
+  } catch (error) {
+    console.error(error);
+    renderFatalError(error);
+  }
+}
 
-      state.occupations = raw.map((item, index) => normalizeOccupation(item, index));
-      state.filtered = [...state.occupations];
-      route();
-    } catch (error) {
-      renderError(error);
-    }
+function cacheElements() {
+  els.app = document.getElementById('app');
+  els.search = document.getElementById('searchInput');
+  els.clearSearch = document.getElementById('clearSearch');
+  els.suggestions = document.getElementById('suggestions');
+  els.resultsMeta = document.getElementById('resultsMeta');
+  els.resultsList = document.getElementById('resultsList');
+  els.detail = document.getElementById('detailView');
+  els.featured = document.getElementById('featuredOccupations');
+  els.riskFilters = document.getElementById('riskFilters');
+  els.speedFilters = document.getElementById('speedFilters');
+  els.confidenceFilter = document.getElementById('confidenceFilter');
+  els.themeToggle = document.getElementById('themeToggle');
+  els.recent = document.getElementById('recentSearches');
+  els.compare = document.getElementById('comparePanel');
+  els.empty = document.getElementById('emptyState');
+}
+
+function bindEvents() {
+  if (els.search) {
+    els.search.addEventListener('input', onSearchInput);
+    els.search.addEventListener('keydown', onSearchKeyDown);
   }
 
-  function wireGlobalEvents() {
-    window.addEventListener('hashchange', route);
-    themeToggle.addEventListener('click', () => {
+  if (els.clearSearch) {
+    els.clearSearch.addEventListener('click', () => {
+      state.query = '';
+      state.suggestionIndex = -1;
+      els.search.value = '';
+      renderSuggestions([]);
+      applyFiltersAndRender();
+      updateHashFromSelection(state.selected);
+    });
+  }
+
+  if (els.themeToggle) {
+    els.themeToggle.addEventListener('click', () => {
       const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
       applyTheme(next);
-      writeStorage(STORAGE_KEYS.theme, next);
-    });
-
-    sharePageButton.addEventListener('click', async () => {
-      const url = location.href;
-      try {
-        if (navigator.share) {
-          await navigator.share({ title: document.title, url });
-        } else {
-          await navigator.clipboard.writeText(url);
-          pulseButton(sharePageButton, 'Copied');
-        }
-      } catch (_) {}
     });
   }
 
-  function route() {
-    const hash = location.hash || '#/';
-    const [_, routeName, routeParam] = hash.split('/');
+  window.addEventListener('hashchange', restoreRoute);
+}
 
-    if (routeName === 'occupation' && routeParam) {
-      state.currentSlug = decodeURIComponent(routeParam);
-      renderDetailView();
-      return;
-    }
-
-    if (routeName === 'compare') {
-      renderCompareView();
-      return;
-    }
-
-    state.currentSlug = null;
-    renderHomeView();
+async function loadOccupations() {
+  const response = await fetch('./data/occupations.json');
+  if (!response.ok) {
+    throw new Error(`Failed to load dataset: ${response.status}`);
   }
 
-  function renderSkeleton() {
-    const template = document.getElementById('skeletonTemplate');
-    app.innerHTML = '';
-    app.appendChild(template.content.cloneNode(true));
+  const raw = await response.json();
+  const rows = extractRows(raw);
+
+  return rows.map((record, index) => normalizeOccupation(record, index));
+}
+
+function extractRows(raw) {
+  if (Array.isArray(raw)) {
+    return raw;
   }
 
-  function renderError(error) {
-    app.innerHTML = `
-      <section class="panel empty-state fade-in">
-        <h2>Dataset failed to load</h2>
-        <p class="empty-copy">${escapeHtml(error.message || 'Unknown error')}</p>
-        <p class="footer-note">Expected file: <code>${DATA_URL}</code></p>
-      </section>
-    `;
+  if (
+    raw &&
+    typeof raw === 'object' &&
+    raw.sheets &&
+    raw.sheets['Scored Occupations'] &&
+    Array.isArray(raw.sheets['Scored Occupations'].rows)
+  ) {
+    return raw.sheets['Scored Occupations'].rows;
   }
 
-  function renderHomeView() {
-    applyFiltersAndSort();
-
-    const featured = [...state.occupations]
-      .sort((a, b) => (safeNum(b.probability_of_computerisation) || 0) - (safeNum(a.probability_of_computerisation) || 0))
-      .slice(0, 6);
-
-    const recent = state.recent.map(findBySlug).filter(Boolean);
-    const favorites = state.favorites.map(findBySlug).filter(Boolean);
-    const searchResults = state.searchValue.trim()
-      ? getSuggestions(state.searchValue, 30).map((entry) => entry.item)
-      : state.filtered.slice(0, 30);
-
-    app.innerHTML = `
-      <section class="panel hero fade-in">
-        <div class="hero-inner">
-          <div class="eyebrow">Static browser app · local JSON · no backend</div>
-          <h1>Search occupations</h1>
-          <p>Explore automation risk, AI coverage, replacement speed, bottlenecks, and reasoning for each occupation from a local dataset.</p>
-          <div class="search-shell">
-            <div class="search-box">
-              <button class="icon-button" type="button" aria-hidden="true">⌕</button>
-              <input id="searchInput" type="search" placeholder="Accountant, Nurse, Software Engineer…" autocomplete="off" spellcheck="false" />
-              <button id="clearSearchButton" class="ghost-button ${state.searchValue ? '' : 'hidden'}" type="button">Clear</button>
-            </div>
-            <div id="searchDropdown" class="search-dropdown hidden"></div>
-          </div>
-          <div class="hero-actions">
-            <button class="primary-button" type="button" data-nav="#/compare">Compare occupations</button>
-            <span class="helper-copy">${state.occupations.length.toLocaleString()} occupations loaded</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="dashboard-grid fade-in">
-        <aside class="sidebar stack">
-          <section class="panel sidebar-card stack">
-            <div class="section-head">
-              <h2>Filters</h2>
-              <button id="resetFiltersButton" class="ghost-button" type="button">Reset</button>
-            </div>
-            <div class="filters-grid">
-              ${renderFilterSelect('risk_band', ['All', ...uniqueValues('risk_band')], state.filters.risk_band, 'Risk band')}
-              ${renderFilterSelect('speed_category', ['All', ...uniqueValues('speed_category')], state.filters.speed_category, 'Speed category')}
-              ${renderFilterSelect('confidence', ['All', ...uniqueValues('confidence')], state.filters.confidence, 'Confidence')}
-            </div>
-            <div class="filter-row">
-              ${renderFilterChip('sortBy', 'probability_of_computerisation', 'Sort: automation', state.sortBy === 'probability_of_computerisation')}
-              ${renderFilterChip('sortBy', 'speed_of_replacement_score', 'Sort: speed', state.sortBy === 'speed_of_replacement_score')}
-              ${renderFilterChip('sortBy', 'job_title', 'Sort: title', state.sortBy === 'job_title')}
-              ${renderFilterChip('sortDir', state.sortDir === 'desc' ? 'asc' : 'desc', state.sortDir === 'desc' ? 'Descending' : 'Ascending', false)}
-            </div>
-          </section>
-
-          <section class="panel sidebar-card stack">
-            <h3>Browse by risk band</h3>
-            <div class="quick-filters">
-              ${uniqueValues('risk_band').map((value) => `<button class="tag" type="button" data-filter-key="risk_band" data-filter-value="${escapeAttr(value)}">${escapeHtml(value)}</button>`).join('')}
-            </div>
-            <h3>Browse by speed category</h3>
-            <div class="quick-filters">
-              ${uniqueValues('speed_category').map((value) => `<button class="tag" type="button" data-filter-key="speed_category" data-filter-value="${escapeAttr(value)}">${escapeHtml(value)}</button>`).join('')}
-            </div>
-          </section>
-
-          ${recent.length ? `
-            <section class="panel sidebar-card stack">
-              <div class="section-head"><h3>Recent searches</h3><button id="clearRecentButton" class="ghost-button" type="button">Clear</button></div>
-              <div class="stack">${recent.map(renderMiniOccupationLink).join('')}</div>
-            </section>
-          ` : ''}
-
-          ${favorites.length ? `
-            <section class="panel sidebar-card stack">
-              <h3>Favorites</h3>
-              <div class="stack">${favorites.map(renderMiniOccupationLink).join('')}</div>
-            </section>
-          ` : ''}
-        </aside>
-
-        <div class="content-stack">
-          <section class="panel content-card stack">
-            <div class="section-head">
-              <h2>Featured occupations</h2>
-              <span class="muted">Highest automation probability in the dataset</span>
-            </div>
-            <div class="featured-grid">
-              ${featured.map(renderFeaturedCard).join('')}
-            </div>
-          </section>
-
-          <section class="panel content-card stack">
-            <div class="section-head">
-              <h2>All occupations</h2>
-              <span class="muted">${searchResults.length.toLocaleString()} shown</span>
-            </div>
-            ${searchResults.length ? `
-              <div class="table-wrap">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Occupation</th>
-                      <th>Risk</th>
-                      <th>Speed</th>
-                      <th>Automation</th>
-                      <th>Observed AI</th>
-                      <th>Confidence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${searchResults.map(renderTableRow).join('')}
-                  </tbody>
-                </table>
-              </div>
-            ` : `
-              <div class="empty-state">
-                <h3>No results</h3>
-                <p class="empty-copy">Try a different title, remove filters, or browse by risk band.</p>
-              </div>
-            `}
-          </section>
-        </div>
-      </section>
-    `;
-
-    wireHomeView(searchResults);
+  if (raw && typeof raw === 'object' && raw.sheets) {
+    const firstSheet = Object.values(raw.sheets).find(
+      (sheet) => sheet && Array.isArray(sheet.rows)
+    );
+    if (firstSheet) return firstSheet.rows;
   }
 
-  function wireHomeView(searchResults) {
-    const input = document.getElementById('searchInput');
-    const dropdown = document.getElementById('searchDropdown');
-    const clearButton = document.getElementById('clearSearchButton');
+  if (raw && typeof raw === 'object' && Array.isArray(raw.rows)) {
+    return raw.rows;
+  }
 
-    if (input) {
-      input.value = state.searchValue;
-      input.focus({ preventScroll: true });
-      input.addEventListener('input', (event) => {
-        state.searchValue = event.target.value;
-        state.activeSuggestion = -1;
-        state.suggestions = getSuggestions(state.searchValue, 8);
-        renderSearchDropdown(dropdown);
-        renderHomeView();
-      });
+  throw new Error('Dataset format not supported. Expected array or workbook.sheets[*].rows');
+}
 
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'ArrowDown') {
-          event.preventDefault();
-          state.activeSuggestion = Math.min(state.activeSuggestion + 1, state.suggestions.length - 1);
-          renderSearchDropdown(dropdown);
-        } else if (event.key === 'ArrowUp') {
-          event.preventDefault();
-          state.activeSuggestion = Math.max(state.activeSuggestion - 1, 0);
-          renderSearchDropdown(dropdown);
-        } else if (event.key === 'Enter') {
-          event.preventDefault();
-          if (state.suggestions[state.activeSuggestion]) {
-            openOccupation(state.suggestions[state.activeSuggestion].item.slug);
-          } else if (searchResults[0]) {
-            openOccupation(searchResults[0].slug);
-          }
-        } else if (event.key === 'Escape') {
-          dropdown.classList.add('hidden');
-        }
-      });
+function normalizeOccupation(record, index) {
+  const code = cleanString(record['O*NET-SOC Code']) || `occupation-${index}`;
+  const title = cleanString(record.job_title) || `Untitled occupation ${index + 1}`;
+  const slug = `${slugify(title)}-${slugify(code)}`;
 
-      input.addEventListener('focus', () => {
-        state.suggestions = getSuggestions(state.searchValue, 8);
-        renderSearchDropdown(dropdown);
-      });
+  const normalized = {
+    ...record,
+    id: code,
+    slug,
+    'O*NET-SOC Code': code,
+    job_title: title,
+    job_description: cleanString(record.job_description),
+    old_frey_osborne_style_score: normalizeScore(record.old_frey_osborne_style_score),
+    theoretical_ai_coverage: normalizeScore(record.theoretical_ai_coverage),
+    observed_ai_coverage: normalizeScore(record.observed_ai_coverage),
+    probability_of_computerisation: normalizeScore(record.probability_of_computerisation),
+    speed_of_replacement_score: normalizeScore(record.speed_of_replacement_score),
+    risk_band: cleanString(record.risk_band),
+    speed_category: cleanString(record.speed_category),
+    key_bottleneck: cleanString(record.key_bottleneck),
+    reasoning_short: cleanString(record.reasoning_short),
+    reasoning_detailed: cleanString(record.reasoning_detailed),
+    confidence: cleanString(record.confidence),
+    assumptions: cleanString(record.assumptions),
+  };
+
+  normalized.searchableText = [
+    normalized.job_title,
+    normalized.job_description,
+    normalized.key_bottleneck,
+    normalized.reasoning_short,
+    normalized.reasoning_detailed,
+    normalized.assumptions,
+    normalized['O*NET-SOC Code'],
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return normalized;
+}
+
+function onSearchInput(event) {
+  state.query = event.target.value || '';
+  state.suggestionIndex = -1;
+  const suggestions = getSuggestions(state.query, 8);
+  renderSuggestions(suggestions);
+  applyFiltersAndRender();
+}
+
+function onSearchKeyDown(event) {
+  const suggestions = getSuggestions(state.query, 8);
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    state.suggestionIndex = Math.min(state.suggestionIndex + 1, suggestions.length - 1);
+    renderSuggestions(suggestions);
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    state.suggestionIndex = Math.max(state.suggestionIndex - 1, 0);
+    renderSuggestions(suggestions);
+  } else if (event.key === 'Enter') {
+    event.preventDefault();
+    const selectedSuggestion =
+      suggestions[state.suggestionIndex] || suggestions[0] || state.filtered[0] || null;
+
+    if (selectedSuggestion) {
+      openOccupation(selectedSuggestion);
+      renderSuggestions([]);
     }
+  } else if (event.key === 'Escape') {
+    renderSuggestions([]);
+  }
+}
 
-    if (clearButton) {
-      clearButton.addEventListener('click', () => {
-        state.searchValue = '';
-        renderHomeView();
-      });
-    }
+function getSuggestions(query, limit = 8) {
+  if (!query.trim()) {
+    return state.occupations.slice(0, limit);
+  }
 
-    renderSearchDropdown(dropdown);
+  return rankOccupations(query, state.occupations).slice(0, limit);
+}
 
-    document.querySelectorAll('[data-open]').forEach((button) => {
-      button.addEventListener('click', () => openOccupation(button.dataset.open));
-    });
+function rankOccupations(query, occupations) {
+  const q = query.trim().toLowerCase();
+  if (!q) return occupations;
 
-    document.querySelectorAll('[data-nav]').forEach((button) => {
-      button.addEventListener('click', () => { location.hash = button.dataset.nav; });
-    });
+  return occupations
+    .map((occupation) => ({
+      occupation,
+      score: searchScore(q, occupation),
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .map((item) => item.occupation);
+}
 
-    document.querySelectorAll('[data-filter-key]').forEach((button) => {
-      button.addEventListener('click', () => {
-        state.filters[button.dataset.filterKey] = button.dataset.filterValue;
-        renderHomeView();
-      });
-    });
+function searchScore(query, occupation) {
+  const title = (occupation.job_title || '').toLowerCase();
+  const desc = (occupation.job_description || '').toLowerCase();
+  const full = occupation.searchableText || '';
 
-    document.querySelectorAll('[data-select-filter]').forEach((select) => {
-      select.addEventListener('change', () => {
-        state.filters[select.dataset.selectFilter] = select.value;
-        renderHomeView();
-      });
-    });
+  if (title === query) return 2000;
+  if (title.startsWith(query)) return 1400 - title.length * 0.1;
+  if (title.includes(query)) return 1000 - title.indexOf(query);
 
-    document.querySelectorAll('[data-sort-by]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const mode = button.dataset.sortBy;
-        const value = button.dataset.sortValue;
-        state[mode] = value;
-        renderHomeView();
-      });
-    });
+  const titleWords = title.split(/\s+/);
+  const queryWords = query.split(/\s+/);
+  let wordScore = 0;
 
-    const resetFiltersButton = document.getElementById('resetFiltersButton');
-    if (resetFiltersButton) {
-      resetFiltersButton.addEventListener('click', () => {
-        state.filters = { risk_band: 'All', speed_category: 'All', confidence: 'All' };
-        state.sortBy = 'probability_of_computerisation';
-        state.sortDir = 'desc';
-        renderHomeView();
-      });
-    }
-
-    const clearRecentButton = document.getElementById('clearRecentButton');
-    if (clearRecentButton) {
-      clearRecentButton.addEventListener('click', () => {
-        state.recent = [];
-        writeStorage(STORAGE_KEYS.recent, []);
-        renderHomeView();
-      });
+  for (const qw of queryWords) {
+    for (const tw of titleWords) {
+      if (tw === qw) wordScore += 180;
+      else if (tw.startsWith(qw)) wordScore += 120;
+      else if (levenshtein(qw, tw) <= 1) wordScore += 70;
+      else if (levenshtein(qw, tw) === 2 && qw.length > 4) wordScore += 35;
     }
   }
 
-  function renderSearchDropdown(dropdown) {
-    if (!dropdown) return;
-    const show = document.activeElement && document.activeElement.id === 'searchInput' && state.suggestions.length > 0;
-    dropdown.innerHTML = show
-      ? state.suggestions.map((entry, index) => `
-          <button class="dropdown-item ${index === state.activeSuggestion ? 'active' : ''}" type="button" data-open="${escapeAttr(entry.item.slug)}">
-            <strong>${escapeHtml(entry.item.job_title)}</strong>
-            <small>${escapeHtml(entry.item['O*NET-SOC Code'] || 'No code')} · ${escapeHtml(entry.item.risk_band || 'Unknown')} risk · ${asPercent(entry.item.probability_of_computerisation)}</small>
-          </button>
-        `).join('')
-      : '';
-    dropdown.classList.toggle('hidden', !show);
-    dropdown.querySelectorAll('[data-open]').forEach((button) => {
-      button.addEventListener('click', () => openOccupation(button.dataset.open));
-    });
+  let textScore = 0;
+  if (desc.includes(query)) textScore += 120;
+  if (full.includes(query)) textScore += 80;
+
+  return wordScore + textScore;
+}
+
+function applyFiltersAndRender() {
+  let results = state.query.trim()
+    ? rankOccupations(state.query, state.occupations)
+    : [...state.occupations];
+
+  results = results.filter((occupation) => {
+    const matchesRisk =
+      state.filters.risk === 'All' || (occupation.risk_band || 'Unknown') === state.filters.risk;
+    const matchesSpeed =
+      state.filters.speed === 'All' ||
+      (occupation.speed_category || 'Unknown') === state.filters.speed;
+    const matchesConfidence =
+      state.filters.confidence === 'All' ||
+      (occupation.confidence || 'Unknown') === state.filters.confidence;
+
+    return matchesRisk && matchesSpeed && matchesConfidence;
+  });
+
+  state.filtered = results;
+  renderResults(results);
+  renderRecent();
+  renderCompare();
+  renderEmptyState(results);
+
+  if (!state.selected && results.length > 0) {
+    selectOccupation(results[0], false);
+  }
+}
+
+function renderSuggestions(items) {
+  if (!els.suggestions) return;
+  if (!items.length || !state.query.trim()) {
+    els.suggestions.innerHTML = '';
+    els.suggestions.hidden = true;
+    return;
   }
 
-  function renderDetailView() {
-    const occupation = findBySlug(state.currentSlug);
-    if (!occupation) {
-      app.innerHTML = `
-        <section class="panel empty-state fade-in">
-          <h2>Occupation not found</h2>
-          <p class="empty-copy">The URL slug does not match any occupation in the local dataset.</p>
-          <a class="primary-button" href="#/">Back to search</a>
-        </section>
+  els.suggestions.hidden = false;
+  els.suggestions.innerHTML = items
+    .map((item, index) => {
+      const active = index === state.suggestionIndex ? 'is-active' : '';
+      return `
+        <button class="suggestion-item ${active}" data-slug="${escapeHtml(item.slug)}" type="button">
+          <span class="suggestion-title">${escapeHtml(item.job_title || 'Untitled')}</span>
+          <span class="suggestion-meta">${escapeHtml(item.risk_band || 'Unknown')} · ${formatPercent(item.probability_of_computerisation)}</span>
+        </button>
       `;
-      return;
-    }
+    })
+    .join('');
 
-    rememberOccupation(occupation.slug);
-    const percentile = percentileRank('probability_of_computerisation', occupation.probability_of_computerisation);
-    const compareActive = state.compare.includes(occupation.slug);
-    const favoriteActive = state.favorites.includes(occupation.slug);
+  els.suggestions.querySelectorAll('.suggestion-item').forEach((button) => {
+    button.addEventListener('click', () => {
+      const occupation = state.occupations.find((o) => o.slug === button.dataset.slug);
+      if (occupation) {
+        openOccupation(occupation);
+        renderSuggestions([]);
+      }
+    });
+  });
+}
 
-    app.innerHTML = `
-      <section class="panel content-card fade-in stack">
-        <div class="detail-header">
-          <a class="muted" href="#/">← Back to search</a>
-          <div class="profile-header">
-            <h1 class="occupation-title">${escapeHtml(occupation.job_title)}</h1>
-            <div class="tag-row">
-              ${pill(occupation.risk_band, 'risk')}
-              ${pill(occupation.speed_category, 'speed')}
-              ${pill(occupation.confidence, 'conf')}
-              <span class="tag">${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</span>
+function renderResults(results) {
+  if (!els.resultsList) return;
+
+  if (!results.length) {
+    els.resultsList.innerHTML = '';
+    if (els.resultsMeta) els.resultsMeta.textContent = 'No occupations found';
+    return;
+  }
+
+  if (els.resultsMeta) {
+    els.resultsMeta.textContent = `${results.length} occupation${results.length === 1 ? '' : 's'}`;
+  }
+
+  els.resultsList.innerHTML = results
+    .slice(0, 100)
+    .map((occupation) => {
+      const active = state.selected?.slug === occupation.slug ? 'is-selected' : '';
+      const favorite = state.favorites.includes(occupation.slug) ? 'is-favorite' : '';
+      return `
+        <article class="result-card ${active}" data-slug="${escapeHtml(occupation.slug)}">
+          <div class="result-card__top">
+            <div>
+              <h3>${escapeHtml(occupation.job_title || 'Untitled')}</h3>
+              <p>${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</p>
             </div>
-            <p class="muted">${escapeHtml(occupation.job_description || 'No description available.')}</p>
-            <div class="inline-actions">
-              <button id="favoriteButton" class="favorite-chip ${favoriteActive ? 'active' : ''}" type="button">${favoriteActive ? 'Favorited' : 'Favorite'}</button>
-              <button id="compareButton" class="compare-chip ${compareActive ? 'active' : ''}" type="button">${compareActive ? 'In compare' : 'Add to compare'}</button>
-              <button id="copyLinkButton" class="ghost-button" type="button">Copy link</button>
-              <button id="printViewButton" class="ghost-button" type="button">Export / print</button>
+            <button class="icon-button favorite-toggle ${favorite}" data-favorite="${escapeHtml(occupation.slug)}" type="button" aria-label="Toggle favorite">★</button>
+          </div>
+          <div class="pill-row">
+            ${pill(occupation.risk_band || 'Unknown')}
+            ${pill(occupation.speed_category || 'Unknown')}
+            ${pill(occupation.confidence || 'Unknown')}
+          </div>
+          <div class="score-row">
+            <div>
+              <span>Automation risk</span>
+              <strong>${formatPercent(occupation.probability_of_computerisation)}</strong>
+            </div>
+            <div>
+              <span>Replacement speed</span>
+              <strong>${formatPercent(occupation.speed_of_replacement_score)}</strong>
             </div>
           </div>
-        </div>
+        </article>
+      `;
+    })
+    .join('');
 
-        <div class="profile-grid">
-          <article class="profile-card main stack">
-            <div class="section-head"><h2>Score overview</h2><span class="muted">All scores normalized from 0.00 to 1.00</span></div>
-            <div class="metrics-grid">
-              ${SCORE_FIELDS.map((field, index) => renderMetricCard(occupation, field, index)).join('')}
-            </div>
-            <div class="benchmark-card stack">
-              <h3>Score benchmark</h3>
-              <div class="benchmark-grid">
-                ${SCORE_FIELDS.map((field) => renderScoreBar(occupation, field)).join('')}
-              </div>
-            </div>
-          </article>
-
-          <aside class="profile-card side stack">
-            <div class="section-head"><h2>Distribution context</h2><span class="muted">Relative position in dataset</span></div>
-            <div class="radial-wrap">
-              <div class="radial" style="--value:${percentile / 100}">
-                <div class="stack" style="justify-items:center; gap:2px;">
-                  <strong>${percentile}</strong>
-                  <span>percentile</span>
-                </div>
-              </div>
-            </div>
-            <div class="score-row">
-              <div class="score-head"><span class="score-label">Automation risk percentile</span><span>${percentile}%</span></div>
-              <div class="progress-track"><div class="progress-fill" style="width:${percentile}%"></div></div>
-            </div>
-            <div class="stat-row"><span class="muted">Core bottleneck</span><strong>${escapeHtml(occupation.key_bottleneck || 'Unknown')}</strong></div>
-            <div class="stat-row"><span class="muted">Assumptions</span><strong>${escapeHtml(occupation.assumptions || 'None provided')}</strong></div>
-          </aside>
-        </div>
-
-        <div class="reasoning-grid">
-          <section class="panel content-card stack">
-            <h2>Why this score?</h2>
-            <div class="score-row">
-              <span class="muted-label">Short reasoning</span>
-              <div>${formatParagraphs(occupation.reasoning_short || 'No short reasoning available.')}</div>
-            </div>
-            <div class="score-row">
-              <span class="muted-label">Detailed reasoning</span>
-              <div>${formatBulletish(occupation.reasoning_detailed || 'No detailed reasoning available.')}</div>
-            </div>
-          </section>
-        </div>
-      </section>
-    `;
-
-    document.getElementById('favoriteButton')?.addEventListener('click', () => {
-      toggleStoredSlug('favorites', occupation.slug);
-      renderDetailView();
+  els.resultsList.querySelectorAll('.result-card').forEach((card) => {
+    card.addEventListener('click', (event) => {
+      const favoriteButton = event.target.closest('.favorite-toggle');
+      if (favoriteButton) return;
+      const occupation = state.occupations.find((o) => o.slug === card.dataset.slug);
+      if (occupation) openOccupation(occupation);
     });
+  });
 
-    document.getElementById('compareButton')?.addEventListener('click', () => {
-      toggleCompare(occupation.slug);
-      renderDetailView();
+  els.resultsList.querySelectorAll('.favorite-toggle').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      toggleFavorite(button.dataset.favorite);
     });
+  });
+}
 
-    document.getElementById('copyLinkButton')?.addEventListener('click', async () => {
+function openOccupation(occupation) {
+  state.query = occupation.job_title || '';
+  if (els.search) els.search.value = state.query;
+  rememberRecent(occupation.slug);
+  selectOccupation(occupation, true);
+  renderSuggestions([]);
+}
+
+function selectOccupation(occupation, updateHash = true) {
+  state.selected = occupation;
+  renderResults(state.filtered);
+  renderDetail(occupation);
+  if (updateHash) {
+    location.hash = `#/occupation/${encodeURIComponent(occupation.slug)}`;
+  }
+}
+
+function renderDetail(occupation) {
+  if (!els.detail || !occupation) return;
+
+  const comparisonRank = getPercentile(
+    occupation.probability_of_computerisation,
+    state.occupations.map((item) => item.probability_of_computerisation)
+  );
+
+  const scoreCards = SCORE_FIELDS.map(
+    (field) => `
+      <div class="score-card">
+        <div class="score-card__header">
+          <span>${escapeHtml(field.label)}</span>
+          <strong>${formatPercent(occupation[field.key])}</strong>
+        </div>
+        <div class="progress">
+          <div class="progress__bar" style="width:${clamp01(occupation[field.key]) * 100}%"></div>
+        </div>
+        <div class="score-card__foot">${formatDecimal(occupation[field.key])}</div>
+      </div>
+    `
+  ).join('');
+
+  const benchmarkRows = SCORE_FIELDS.map(
+    (field) => `
+      <div class="benchmark-row">
+        <div class="benchmark-row__label">${escapeHtml(field.label)}</div>
+        <div class="benchmark-row__track">
+          <div class="benchmark-row__fill" style="width:${clamp01(occupation[field.key]) * 100}%"></div>
+        </div>
+        <div class="benchmark-row__value">${formatPercent(occupation[field.key])}</div>
+      </div>
+    `
+  ).join('');
+
+  const radial = radialMeter(
+    occupation.probability_of_computerisation,
+    occupation.risk_band || 'Unknown'
+  );
+
+  const isFavorite = state.favorites.includes(occupation.slug);
+  const compareIncluded = state.compare.includes(occupation.slug);
+
+  els.detail.innerHTML = `
+    <section class="detail-card">
+      <div class="detail-hero">
+        <div class="detail-hero__main">
+          <div class="pill-row">
+            ${pill(occupation.risk_band || 'Unknown')}
+            ${pill(occupation.speed_category || 'Unknown')}
+            ${pill(occupation.confidence || 'Unknown')}
+          </div>
+          <h1>${escapeHtml(occupation.job_title || 'Untitled')}</h1>
+          <p class="detail-code">${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</p>
+          <p class="detail-description">${escapeHtml(occupation.job_description || 'No description available.')}</p>
+          <div class="detail-actions">
+            <button class="button" id="shareButton" type="button">Copy link</button>
+            <button class="button" id="favoriteButton" type="button">${isFavorite ? 'Remove favorite' : 'Save favorite'}</button>
+            <button class="button" id="compareButton" type="button">${compareIncluded ? 'Remove from compare' : 'Add to compare'}</button>
+          </div>
+        </div>
+        <div class="detail-hero__side">
+          ${radial}
+          <div class="context-card">
+            <span>Dataset position</span>
+            <strong>Higher than ${comparisonRank}% of occupations</strong>
+            <small>Based on automation risk score.</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="detail-section">
+          <h2>Scores</h2>
+          <div class="score-grid">${scoreCards}</div>
+        </div>
+
+        <div class="detail-section">
+          <h2>Score benchmark</h2>
+          <div class="benchmark-chart">${benchmarkRows}</div>
+        </div>
+
+        <div class="detail-section">
+          <h2>Why this score?</h2>
+          <div class="info-list">
+            ${infoRow('Core bottleneck', occupation.key_bottleneck)}
+            ${infoRow('Short reasoning', occupation.reasoning_short)}
+            ${infoRow('Detailed reasoning', formatMultiline(occupation.reasoning_detailed))}
+            ${infoRow('Assumptions', formatMultiline(occupation.assumptions))}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+
+  const shareButton = document.getElementById('shareButton');
+  const favoriteButton = document.getElementById('favoriteButton');
+  const compareButton = document.getElementById('compareButton');
+
+  if (shareButton) {
+    shareButton.addEventListener('click', async () => {
+      const url = new URL(location.href);
+      url.hash = `#/occupation/${occupation.slug}`;
       try {
-        await navigator.clipboard.writeText(location.href);
-        pulseButton(document.getElementById('copyLinkButton'), 'Copied');
-      } catch (_) {}
+        await navigator.clipboard.writeText(url.toString());
+        shareButton.textContent = 'Copied';
+        setTimeout(() => {
+          shareButton.textContent = 'Copy link';
+        }, 1200);
+      } catch {
+        shareButton.textContent = 'Copy failed';
+        setTimeout(() => {
+          shareButton.textContent = 'Copy link';
+        }, 1200);
+      }
     });
-
-    document.getElementById('printViewButton')?.addEventListener('click', () => window.print());
   }
 
-  function renderCompareView() {
-    const items = state.compare.map(findBySlug).filter(Boolean).slice(0, 2);
-    app.innerHTML = `
-      <section class="panel content-card fade-in stack">
-        <div class="compare-header">
-          <a class="muted" href="#/">← Back to search</a>
-          <h2>Compare occupations</h2>
-          <p class="muted">Pick up to two occupations. Comparison is stored locally in your browser.</p>
-          <div class="compare-meta">
-            <button id="clearCompareButton" class="ghost-button" type="button">Clear compare</button>
+  if (favoriteButton) {
+    favoriteButton.addEventListener('click', () => toggleFavorite(occupation.slug));
+  }
+
+  if (compareButton) {
+    compareButton.addEventListener('click', () => toggleCompare(occupation.slug));
+  }
+}
+
+function renderFeatured() {
+  if (!els.featured) return;
+
+  const featured = [...state.occupations]
+    .sort((a, b) => b.probability_of_computerisation - a.probability_of_computerisation)
+    .slice(0, 6);
+
+  els.featured.innerHTML = featured
+    .map(
+      (occupation) => `
+      <button class="featured-card" type="button" data-slug="${escapeHtml(occupation.slug)}">
+        <span class="featured-card__eyebrow">${escapeHtml(occupation.risk_band || 'Unknown')}</span>
+        <strong>${escapeHtml(occupation.job_title || 'Untitled')}</strong>
+        <small>${formatPercent(occupation.probability_of_computerisation)} automation risk</small>
+      </button>
+    `
+    )
+    .join('');
+
+  els.featured.querySelectorAll('.featured-card').forEach((button) => {
+    button.addEventListener('click', () => {
+      const occupation = state.occupations.find((o) => o.slug === button.dataset.slug);
+      if (occupation) openOccupation(occupation);
+    });
+  });
+}
+
+function populateFilterOptions() {
+  populateButtonFilter(
+    els.riskFilters,
+    ['All', ...uniqueValues(state.occupations.map((item) => item.risk_band || 'Unknown'))],
+    'risk'
+  );
+
+  populateButtonFilter(
+    els.speedFilters,
+    ['All', ...uniqueValues(state.occupations.map((item) => item.speed_category || 'Unknown'))],
+    'speed'
+  );
+
+  if (els.confidenceFilter) {
+    const options = ['All', ...uniqueValues(state.occupations.map((item) => item.confidence || 'Unknown'))];
+    els.confidenceFilter.innerHTML = options
+      .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
+      .join('');
+
+    els.confidenceFilter.value = state.filters.confidence;
+    els.confidenceFilter.addEventListener('change', (event) => {
+      state.filters.confidence = event.target.value;
+      applyFiltersAndRender();
+    });
+  }
+}
+
+function populateButtonFilter(container, values, filterKey) {
+  if (!container) return;
+
+  container.innerHTML = values
+    .map((value) => {
+      const active = state.filters[filterKey] === value ? 'is-active' : '';
+      return `<button class="filter-pill ${active}" type="button" data-filter-key="${filterKey}" data-value="${escapeHtml(value)}">${escapeHtml(value)}</button>`;
+    })
+    .join('');
+
+  container.querySelectorAll('.filter-pill').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.filters[filterKey] = button.dataset.value;
+      populateFilterOptions();
+      applyFiltersAndRender();
+    });
+  });
+}
+
+function renderRecent() {
+  if (!els.recent) return;
+  const recentOccupations = state.recent
+    .map((slug) => state.occupations.find((item) => item.slug === slug))
+    .filter(Boolean)
+    .slice(0, 6);
+
+  if (!recentOccupations.length) {
+    els.recent.innerHTML = `<p class="muted">No recent searches yet.</p>`;
+    return;
+  }
+
+  els.recent.innerHTML = recentOccupations
+    .map(
+      (occupation) => `
+      <button class="recent-item" type="button" data-slug="${escapeHtml(occupation.slug)}">
+        <span>${escapeHtml(occupation.job_title || 'Untitled')}</span>
+        <small>${formatPercent(occupation.probability_of_computerisation)}</small>
+      </button>
+    `
+    )
+    .join('');
+
+  els.recent.querySelectorAll('.recent-item').forEach((button) => {
+    button.addEventListener('click', () => {
+      const occupation = state.occupations.find((item) => item.slug === button.dataset.slug);
+      if (occupation) openOccupation(occupation);
+    });
+  });
+}
+
+function toggleFavorite(slug) {
+  if (!slug) return;
+  const exists = state.favorites.includes(slug);
+
+  state.favorites = exists
+    ? state.favorites.filter((item) => item !== slug)
+    : [...state.favorites, slug];
+
+  saveLocal('occupation-favorites', state.favorites);
+  renderResults(state.filtered);
+  if (state.selected) renderDetail(state.selected);
+}
+
+function toggleCompare(slug) {
+  if (!slug) return;
+  const exists = state.compare.includes(slug);
+
+  if (exists) {
+    state.compare = state.compare.filter((item) => item !== slug);
+  } else {
+    state.compare = [...state.compare, slug].slice(0, 2);
+  }
+
+  renderCompare();
+  if (state.selected) renderDetail(state.selected);
+}
+
+function renderCompare() {
+  if (!els.compare) return;
+
+  const items = state.compare
+    .map((slug) => state.occupations.find((item) => item.slug === slug))
+    .filter(Boolean);
+
+  if (!items.length) {
+    els.compare.innerHTML = `<p class="muted">Add up to two occupations to compare.</p>`;
+    return;
+  }
+
+  els.compare.innerHTML = `
+    <div class="compare-grid">
+      ${items
+        .map(
+          (occupation) => `
+          <div class="compare-card">
+            <div class="compare-card__top">
+              <strong>${escapeHtml(occupation.job_title || 'Untitled')}</strong>
+              <button class="icon-button compare-remove" data-slug="${escapeHtml(occupation.slug)}" type="button">×</button>
+            </div>
+            ${SCORE_FIELDS.map(
+              (field) => `
+              <div class="compare-row">
+                <span>${escapeHtml(field.label)}</span>
+                <strong>${formatPercent(occupation[field.key])}</strong>
+              </div>
+            `
+            ).join('')}
           </div>
-        </div>
-        ${items.length ? `
-          <div class="compare-grid">
-            ${items.map(renderCompareCard).join('')}
-          </div>
-        ` : `
-          <div class="empty-state">
-            <h3>No occupations selected</h3>
-            <p class="empty-copy">Open any occupation and click “Add to compare”.</p>
-          </div>
-        `}
+        `
+        )
+        .join('')}
+    </div>
+  `;
+
+  els.compare.querySelectorAll('.compare-remove').forEach((button) => {
+    button.addEventListener('click', () => toggleCompare(button.dataset.slug));
+  });
+}
+
+function renderEmptyState(results) {
+  if (!els.empty) return;
+  els.empty.hidden = results.length > 0;
+}
+
+function restoreRoute() {
+  const hash = location.hash || '';
+  const match = hash.match(/^#\/occupation\/(.+)$/);
+
+  if (!match) {
+    if (!state.selected && state.filtered.length) {
+      selectOccupation(state.filtered[0], false);
+    }
+    return;
+  }
+
+  const slug = decodeURIComponent(match[1]);
+  const occupation = state.occupations.find((item) => item.slug === slug);
+
+  if (occupation) {
+    state.selected = occupation;
+    renderDetail(occupation);
+    renderResults(state.filtered);
+  }
+}
+
+function updateHashFromSelection(selected) {
+  if (!selected) {
+    history.replaceState(null, '', location.pathname + location.search);
+    return;
+  }
+  location.hash = `#/occupation/${encodeURIComponent(selected.slug)}`;
+}
+
+function renderShellLoading() {
+  if (els.detail) {
+    els.detail.innerHTML = `
+      <section class="detail-card skeleton">
+        <div class="skeleton-line lg"></div>
+        <div class="skeleton-line md"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line"></div>
       </section>
     `;
-
-    document.getElementById('clearCompareButton')?.addEventListener('click', () => {
-      state.compare = [];
-      writeStorage(STORAGE_KEYS.compare, state.compare);
-      renderCompareView();
-    });
-
-    document.querySelectorAll('[data-open]').forEach((button) => {
-      button.addEventListener('click', () => openOccupation(button.dataset.open));
-    });
   }
+}
 
-  function renderCompareCard(occupation) {
-    return `
-      <article class="compare-card stack">
-        <div class="compare-header">
-          <h3>${escapeHtml(occupation.job_title)}</h3>
-          <div class="tag-row">
-            ${pill(occupation.risk_band, 'risk')}
-            ${pill(occupation.speed_category, 'speed')}
-          </div>
-          <p class="muted">${escapeHtml(occupation.job_description || 'No description available.')}</p>
-        </div>
-        <div class="score-bars">
-          ${SCORE_FIELDS.map((field) => renderScoreBar(occupation, field)).join('')}
-        </div>
-        <div class="inline-actions">
-          <button class="ghost-button" type="button" data-open="${escapeAttr(occupation.slug)}">Open profile</button>
-        </div>
-      </article>
-    `;
+function renderFatalError(error) {
+  if (!els.detail) return;
+  els.detail.innerHTML = `
+    <section class="detail-card">
+      <h2>Failed to load dataset</h2>
+      <p>${escapeHtml(error?.message || 'Unknown error')}</p>
+      <p>Check that <code>./data/occupations.json</code> exists and is valid JSON.</p>
+    </section>
+  `;
+}
+
+function applyTheme(theme) {
+  const next = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  state.theme = next;
+  saveLocal('occupation-theme', next);
+  if (els.themeToggle) {
+    els.themeToggle.textContent = next === 'light' ? 'Dark mode' : 'Light mode';
   }
+}
 
-  function renderMetricCard(occupation, field, index) {
-    const value = safeNum(occupation[field.key]);
-    return `
-      <div class="metric-card stack">
-        <div class="score-head">
-          <span class="metric-title">${escapeHtml(field.label)}</span>
-          <span class="muted">${value == null ? '—' : value.toFixed(2)}</span>
-        </div>
-        <div class="radial-wrap">
-          <div class="radial" style="--value:${Math.max(0, Math.min(1, value ?? 0))}">
-            <div class="stack" style="justify-items:center; gap:2px;">
-              <strong>${value == null ? '—' : Math.round(value * 100)}</strong>
-              <span>${value == null ? '' : '%'}</span>
-            </div>
-          </div>
-        </div>
-        <div class="score-row">
-          <div class="score-head">
-            <span class="score-label">${escapeHtml(field.label)}</span>
-            <span>${asPercent(value)}</span>
-          </div>
-          <div class="progress-track"><div class="progress-fill" style="width:${(value ?? 0) * 100}%"></div></div>
+function rememberRecent(slug) {
+  state.recent = [slug, ...state.recent.filter((item) => item !== slug)].slice(0, 8);
+  saveLocal('occupation-recent', state.recent);
+}
+
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
+}
+
+function normalizeScore(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return clamp01(num);
+}
+
+function clamp01(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return 0;
+  return Math.max(0, Math.min(1, num));
+}
+
+function formatPercent(value) {
+  return `${Math.round(clamp01(value) * 100)}%`;
+}
+
+function formatDecimal(value) {
+  return clamp01(value).toFixed(2);
+}
+
+function cleanString(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function pill(value) {
+  return `<span class="pill">${escapeHtml(value)}</span>`;
+}
+
+function infoRow(label, value) {
+  return `
+    <div class="info-row">
+      <div class="info-row__label">${escapeHtml(label)}</div>
+      <div class="info-row__value">${value ? value : '<span class="muted">Not available</span>'}</div>
+    </div>
+  `;
+}
+
+function formatMultiline(text) {
+  if (!text) return '';
+  return escapeHtml(text).replace(/\n/g, '<br>');
+}
+
+function radialMeter(value, label) {
+  const pct = clamp01(value);
+  const angle = pct * 360;
+  return `
+    <div class="radial-wrap">
+      <div class="radial" style="--angle:${angle}deg;">
+        <div class="radial__inner">
+          <strong>${formatPercent(pct)}</strong>
+          <span>${escapeHtml(label)}</span>
         </div>
       </div>
-    `;
+    </div>
+  `;
+}
+
+function getPercentile(value, values) {
+  const valid = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  if (!valid.length) return 0;
+  const count = valid.filter((v) => v <= value).length;
+  return Math.round((count / valid.length) * 100);
+}
+
+function loadLocal(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveLocal(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function levenshtein(a, b) {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
   }
 
-  function renderScoreBar(occupation, field) {
-    const value = safeNum(occupation[field.key]);
-    return `
-      <div class="score-row">
-        <div class="score-head">
-          <span class="score-label">${escapeHtml(field.label)}</span>
-          <strong>${value == null ? '—' : `${value.toFixed(2)} · ${Math.round(value * 100)}%`}</strong>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${(value ?? 0) * 100}%"></div></div>
-      </div>
-    `;
-  }
-
-  function renderFeaturedCard(occupation) {
-    return `
-      <article class="featured-card stack">
-        <div class="list-card-header">
-          <h3>${escapeHtml(occupation.job_title)}</h3>
-          <div class="tag-row">
-            ${pill(occupation.risk_band, 'risk')}
-            ${pill(occupation.speed_category, 'speed')}
-          </div>
-        </div>
-        <div class="score-row">
-          <div class="score-head"><span class="score-label">Automation risk</span><span>${asPercent(occupation.probability_of_computerisation)}</span></div>
-          <div class="progress-track"><div class="progress-fill" style="width:${safePct(occupation.probability_of_computerisation)}%"></div></div>
-        </div>
-        <p class="muted">${escapeHtml(shorten(occupation.reasoning_short || occupation.job_description || '', 120))}</p>
-        <div class="inline-actions">
-          <button class="primary-button" type="button" data-open="${escapeAttr(occupation.slug)}">Open</button>
-        </div>
-      </article>
-    `;
-  }
-
-  function renderTableRow(occupation) {
-    return `
-      <tr data-open="${escapeAttr(occupation.slug)}">
-        <td><strong>${escapeHtml(occupation.job_title)}</strong><br /><span class="muted">${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</span></td>
-        <td>${pill(occupation.risk_band, 'risk')}</td>
-        <td>${pill(occupation.speed_category, 'speed')}</td>
-        <td>${asPercent(occupation.probability_of_computerisation)}</td>
-        <td>${asPercent(occupation.observed_ai_coverage)}</td>
-        <td>${escapeHtml(occupation.confidence || 'Unknown')}</td>
-      </tr>
-    `;
-  }
-
-  function renderMiniOccupationLink(occupation) {
-    return `
-      <button class="dropdown-item" type="button" data-open="${escapeAttr(occupation.slug)}">
-        <strong>${escapeHtml(occupation.job_title)}</strong>
-        <small>${escapeHtml(occupation.risk_band || 'Unknown')} risk · ${asPercent(occupation.probability_of_computerisation)}</small>
-      </button>
-    `;
-  }
-
-  function renderFilterSelect(key, values, selected, label) {
-    return `
-      <label class="stack">
-        <span class="muted-label">${escapeHtml(label)}</span>
-        <select data-select-filter="${escapeAttr(key)}">
-          ${values.map((value) => `<option value="${escapeAttr(value)}" ${selected === value ? 'selected' : ''}>${escapeHtml(value)}</option>`).join('')}
-        </select>
-      </label>
-    `;
-  }
-
-  function renderFilterChip(mode, value, label, active) {
-    return `<button class="filter-chip ${active ? 'active' : ''}" type="button" data-sort-by="${escapeAttr(mode)}" data-sort-value="${escapeAttr(value)}">${escapeHtml(label)}</button>`;
-  }
-
-  function applyFiltersAndSort() {
-    state.filtered = state.occupations.filter((item) => {
-      if (state.filters.risk_band !== 'All' && item.risk_band !== state.filters.risk_band) return false;
-      if (state.filters.speed_category !== 'All' && item.speed_category !== state.filters.speed_category) return false;
-      if (state.filters.confidence !== 'All' && item.confidence !== state.filters.confidence) return false;
-      if (!state.searchValue.trim()) return true;
-      return searchScore(item, state.searchValue) > 0;
-    });
-
-    const dir = state.sortDir === 'asc' ? 1 : -1;
-    state.filtered.sort((a, b) => {
-      const left = a[state.sortBy];
-      const right = b[state.sortBy];
-      if (typeof left === 'string' || typeof right === 'string') {
-        return String(left || '').localeCompare(String(right || '')) * dir;
-      }
-      return ((safeNum(left) || 0) - (safeNum(right) || 0)) * dir;
-    });
-  }
-
-  function getSuggestions(query, limit) {
-    const trimmed = query.trim();
-    const results = trimmed
-      ? state.occupations
-          .map((item) => ({ item, score: searchScore(item, trimmed) }))
-          .filter((entry) => entry.score > 0)
-          .sort((a, b) => b.score - a.score)
-      : state.occupations.map((item, index) => ({ item, score: state.occupations.length - index }));
-    return results.slice(0, limit);
-  }
-
-  function searchScore(item, query) {
-    const q = normalizeText(query);
-    if (!q) return 0;
-    const title = item.__titleNormalized;
-    const desc = item.__descriptionNormalized;
-    const blob = item.__searchBlob;
-
-    if (title === q) return 2000;
-    if (title.startsWith(q)) return 1200 - title.length;
-    if (title.includes(q)) return 900 - title.indexOf(q);
-
-    const titleWords = title.split(' ');
-    const queryWords = q.split(' ');
-    let score = 0;
-
-    for (const word of queryWords) {
-      if (titleWords.some((titleWord) => titleWord.startsWith(word))) score += 160;
-      else if (blob.includes(word)) score += 70;
-      else {
-        const fuzzy = bestWordDistance(word, titleWords);
-        if (fuzzy <= 1) score += 60;
-        else if (fuzzy === 2) score += 22;
-      }
-    }
-
-    if (desc.includes(q)) score += 65;
-    if (blob.includes(q)) score += 40;
-    return score;
-  }
-
-  function bestWordDistance(word, words) {
-    let best = Infinity;
-    for (const candidate of words) {
-      if (Math.abs(candidate.length - word.length) > 2) continue;
-      best = Math.min(best, levenshtein(word, candidate));
-      if (best === 0) break;
-    }
-    return best;
-  }
-
-  function levenshtein(a, b) {
-    if (a === b) return 0;
-    const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
-    for (let i = 1; i <= a.length; i++) {
-      let prev = i - 1;
-      dp[0] = i;
-      for (let j = 1; j <= b.length; j++) {
-        const temp = dp[j];
-        dp[j] = Math.min(
-          dp[j] + 1,
-          dp[j - 1] + 1,
-          prev + (a[i - 1] === b[j - 1] ? 0 : 1)
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
         );
-        prev = temp;
       }
     }
-    return dp[b.length];
   }
 
-  function normalizeOccupation(item, index) {
-    const title = item.job_title || `Untitled occupation ${index + 1}`;
-    const code = item['O*NET-SOC Code'] || `occupation-${index + 1}`;
-    const slug = `${slugify(title)}-${slugify(code)}`;
-    const description = item.job_description || '';
-    return {
-      ...item,
-      slug,
-      __titleNormalized: normalizeText(title),
-      __descriptionNormalized: normalizeText(description),
-      __searchBlob: normalizeText([
-        item.job_title,
-        item.job_description,
-        item.reasoning_short,
-        item.reasoning_detailed,
-        item.key_bottleneck,
-        item['O*NET-SOC Code']
-      ].filter(Boolean).join(' '))
-    };
-  }
-
-  function openOccupation(slug) {
-    if (!slug) return;
-    location.hash = `#/occupation/${encodeURIComponent(slug)}`;
-  }
-
-  function findBySlug(slug) {
-    return state.occupations.find((item) => item.slug === slug) || null;
-  }
-
-  function uniqueValues(key) {
-    return [...new Set(state.occupations.map((item) => item[key]).filter(Boolean))].sort();
-  }
-
-  function rememberOccupation(slug) {
-    state.recent = [slug, ...state.recent.filter((item) => item !== slug)].slice(0, 8);
-    writeStorage(STORAGE_KEYS.recent, state.recent);
-  }
-
-  function toggleStoredSlug(type, slug) {
-    const key = type === 'favorites' ? STORAGE_KEYS.favorites : STORAGE_KEYS.recent;
-    const list = type === 'favorites' ? state.favorites : state.recent;
-    const next = list.includes(slug) ? list.filter((item) => item !== slug) : [slug, ...list].slice(0, 24);
-    if (type === 'favorites') state.favorites = next;
-    else state.recent = next;
-    writeStorage(key, next);
-  }
-
-  function toggleCompare(slug) {
-    if (state.compare.includes(slug)) {
-      state.compare = state.compare.filter((item) => item !== slug);
-    } else {
-      state.compare = [...state.compare, slug].slice(-2);
-    }
-    writeStorage(STORAGE_KEYS.compare, state.compare);
-  }
-
-  function percentileRank(field, value) {
-    const values = state.occupations.map((item) => safeNum(item[field])).filter((n) => n != null).sort((a, b) => a - b);
-    if (!values.length || value == null) return 0;
-    let count = 0;
-    for (const item of values) if (item <= value) count += 1;
-    return Math.round((count / values.length) * 100);
-  }
-
-  function applyTheme(theme) {
-    document.documentElement.dataset.theme = theme;
-    themeToggle.textContent = theme === 'light' ? 'Dark' : 'Light';
-  }
-
-  function detectPreferredTheme() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-  }
-
-  function pill(value, kind) {
-    const safe = String(value || 'Unknown');
-    const cls = `${kind}-${normalizeText(safe).replace(/\s+/g, '-')}`;
-    return `<span class="${kind}-pill ${cls}">${escapeHtml(safe)}</span>`;
-  }
-
-  function formatParagraphs(text) {
-    return `<p>${escapeHtml(text)}</p>`;
-  }
-
-  function formatBulletish(text) {
-    const parts = String(text)
-      .split('\n')
-      .map((item) => item.trim())
-      .filter(Boolean);
-    if (!parts.length) return '<p>No detailed reasoning available.</p>';
-    return `<div class="stack">${parts.map((line) => `<div>${escapeHtml(line)}</div>`).join('')}</div>`;
-  }
-
-  function safeNum(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  function safePct(value) {
-    return Math.round((safeNum(value) || 0) * 100);
-  }
-
-  function asPercent(value) {
-    const n = safeNum(value);
-    return n == null ? '—' : `${Math.round(n * 100)}%`;
-  }
-
-  function normalizeText(value) {
-    return String(value || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-  }
-
-  function slugify(value) {
-    return normalizeText(value).replace(/\s+/g, '-');
-  }
-
-  function shorten(text, max) {
-    const value = String(text || '');
-    return value.length > max ? `${value.slice(0, max - 1)}…` : value;
-  }
-
-  function escapeHtml(value) {
-    return String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function escapeAttr(value) {
-    return escapeHtml(value).replace(/`/g, '&#096;');
-  }
-
-  function readStorage(key, fallback) {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
-    } catch {
-      return fallback;
-    }
-  }
-
-  function writeStorage(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
-  }
-
-  function pulseButton(button, text) {
-    if (!button) return;
-    const original = button.textContent;
-    button.textContent = text;
-    setTimeout(() => { button.textContent = original; }, 1200);
-  }
-})();
+  return matrix[b.length][a.length];
+}
