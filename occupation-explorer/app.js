@@ -5,7 +5,6 @@ const state = {
   compare: [],
   favorites: loadLocal('occupation-favorites', []),
   recent: loadLocal('occupation-recent', []),
-  theme: loadLocal('occupation-theme', 'dark'),
   filters: {
     risk: 'All',
     speed: 'All',
@@ -30,7 +29,6 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
   cacheElements();
   bindEvents();
-  applyTheme(state.theme);
   renderShellLoading();
 
   try {
@@ -59,7 +57,6 @@ function cacheElements() {
   els.riskFilters = document.getElementById('riskFilters');
   els.speedFilters = document.getElementById('speedFilters');
   els.confidenceFilter = document.getElementById('confidenceFilter');
-  els.themeToggle = document.getElementById('themeToggle');
   els.recent = document.getElementById('recentSearches');
   els.compare = document.getElementById('comparePanel');
   els.empty = document.getElementById('emptyState');
@@ -79,13 +76,6 @@ function bindEvents() {
       renderSuggestions([]);
       applyFiltersAndRender();
       updateHashFromSelection(state.selected);
-    });
-  }
-
-  if (els.themeToggle) {
-    els.themeToggle.addEventListener('click', () => {
-      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-      applyTheme(next);
     });
   }
 
@@ -457,7 +447,7 @@ function renderDetail(occupation) {
           <p class="detail-code">${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</p>
           <p class="detail-description">${escapeHtml(occupation.job_description || 'No description available.')}</p>
           <div class="detail-actions">
-            <button class="button" id="shareButton" type="button">Copy link</button>
+            <button class="button" id="shareButton" type="button">Share</button>
             <button class="button" id="favoriteButton" type="button">${isFavorite ? 'Remove favorite' : 'Save favorite'}</button>
             <button class="button" id="compareButton" type="button">${compareIncluded ? 'Remove from compare' : 'Add to compare'}</button>
           </div>
@@ -508,12 +498,12 @@ function renderDetail(occupation) {
         await navigator.clipboard.writeText(url.toString());
         shareButton.textContent = 'Copied';
         setTimeout(() => {
-          shareButton.textContent = 'Copy link';
+          shareButton.textContent = 'Share';
         }, 1200);
       } catch {
         shareButton.textContent = 'Copy failed';
         setTimeout(() => {
-          shareButton.textContent = 'Copy link';
+          shareButton.textContent = 'Share';
         }, 1200);
       }
     });
@@ -757,16 +747,6 @@ function renderFatalError(error) {
       <p>Check that <code>./data/occupations.json</code> exists and is valid JSON.</p>
     </section>
   `;
-}
-
-function applyTheme(theme) {
-  const next = theme === 'light' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = next;
-  state.theme = next;
-  saveLocal('occupation-theme', next);
-  if (els.themeToggle) {
-    els.themeToggle.textContent = next === 'light' ? 'Dark mode' : 'Light mode';
-  }
 }
 
 function rememberRecent(slug) {
