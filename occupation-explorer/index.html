@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Occupation Explorer</title>
+    <meta
+      name="description"
+      content="Search occupations and explore automation risk, AI coverage, and replacement speed from a static JSON dataset."
+    />
+    <meta name="theme-color" content="#0b1020" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#/">
+          <span class="brand-mark"></span>
+          <span>Occupation Explorer</span>
+        </a>
+        <div class="topbar-actions">
+          <button id="themeToggle" class="ghost-button" type="button" aria-label="Toggle theme">Theme</button>
+          <button id="sharePageButton" class="ghost-button" type="button">Share</button>
+        </div>
+      </header>
+
+      <main id="app" class="page"></main>
+    </div>
+
+    <template id="skeletonTemplate">
+      <section class="hero hero-skeleton panel shimmer"></section>
+      <section class="panel skeleton-grid">
+        <div class="skeleton-card shimmer"></div>
+        <div class="skeleton-card shimmer"></div>
+        <div class="skeleton-card shimmer"></div>
+      </section>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
