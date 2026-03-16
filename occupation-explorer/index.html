@@ -1,43 +1,115 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Occupation Explorer</title>
     <meta
       name="description"
-      content="Search occupations and explore automation risk, AI coverage, and replacement speed from a static JSON dataset."
+      content="Search occupations and explore automation risk, AI coverage, and replacement speed."
     />
-    <meta name="theme-color" content="#0b1020" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div id="app" class="site-shell">
       <header class="topbar">
-        <a class="brand" href="#/">
-          <span class="brand-mark"></span>
+        <div class="topbar__brand">
+          <div class="brand-mark"></div>
           <span>Occupation Explorer</span>
-        </a>
-        <div class="topbar-actions">
-          <button id="themeToggle" class="ghost-button" type="button" aria-label="Toggle theme">Theme</button>
-          <button id="sharePageButton" class="ghost-button" type="button">Share</button>
         </div>
+        <button id="themeToggle" class="button button--ghost" type="button">Light mode</button>
       </header>
 
-      <main id="app" class="page"></main>
-    </div>
+      <main class="layout">
+        <section class="hero">
+          <div class="hero__inner">
+            <p class="eyebrow">Occupation intelligence</p>
+            <h1>Search occupations</h1>
+            <p class="hero__copy">
+              Explore automation risk, AI coverage, replacement speed, and the reasoning behind each score.
+            </p>
 
-    <template id="skeletonTemplate">
-      <section class="hero hero-skeleton panel shimmer"></section>
-      <section class="panel skeleton-grid">
-        <div class="skeleton-card shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-        <div class="skeleton-card shimmer"></div>
-      </section>
-    </template>
+            <div class="search-shell">
+              <div class="search-box">
+                <input
+                  id="searchInput"
+                  type="text"
+                  placeholder="Search job titles, occupations, or keywords"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <button id="clearSearch" class="button button--ghost" type="button">Clear</button>
+              </div>
+              <div id="suggestions" class="suggestions" hidden></div>
+            </div>
+
+            <div class="hero-meta">
+              <div id="resultsMeta" class="muted">Loading occupations...</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="discovery-grid">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Featured occupations</h2>
+            </div>
+            <div id="featuredOccupations" class="featured-grid"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Recent searches</h2>
+            </div>
+            <div id="recentSearches"></div>
+          </div>
+        </section>
+
+        <section class="filters-grid">
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Browse by risk band</h2>
+            </div>
+            <div id="riskFilters" class="filter-row"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Browse by speed category</h2>
+            </div>
+            <div id="speedFilters" class="filter-row"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <h2>Confidence</h2>
+            </div>
+            <select id="confidenceFilter" class="select"></select>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <aside class="panel sidebar">
+            <div class="panel__header">
+              <h2>Occupations</h2>
+            </div>
+            <div id="emptyState" class="empty-state" hidden>
+              <p>No occupations match the current query and filters.</p>
+            </div>
+            <div id="resultsList" class="results-list"></div>
+          </aside>
+
+          <section id="detailView" class="detail-view"></section>
+        </section>
+
+        <section class="panel">
+          <div class="panel__header">
+            <h2>Compare</h2>
+          </div>
+          <div id="comparePanel"></div>
+        </section>
+      </main>
+    </div>
 
     <script src="./app.js"></script>
   </body>
