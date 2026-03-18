@@ -1,120 +1,102 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Occupation Explorer</title>
-    <meta
-      name="description"
-      content="Search occupations and explore automation risk, AI coverage, replacement speed, and reasoning."
-    />
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div id="app" class="site-shell">
-      <header class="topbar">
-        <a href="./" class="brand-link">
-          <div class="topbar__brand">
-            <div class="brand-mark"></div>
-            <span>Occupation Explorer</span>
-          </div>
-        </a>
-      </header>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Occupation Explorer</title>
+  <meta name="description" content="Explore automation risk, AI coverage, and replacement speed for every occupation." />
+  <meta name="theme-color" content="#0c1018" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=Fraunces:ital,opsz,wght@0,9..144,700;0,9..144,800;1,9..144,700;1,9..144,800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
 
-      <main class="layout">
-        <section class="hero">
-          <div class="hero__inner">
-            <p class="eyebrow">Occupation intelligence</p>
-            <h1>Search occupations</h1>
-            <p class="hero__copy">
-              Explore automation risk, AI coverage, replacement speed, and the reasoning behind each score.
-            </p>
+  <!-- ═══════════════════════════════════════════════════════════
+       SEARCH OVERLAY — slides down from top, purple-black bg
+       distinct from the main app's graphite background
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="searchOverlay" class="search-overlay" role="dialog" aria-modal="true" aria-label="Search occupations">
 
-            <div class="search-shell">
-              <div class="search-box">
-                <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M10.5 4a6.5 6.5 0 1 1 0 13a6.5 6.5 0 0 1 0-13Zm0 0l9 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                <input
-                  id="searchInput"
-                  type="text"
-                  placeholder="Search job titles, occupations, or keywords"
-                  autocomplete="off"
-                  spellcheck="false"
-                />
-                <button id="clearSearch" class="button button--ghost" type="button">Clear</button>
-              </div>
-              <div id="suggestions" class="suggestions" hidden></div>
-            </div>
-
-            <div class="hero-meta">
-              <div id="resultsMeta" class="muted">Loading occupations...</div>
-            </div>
-          </div>
-        </section>
-
-        <section class="discovery-grid">
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Featured occupations</h2>
-            </div>
-            <div id="featuredOccupations" class="featured-grid"></div>
-          </div>
-
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Recent searches</h2>
-            </div>
-            <div id="recentSearches"></div>
-          </div>
-        </section>
-
-        <section class="filters-grid">
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Browse by risk band</h2>
-            </div>
-            <div id="riskFilters" class="filter-row"></div>
-          </div>
-
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Browse by speed category</h2>
-            </div>
-            <div id="speedFilters" class="filter-row"></div>
-          </div>
-
-          <div class="panel">
-            <div class="panel__header">
-              <h2>Confidence</h2>
-            </div>
-            <select id="confidenceFilter" class="select"></select>
-          </div>
-        </section>
-
-        <section class="content-grid">
-          <aside class="panel sidebar">
-            <div class="panel__header">
-              <h2>Occupations</h2>
-            </div>
-            <div id="emptyState" class="empty-state" hidden>
-              <p>No occupations match the current query and filters.</p>
-            </div>
-            <div id="resultsList" class="results-list"></div>
-          </aside>
-
-          <section id="detailView" class="detail-view"></section>
-        </section>
-
-        <section class="panel compare-panel">
-          <div class="panel__header">
-            <h2>Compare</h2>
-          </div>
-          <div id="comparePanel"></div>
-        </section>
-      </main>
+    <div class="overlay-topbar">
+      <span class="overlay-brand">
+        <span class="overlay-dot"></span>
+        Occupation Explorer
+      </span>
+      <button id="closeSearchBtn" class="overlay-close-btn" type="button">
+        Browse results <kbd>Esc</kbd>
+      </button>
     </div>
 
-    <script src="./app.js"></script>
-  </body>
+    <div class="overlay-body">
+      <div class="overlay-input-row">
+        <label class="sr-only" for="searchInput">Search occupations</label>
+        <input
+          id="searchInput"
+          class="overlay-input"
+          type="search"
+          placeholder="What do you do?"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button id="clearSearchBtn" class="overlay-clear-btn hidden" type="button" aria-label="Clear search">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Inline results list (not a positioned dropdown) -->
+      <div id="overlayResultsList" class="overlay-results-list hidden"></div>
+
+      <!-- Shown when not actively searching -->
+      <div id="overlayIdleArea" class="overlay-idle"></div>
+
+      <p class="overlay-hint">
+        <kbd>↵</kbd> open &ensp; <kbd>↑↓</kbd> navigate &ensp; <kbd>Esc</kbd> browse
+      </p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       MAIN APP
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#/">
+        <span class="brand-dot"></span>
+        <span class="brand-text">Occupation Explorer</span>
+      </a>
+
+      <div id="topbarCenter" class="topbar-center"></div>
+
+      <nav class="topbar-nav">
+        <button id="openSearchBtn" class="nav-search-btn" type="button" aria-label="Open search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <span id="navSearchLabel">Search</span>
+        </button>
+        <button id="themeToggle" class="nav-btn" type="button">Light</button>
+        <button id="sharePageButton" class="nav-btn" type="button">Share</button>
+      </nav>
+    </header>
+
+    <main id="app" class="page"></main>
+  </div>
+
+  <template id="skeletonTemplate">
+    <div class="skeleton-page fade-in">
+      <div class="skel-bar shimmer"></div>
+      <div class="skel-layout">
+        <div class="skel-sidebar shimmer"></div>
+        <div class="skel-main">
+          <div class="skel-card shimmer"></div>
+          <div class="skel-card shimmer"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="./app.js"></script>
+</body>
 </html>
