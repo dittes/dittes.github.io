@@ -1,886 +1,988 @@
-const state = {
-  occupations: [],
-  filtered: [],
-  selected: null,
-  compare: [],
-  favorites: loadLocal('occupation-favorites', []),
-  recent: loadLocal('occupation-recent', []),
-  filters: {
-    risk: 'All',
-    speed: 'All',
-    confidence: 'All',
-  },
-  query: '',
-  suggestionIndex: -1,
-};
+(() => {
+  'use strict';
 
-const SCORE_FIELDS = [
-  { key: 'old_frey_osborne_style_score', label: 'Old Frey/Osborne score' },
-  { key: 'theoretical_ai_coverage', label: 'Theoretical AI coverage' },
-  { key: 'observed_ai_coverage', label: 'Observed AI coverage' },
-  { key: 'probability_of_computerisation', label: 'Automation risk' },
-  { key: 'speed_of_replacement_score', label: 'Replacement speed' },
-];
-
-const els = {};
-
-document.addEventListener('DOMContentLoaded', init);
-
-async function init() {
-  cacheElements();
-  bindEvents();
-  renderShellLoading();
-
-  try {
-    state.occupations = await loadOccupations();
-    state.filtered = [...state.occupations];
-
-    populateFilterOptions();
-    renderFeatured();
-    applyFiltersAndRender();
-    restoreRoute();
-  } catch (error) {
-    console.error(error);
-    renderFatalError(error);
-  }
-}
-
-function cacheElements() {
-  els.app = document.getElementById('app');
-  els.search = document.getElementById('searchInput');
-  els.clearSearch = document.getElementById('clearSearch');
-  els.suggestions = document.getElementById('suggestions');
-  els.resultsMeta = document.getElementById('resultsMeta');
-  els.resultsList = document.getElementById('resultsList');
-  els.detail = document.getElementById('detailView');
-  els.featured = document.getElementById('featuredOccupations');
-  els.riskFilters = document.getElementById('riskFilters');
-  els.speedFilters = document.getElementById('speedFilters');
-  els.confidenceFilter = document.getElementById('confidenceFilter');
-  els.recent = document.getElementById('recentSearches');
-  els.compare = document.getElementById('comparePanel');
-  els.empty = document.getElementById('emptyState');
-}
-
-function bindEvents() {
-  if (els.search) {
-    els.search.addEventListener('input', onSearchInput);
-    els.search.addEventListener('keydown', onSearchKeyDown);
-  }
-
-  if (els.clearSearch) {
-    els.clearSearch.addEventListener('click', () => {
-      state.query = '';
-      state.suggestionIndex = -1;
-      els.search.value = '';
-      renderSuggestions([]);
-      applyFiltersAndRender();
-      updateHashFromSelection(state.selected);
-    });
-  }
-
-  window.addEventListener('hashchange', restoreRoute);
-}
-
-async function loadOccupations() {
-  const response = await fetch('./data/occupations.json');
-  if (!response.ok) {
-    throw new Error(`Failed to load dataset: ${response.status}`);
-  }
-
-  const raw = await response.json();
-  const rows = extractRows(raw);
-
-  return rows.map((record, index) => normalizeOccupation(record, index));
-}
-
-function extractRows(raw) {
-  if (Array.isArray(raw)) {
-    return raw;
-  }
-
-  if (
-    raw &&
-    typeof raw === 'object' &&
-    raw.sheets &&
-    raw.sheets['Scored Occupations'] &&
-    Array.isArray(raw.sheets['Scored Occupations'].rows)
-  ) {
-    return raw.sheets['Scored Occupations'].rows;
-  }
-
-  if (raw && typeof raw === 'object' && raw.sheets) {
-    const firstSheet = Object.values(raw.sheets).find(
-      (sheet) => sheet && Array.isArray(sheet.rows)
-    );
-    if (firstSheet) return firstSheet.rows;
-  }
-
-  if (raw && typeof raw === 'object' && Array.isArray(raw.rows)) {
-    return raw.rows;
-  }
-
-  throw new Error('Dataset format not supported. Expected array or workbook.sheets[*].rows');
-}
-
-function normalizeOccupation(record, index) {
-  const code = cleanString(record['O*NET-SOC Code']) || `occupation-${index}`;
-  const title = cleanString(record.job_title) || `Untitled occupation ${index + 1}`;
-  const slug = `${slugify(title)}-${slugify(code)}`;
-
-  const normalized = {
-    ...record,
-    id: code,
-    slug,
-    'O*NET-SOC Code': code,
-    job_title: title,
-    job_description: cleanString(record.job_description),
-    old_frey_osborne_style_score: normalizeScore(record.old_frey_osborne_style_score),
-    theoretical_ai_coverage: normalizeScore(record.theoretical_ai_coverage),
-    observed_ai_coverage: normalizeScore(record.observed_ai_coverage),
-    probability_of_computerisation: normalizeScore(record.probability_of_computerisation),
-    speed_of_replacement_score: normalizeScore(record.speed_of_replacement_score),
-    risk_band: cleanString(record.risk_band),
-    speed_category: cleanString(record.speed_category),
-    key_bottleneck: cleanString(record.key_bottleneck),
-    reasoning_short: cleanString(record.reasoning_short),
-    reasoning_detailed: cleanString(record.reasoning_detailed),
-    confidence: cleanString(record.confidence),
-    assumptions: cleanString(record.assumptions),
+  const DATA_URL = './data/occupations.json';
+  const KEYS = {
+    recent:    'occ-exp:recent',
+    favorites: 'occ-exp:favorites',
+    theme:     'occ-exp:theme',
+    compare:   'occ-exp:compare'
   };
 
-  normalized.searchableText = [
-    normalized.job_title,
-    normalized.job_description,
-    normalized.key_bottleneck,
-    normalized.reasoning_short,
-    normalized.reasoning_detailed,
-    normalized.assumptions,
-    normalized['O*NET-SOC Code'],
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+  const SCORE_FIELDS = [
+    { key: 'old_frey_osborne_style_score',   label: 'Frey / Osborne style score' },
+    { key: 'theoretical_ai_coverage',         label: 'Theoretical AI coverage'    },
+    { key: 'observed_ai_coverage',            label: 'Observed AI coverage'       },
+    { key: 'probability_of_computerisation',  label: 'Probability of computerisation' },
+    { key: 'speed_of_replacement_score',      label: 'Replacement speed score'    }
+  ];
 
-  return normalized;
-}
+  const state = {
+    occupations:      [],
+    filtered:         [],
+    searchValue:      '',
+    suggestions:      [],
+    activeSugg:       -1,
+    filters:          { risk_band: 'All', speed_category: 'All', confidence: 'All' },
+    sortBy:           'probability_of_computerisation',
+    sortDir:          'desc',
+    currentSlug:      null,
+    overlayOpen:      false,
+    recent:           readStorage(KEYS.recent,    []),
+    favorites:        readStorage(KEYS.favorites, []),
+    compare:          readStorage(KEYS.compare,   [])
+  };
 
-function onSearchInput(event) {
-  state.query = event.target.value || '';
-  state.suggestionIndex = -1;
-  const suggestions = getSuggestions(state.query, 8);
-  renderSuggestions(suggestions);
-  applyFiltersAndRender();
-}
+  // ── DOM refs ─────────────────────────────────────────────────────
+  const $app         = document.getElementById('app');
+  const $overlay     = document.getElementById('searchOverlay');
+  const $input       = document.getElementById('searchInput');
+  const $resultsList = document.getElementById('overlayResultsList');
+  const $idleArea    = document.getElementById('overlayIdleArea');
+  const $clearBtn    = document.getElementById('clearSearchBtn');
+  const $openBtn     = document.getElementById('openSearchBtn');
+  const $closeBtn    = document.getElementById('closeSearchBtn');
+  const $themeToggle = document.getElementById('themeToggle');
+  const $shareBtn    = document.getElementById('sharePageButton');
+  const $topCenter   = document.getElementById('topbarCenter');
+  const $navLabel    = document.getElementById('navSearchLabel');
 
-function onSearchKeyDown(event) {
-  const suggestions = getSuggestions(state.query, 8);
+  // ── Boot ──────────────────────────────────────────────────────────
+  boot();
 
-  if (event.key === 'ArrowDown') {
-    event.preventDefault();
-    state.suggestionIndex = Math.min(state.suggestionIndex + 1, suggestions.length - 1);
-    renderSuggestions(suggestions);
-  } else if (event.key === 'ArrowUp') {
-    event.preventDefault();
-    state.suggestionIndex = Math.max(state.suggestionIndex - 1, 0);
-    renderSuggestions(suggestions);
-  } else if (event.key === 'Enter') {
-    event.preventDefault();
-    const selectedSuggestion =
-      suggestions[state.suggestionIndex] || suggestions[0] || state.filtered[0] || null;
+  async function boot() {
+    applyTheme(readStorage(KEYS.theme, preferredTheme()));
+    wireGlobalEvents();
+    initOverlay();
+    renderSkeleton();
 
-    if (selectedSuggestion) {
-      openOccupation(selectedSuggestion);
-      renderSuggestions([]);
-    }
-  } else if (event.key === 'Escape') {
-    renderSuggestions([]);
-  }
-}
+    try {
+      const raw = await fetch(DATA_URL).then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      });
+      state.occupations = raw.map(normalizeOccupation);
+      state.filtered    = [...state.occupations];
 
-function getSuggestions(query, limit = 8) {
-  if (!query.trim()) {
-    return state.occupations.slice(0, limit);
-  }
-
-  return rankOccupations(query, state.occupations).slice(0, limit);
-}
-
-function rankOccupations(query, occupations) {
-  const q = query.trim().toLowerCase();
-  if (!q) return occupations;
-
-  return occupations
-    .map((occupation) => ({
-      occupation,
-      score: searchScore(q, occupation),
-    }))
-    .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map((item) => item.occupation);
-}
-
-function searchScore(query, occupation) {
-  const title = (occupation.job_title || '').toLowerCase();
-  const desc = (occupation.job_description || '').toLowerCase();
-  const full = occupation.searchableText || '';
-
-  if (title === query) return 2000;
-  if (title.startsWith(query)) return 1400 - title.length * 0.1;
-  if (title.includes(query)) return 1000 - title.indexOf(query);
-
-  const titleWords = title.split(/\s+/);
-  const queryWords = query.split(/\s+/);
-  let wordScore = 0;
-
-  for (const qw of queryWords) {
-    for (const tw of titleWords) {
-      if (tw === qw) wordScore += 180;
-      else if (tw.startsWith(qw)) wordScore += 120;
-      else if (levenshtein(qw, tw) <= 1) wordScore += 70;
-      else if (levenshtein(qw, tw) === 2 && qw.length > 4) wordScore += 35;
-    }
-  }
-
-  let textScore = 0;
-  if (desc.includes(query)) textScore += 120;
-  if (full.includes(query)) textScore += 80;
-
-  return wordScore + textScore;
-}
-
-function applyFiltersAndRender() {
-  let results = state.query.trim()
-    ? rankOccupations(state.query, state.occupations)
-    : [...state.occupations];
-
-  results = results.filter((occupation) => {
-    const matchesRisk =
-      state.filters.risk === 'All' || (occupation.risk_band || 'Unknown') === state.filters.risk;
-    const matchesSpeed =
-      state.filters.speed === 'All' ||
-      (occupation.speed_category || 'Unknown') === state.filters.speed;
-    const matchesConfidence =
-      state.filters.confidence === 'All' ||
-      (occupation.confidence || 'Unknown') === state.filters.confidence;
-
-    return matchesRisk && matchesSpeed && matchesConfidence;
-  });
-
-  state.filtered = results;
-  renderResults(results);
-  renderRecent();
-  renderCompare();
-  renderEmptyState(results);
-
-  if (!state.selected && results.length > 0) {
-    selectOccupation(results[0], false);
-  }
-}
-
-function renderSuggestions(items) {
-  if (!els.suggestions) return;
-  if (!items.length || !state.query.trim()) {
-    els.suggestions.innerHTML = '';
-    els.suggestions.hidden = true;
-    return;
-  }
-
-  els.suggestions.hidden = false;
-  els.suggestions.innerHTML = items
-    .map((item, index) => {
-      const active = index === state.suggestionIndex ? 'is-active' : '';
-      return `
-        <button class="suggestion-item ${active}" data-slug="${escapeHtml(item.slug)}" type="button">
-          <span class="suggestion-title">${escapeHtml(item.job_title || 'Untitled')}</span>
-          <span class="suggestion-meta">${escapeHtml(item.risk_band || 'Unknown')} · ${formatPercent(item.probability_of_computerisation)}</span>
-        </button>
-      `;
-    })
-    .join('');
-
-  els.suggestions.querySelectorAll('.suggestion-item').forEach((button) => {
-    button.addEventListener('click', () => {
-      const occupation = state.occupations.find((o) => o.slug === button.dataset.slug);
-      if (occupation) {
-        openOccupation(occupation);
-        renderSuggestions([]);
+      // Auto-open search on first visit to home
+      const h = location.hash || '#/';
+      if (!state.searchValue && (h === '#/' || h === '')) {
+        openOverlay();
       }
-    });
-  });
-}
-
-function renderResults(results) {
-  if (!els.resultsList) return;
-
-  if (!results.length) {
-    els.resultsList.innerHTML = '';
-    if (els.resultsMeta) els.resultsMeta.textContent = 'No occupations found';
-    return;
+      route();
+    } catch (err) {
+      $app.innerHTML = `
+        <section class="panel empty-state fade-in">
+          <h2>Dataset failed to load</h2>
+          <p class="empty-copy">${esc(err.message || 'Unknown error')}</p>
+          <p class="footer-note">Expected: <code>${DATA_URL}</code></p>
+        </section>`;
+    }
   }
 
-  if (els.resultsMeta) {
-    els.resultsMeta.textContent = `${results.length} occupation${results.length === 1 ? '' : 's'}`;
+  // ── Routing ───────────────────────────────────────────────────────
+  function route() {
+    const h = location.hash || '#/';
+    const [, name, param] = h.split('/');
+    if (name === 'occupation' && param) {
+      state.currentSlug = decodeURIComponent(param);
+      renderDetail();
+    } else if (name === 'compare') {
+      renderCompare();
+    } else {
+      state.currentSlug = null;
+      renderHome();
+    }
   }
 
-  els.resultsList.innerHTML = results
-    .slice(0, 100)
-    .map((occupation) => {
-      const active = state.selected?.slug === occupation.slug ? 'is-selected' : '';
-      const favorite = state.favorites.includes(occupation.slug) ? 'is-favorite' : '';
-      return `
-        <article class="result-card ${active}" data-slug="${escapeHtml(occupation.slug)}">
-          <div class="result-card__top">
-            <div>
-              <h3>${escapeHtml(occupation.job_title || 'Untitled')}</h3>
-              <p>${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</p>
-            </div>
-            <button class="icon-button favorite-toggle ${favorite}" data-favorite="${escapeHtml(occupation.slug)}" type="button" aria-label="Toggle favorite">★</button>
-          </div>
-          <div class="pill-row">
-            ${pill(occupation.risk_band || 'Unknown')}
-            ${pill(occupation.speed_category || 'Unknown')}
-            ${pill(occupation.confidence || 'Unknown')}
-          </div>
-          <div class="score-row">
-            <div>
-              <span>Automation risk</span>
-              <strong>${formatPercent(occupation.probability_of_computerisation)}</strong>
-            </div>
-            <div>
-              <span>Replacement speed</span>
-              <strong>${formatPercent(occupation.speed_of_replacement_score)}</strong>
-            </div>
-          </div>
-        </article>
-      `;
-    })
-    .join('');
+  // ── Global events ─────────────────────────────────────────────────
+  function wireGlobalEvents() {
+    window.addEventListener('hashchange', () => { quietCloseOverlay(); route(); });
 
-  els.resultsList.querySelectorAll('.result-card').forEach((card) => {
-    card.addEventListener('click', (event) => {
-      const favoriteButton = event.target.closest('.favorite-toggle');
-      if (favoriteButton) return;
-      const occupation = state.occupations.find((o) => o.slug === card.dataset.slug);
-      if (occupation) openOccupation(occupation);
+    $themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+      applyTheme(next);
+      writeStorage(KEYS.theme, next);
     });
-  });
 
-  els.resultsList.querySelectorAll('.favorite-toggle').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      toggleFavorite(button.dataset.favorite);
-    });
-  });
-}
-
-function openOccupation(occupation) {
-  state.query = occupation.job_title || '';
-  if (els.search) els.search.value = state.query;
-  rememberRecent(occupation.slug);
-  selectOccupation(occupation, true);
-  renderSuggestions([]);
-}
-
-function selectOccupation(occupation, updateHash = true) {
-  state.selected = occupation;
-  renderResults(state.filtered);
-  renderDetail(occupation);
-  if (updateHash) {
-    location.hash = `#/occupation/${encodeURIComponent(occupation.slug)}`;
-  }
-}
-
-function renderDetail(occupation) {
-  if (!els.detail || !occupation) return;
-
-  const comparisonRank = getPercentile(
-    occupation.probability_of_computerisation,
-    state.occupations.map((item) => item.probability_of_computerisation)
-  );
-
-  const scoreCards = SCORE_FIELDS.map(
-    (field) => `
-      <div class="score-card">
-        <div class="score-card__header">
-          <span>${escapeHtml(field.label)}</span>
-          <strong>${formatPercent(occupation[field.key])}</strong>
-        </div>
-        <div class="progress">
-          <div class="progress__bar" style="width:${clamp01(occupation[field.key]) * 100}%"></div>
-        </div>
-        <div class="score-card__foot">${formatDecimal(occupation[field.key])}</div>
-      </div>
-    `
-  ).join('');
-
-  const benchmarkRows = SCORE_FIELDS.map(
-    (field) => `
-      <div class="benchmark-row">
-        <div class="benchmark-row__label">${escapeHtml(field.label)}</div>
-        <div class="benchmark-row__track">
-          <div class="benchmark-row__fill" style="width:${clamp01(occupation[field.key]) * 100}%"></div>
-        </div>
-        <div class="benchmark-row__value">${formatPercent(occupation[field.key])}</div>
-      </div>
-    `
-  ).join('');
-
-  const radial = radialMeter(
-    occupation.probability_of_computerisation,
-    occupation.risk_band || 'Unknown'
-  );
-
-  const isFavorite = state.favorites.includes(occupation.slug);
-  const compareIncluded = state.compare.includes(occupation.slug);
-
-  els.detail.innerHTML = `
-    <section class="detail-card">
-      <div class="detail-hero">
-        <div class="detail-hero__main">
-          <div class="pill-row">
-            ${pill(occupation.risk_band || 'Unknown')}
-            ${pill(occupation.speed_category || 'Unknown')}
-            ${pill(occupation.confidence || 'Unknown')}
-          </div>
-          <h1>${escapeHtml(occupation.job_title || 'Untitled')}</h1>
-          <p class="detail-code">${escapeHtml(occupation['O*NET-SOC Code'] || 'No code')}</p>
-          <p class="detail-description">${escapeHtml(occupation.job_description || 'No description available.')}</p>
-          <div class="detail-actions">
-            <button class="button" id="shareButton" type="button">Share</button>
-            <button class="button" id="favoriteButton" type="button">${isFavorite ? 'Remove favorite' : 'Save favorite'}</button>
-            <button class="button" id="compareButton" type="button">${compareIncluded ? 'Remove from compare' : 'Add to compare'}</button>
-          </div>
-        </div>
-        <div class="detail-hero__side">
-          ${radial}
-          <div class="context-card">
-            <span>Dataset position</span>
-            <strong>Higher than ${comparisonRank}% of occupations</strong>
-            <small>Based on automation risk score.</small>
-          </div>
-        </div>
-      </div>
-
-      <div class="detail-grid">
-        <div class="detail-section">
-          <h2>Scores</h2>
-          <div class="score-grid">${scoreCards}</div>
-        </div>
-
-        <div class="detail-section">
-          <h2>Score benchmark</h2>
-          <div class="benchmark-chart">${benchmarkRows}</div>
-        </div>
-
-        <div class="detail-section">
-          <h2>Why this score?</h2>
-          <div class="info-list">
-            ${infoRow('Core bottleneck', occupation.key_bottleneck)}
-            ${infoRow('Short reasoning', occupation.reasoning_short)}
-            ${infoRow('Detailed reasoning', formatMultiline(occupation.reasoning_detailed))}
-            ${infoRow('Assumptions', formatMultiline(occupation.assumptions))}
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-
-  const shareButton = document.getElementById('shareButton');
-  const favoriteButton = document.getElementById('favoriteButton');
-  const compareButton = document.getElementById('compareButton');
-
-  if (shareButton) {
-    shareButton.addEventListener('click', async () => {
-      const url = new URL(location.href);
-      url.hash = `#/occupation/${occupation.slug}`;
+    $shareBtn.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(url.toString());
-        shareButton.textContent = 'Copied';
-        setTimeout(() => {
-          shareButton.textContent = 'Share';
-        }, 1200);
-      } catch {
-        shareButton.textContent = 'Copy failed';
-        setTimeout(() => {
-          shareButton.textContent = 'Share';
-        }, 1200);
-      }
+        if (navigator.share) {
+          await navigator.share({ title: document.title, url: location.href });
+        } else {
+          await navigator.clipboard.writeText(location.href);
+          pulse($shareBtn, 'Copied!');
+        }
+      } catch (_) {}
+    });
+
+    // ⌘/Ctrl+K shortcut
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openOverlay(); }
     });
   }
 
-  if (favoriteButton) {
-    favoriteButton.addEventListener('click', () => toggleFavorite(occupation.slug));
-  }
+  // ════════════════════════════════════════════════════════════════
+  // SEARCH OVERLAY
+  // ════════════════════════════════════════════════════════════════
+  function initOverlay() {
+    $openBtn.addEventListener('click', openOverlay);
+    $closeBtn.addEventListener('click', closeOverlay);
 
-  if (compareButton) {
-    compareButton.addEventListener('click', () => toggleCompare(occupation.slug));
-  }
-}
+    // Click outside overlay-body to close
+    $overlay.addEventListener('click', (e) => { if (e.target === $overlay) closeOverlay(); });
 
-function renderFeatured() {
-  if (!els.featured) return;
-
-  const featured = [...state.occupations]
-    .sort((a, b) => b.probability_of_computerisation - a.probability_of_computerisation)
-    .slice(0, 6);
-
-  els.featured.innerHTML = featured
-    .map(
-      (occupation) => `
-      <button class="featured-card" type="button" data-slug="${escapeHtml(occupation.slug)}">
-        <span class="featured-card__eyebrow">${escapeHtml(occupation.risk_band || 'Unknown')}</span>
-        <strong>${escapeHtml(occupation.job_title || 'Untitled')}</strong>
-        <small>${formatPercent(occupation.probability_of_computerisation)} automation risk</small>
-      </button>
-    `
-    )
-    .join('');
-
-  els.featured.querySelectorAll('.featured-card').forEach((button) => {
-    button.addEventListener('click', () => {
-      const occupation = state.occupations.find((o) => o.slug === button.dataset.slug);
-      if (occupation) openOccupation(occupation);
+    // Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && state.overlayOpen) closeOverlay();
     });
-  });
-}
 
-function populateFilterOptions() {
-  populateButtonFilter(
-    els.riskFilters,
-    ['All', ...uniqueValues(state.occupations.map((item) => item.risk_band || 'Unknown'))],
-    'risk'
-  );
+    // Input events
+    $input.addEventListener('input', onInputChange);
+    $input.addEventListener('keydown', onInputKeydown);
+    $input.addEventListener('focus', () => {
+      state.suggestions = getSuggestions(state.searchValue, 8);
+      renderOverlayResults();
+    });
+    $input.addEventListener('blur', () => {
+      // Let click events fire first
+      setTimeout(() => { if (!$overlay.contains(document.activeElement)) renderOverlayResults(); }, 160);
+    });
 
-  populateButtonFilter(
-    els.speedFilters,
-    ['All', ...uniqueValues(state.occupations.map((item) => item.speed_category || 'Unknown'))],
-    'speed'
-  );
-
-  if (els.confidenceFilter) {
-    const options = ['All', ...uniqueValues(state.occupations.map((item) => item.confidence || 'Unknown'))];
-    els.confidenceFilter.innerHTML = options
-      .map((value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`)
-      .join('');
-
-    els.confidenceFilter.value = state.filters.confidence;
-    els.confidenceFilter.addEventListener('change', (event) => {
-      state.filters.confidence = event.target.value;
-      applyFiltersAndRender();
+    $clearBtn.addEventListener('click', () => {
+      state.searchValue = '';
+      $input.value = '';
+      state.activeSugg = -1;
+      $clearBtn.classList.add('hidden');
+      state.suggestions = getSuggestions('', 8);
+      renderOverlayResults();
+      renderIdleArea();
+      $input.focus();
     });
   }
-}
 
-function populateButtonFilter(container, values, filterKey) {
-  if (!container) return;
-
-  container.innerHTML = values
-    .map((value) => {
-      const active = state.filters[filterKey] === value ? 'is-active' : '';
-      return `<button class="filter-pill ${active}" type="button" data-filter-key="${filterKey}" data-value="${escapeHtml(value)}">${escapeHtml(value)}</button>`;
-    })
-    .join('');
-
-  container.querySelectorAll('.filter-pill').forEach((button) => {
-    button.addEventListener('click', () => {
-      state.filters[filterKey] = button.dataset.value;
-      populateFilterOptions();
-      applyFiltersAndRender();
-    });
-  });
-}
-
-function renderRecent() {
-  if (!els.recent) return;
-  const recentOccupations = state.recent
-    .map((slug) => state.occupations.find((item) => item.slug === slug))
-    .filter(Boolean)
-    .slice(0, 6);
-
-  if (!recentOccupations.length) {
-    els.recent.innerHTML = `<p class="muted">No recent searches yet.</p>`;
-    return;
+  function onInputChange(e) {
+    state.searchValue = e.target.value;
+    state.activeSugg  = -1;
+    $clearBtn.classList.toggle('hidden', !state.searchValue);
+    state.suggestions = getSuggestions(state.searchValue, 8);
+    renderOverlayResults();
+    renderIdleArea();
   }
 
-  els.recent.innerHTML = recentOccupations
-    .map(
-      (occupation) => `
-      <button class="recent-item" type="button" data-slug="${escapeHtml(occupation.slug)}">
-        <span>${escapeHtml(occupation.job_title || 'Untitled')}</span>
-        <small>${formatPercent(occupation.probability_of_computerisation)}</small>
-      </button>
-    `
-    )
-    .join('');
-
-  els.recent.querySelectorAll('.recent-item').forEach((button) => {
-    button.addEventListener('click', () => {
-      const occupation = state.occupations.find((item) => item.slug === button.dataset.slug);
-      if (occupation) openOccupation(occupation);
-    });
-  });
-}
-
-function toggleFavorite(slug) {
-  if (!slug) return;
-  const exists = state.favorites.includes(slug);
-
-  state.favorites = exists
-    ? state.favorites.filter((item) => item !== slug)
-    : [...state.favorites, slug];
-
-  saveLocal('occupation-favorites', state.favorites);
-  renderResults(state.filtered);
-  if (state.selected) renderDetail(state.selected);
-}
-
-function toggleCompare(slug) {
-  if (!slug) return;
-  const exists = state.compare.includes(slug);
-
-  if (exists) {
-    state.compare = state.compare.filter((item) => item !== slug);
-  } else {
-    state.compare = [...state.compare, slug].slice(0, 2);
-  }
-
-  renderCompare();
-  if (state.selected) renderDetail(state.selected);
-}
-
-function renderCompare() {
-  if (!els.compare) return;
-
-  const items = state.compare
-    .map((slug) => state.occupations.find((item) => item.slug === slug))
-    .filter(Boolean);
-
-  if (!items.length) {
-    els.compare.innerHTML = `<p class="muted">Add up to two occupations to compare.</p>`;
-    return;
-  }
-
-  els.compare.innerHTML = `
-    <div class="compare-grid">
-      ${items
-        .map(
-          (occupation) => `
-          <div class="compare-card">
-            <div class="compare-card__top">
-              <strong>${escapeHtml(occupation.job_title || 'Untitled')}</strong>
-              <button class="icon-button compare-remove" data-slug="${escapeHtml(occupation.slug)}" type="button">×</button>
-            </div>
-            ${SCORE_FIELDS.map(
-              (field) => `
-              <div class="compare-row">
-                <span>${escapeHtml(field.label)}</span>
-                <strong>${formatPercent(occupation[field.key])}</strong>
-              </div>
-            `
-            ).join('')}
-          </div>
-        `
-        )
-        .join('')}
-    </div>
-  `;
-
-  els.compare.querySelectorAll('.compare-remove').forEach((button) => {
-    button.addEventListener('click', () => toggleCompare(button.dataset.slug));
-  });
-}
-
-function renderEmptyState(results) {
-  if (!els.empty) return;
-  els.empty.hidden = results.length > 0;
-}
-
-function restoreRoute() {
-  const hash = location.hash || '';
-  const match = hash.match(/^#\/occupation\/(.+)$/);
-
-  if (!match) {
-    if (!state.selected && state.filtered.length) {
-      selectOccupation(state.filtered[0], false);
+  function onInputKeydown(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      state.activeSugg = Math.min(state.activeSugg + 1, state.suggestions.length - 1);
+      renderOverlayResults();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      state.activeSugg = Math.max(state.activeSugg - 1, 0);
+      renderOverlayResults();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const hit = state.suggestions[state.activeSugg] || state.suggestions[0];
+      if (hit) openOccupation(hit.item.slug);
+      else closeOverlay();
+    } else if (e.key === 'Escape') {
+      closeOverlay();
     }
-    return;
   }
 
-  const slug = decodeURIComponent(match[1]);
-  const occupation = state.occupations.find((item) => item.slug === slug);
-
-  if (occupation) {
-    state.selected = occupation;
-    renderDetail(occupation);
-    renderResults(state.filtered);
+  function openOverlay() {
+    if (!state.occupations.length) return;
+    state.overlayOpen = true;
+    $overlay.classList.remove('is-closing');
+    $overlay.classList.add('is-open');
+    document.body.classList.add('overlay-open');
+    $input.value = state.searchValue;
+    $clearBtn.classList.toggle('hidden', !state.searchValue);
+    state.suggestions = getSuggestions(state.searchValue, 8);
+    renderOverlayResults();
+    renderIdleArea();
+    $openBtn.classList.add('active');
+    setTimeout(() => { $input.focus(); if (state.searchValue) $input.select(); }, 50);
   }
-}
 
-function updateHashFromSelection(selected) {
-  if (!selected) {
-    history.replaceState(null, '', location.pathname + location.search);
-    return;
+  function closeOverlay() {
+    // Spring close animation
+    $overlay.classList.remove('is-open');
+    $overlay.classList.add('is-closing');
+    document.body.classList.remove('overlay-open');
+    $openBtn.classList.remove('active');
+    setTimeout(() => {
+      $overlay.classList.remove('is-closing');
+      state.overlayOpen = false;
+    }, 280);
+    // Re-render home if on home route
+    const h = location.hash || '#/';
+    if (h === '#/' || h === '') renderHome();
   }
-  location.hash = `#/occupation/${encodeURIComponent(selected.slug)}`;
-}
 
-function renderShellLoading() {
-  if (els.detail) {
-    els.detail.innerHTML = `
-      <section class="detail-card skeleton">
-        <div class="skeleton-line lg"></div>
-        <div class="skeleton-line md"></div>
-        <div class="skeleton-line"></div>
-        <div class="skeleton-line"></div>
-      </section>
-    `;
+  function quietCloseOverlay() {
+    if (!state.overlayOpen) return;
+    $overlay.classList.remove('is-open', 'is-closing');
+    document.body.classList.remove('overlay-open');
+    $openBtn.classList.remove('active');
+    state.overlayOpen = false;
   }
-}
 
-function renderFatalError(error) {
-  if (!els.detail) return;
-  els.detail.innerHTML = `
-    <section class="detail-card">
-      <h2>Failed to load dataset</h2>
-      <p>${escapeHtml(error?.message || 'Unknown error')}</p>
-      <p>Check that <code>./data/occupations.json</code> exists and is valid JSON.</p>
-    </section>
-  `;
-}
+  function renderOverlayResults() {
+    if (!state.searchValue.trim() || !state.suggestions.length) {
+      $resultsList.innerHTML = '';
+      $resultsList.classList.add('hidden');
+      return;
+    }
+    $resultsList.innerHTML = state.suggestions.map((entry, i) => `
+      <button class="overlay-result ${i === state.activeSugg ? 'active' : ''}"
+        type="button" data-slug="${escAttr(entry.item.slug)}">
+        <span class="overlay-result-num">${i + 1}</span>
+        <span class="overlay-result-body">
+          <span class="overlay-result-title">${esc(entry.item.job_title)}</span>
+          <span class="overlay-result-sub">${esc(entry.item['O*NET-SOC Code'] || '')} · ${esc(entry.item.risk_band || 'Unknown')} risk</span>
+        </span>
+        <span class="overlay-result-pct">${pct(entry.item.probability_of_computerisation)}</span>
+      </button>
+    `).join('');
+    $resultsList.classList.remove('hidden');
 
-function rememberRecent(slug) {
-  state.recent = [slug, ...state.recent.filter((item) => item !== slug)].slice(0, 8);
-  saveLocal('occupation-recent', state.recent);
-}
+    $resultsList.querySelectorAll('[data-slug]').forEach((btn) => {
+      btn.addEventListener('mousedown', (e) => { e.preventDefault(); openOccupation(btn.dataset.slug); });
+    });
+  }
 
-function uniqueValues(values) {
-  return [...new Set(values.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b)));
-}
+  function renderIdleArea() {
+    if (state.searchValue.trim()) {
+      $idleArea.innerHTML = '';
+      return;
+    }
+    const recent    = state.recent.map(findBySlug).filter(Boolean);
+    const favorites = state.favorites.map(findBySlug).filter(Boolean);
+    const sections  = [];
 
-function normalizeScore(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return 0;
-  return clamp01(num);
-}
+    if (recent.length) {
+      sections.push(`
+        <div>
+          <div class="overlay-section-label">Recent</div>
+          <div class="overlay-chip-row">
+            ${recent.slice(0, 8).map((o) => `
+              <button class="overlay-chip" type="button" data-slug="${escAttr(o.slug)}">${esc(o.job_title)}</button>
+            `).join('')}
+          </div>
+        </div>`);
+    }
+    if (favorites.length) {
+      sections.push(`
+        <div>
+          <div class="overlay-section-label">Favorites</div>
+          <div class="overlay-chip-row">
+            ${favorites.slice(0, 8).map((o) => `
+              <button class="overlay-chip" type="button" data-slug="${escAttr(o.slug)}">${esc(o.job_title)}</button>
+            `).join('')}
+          </div>
+        </div>`);
+    }
+    if (!sections.length && state.occupations.length) {
+      const top = [...state.occupations]
+        .sort((a, b) => (b.probability_of_computerisation || 0) - (a.probability_of_computerisation || 0))
+        .slice(0, 8);
+      sections.push(`
+        <div>
+          <div class="overlay-section-label">Highest automation risk</div>
+          <div class="overlay-chip-row">
+            ${top.map((o) => `
+              <button class="overlay-chip" type="button" data-slug="${escAttr(o.slug)}">${esc(o.job_title)}</button>
+            `).join('')}
+          </div>
+        </div>`);
+    }
 
-function clamp01(value) {
-  const num = Number(value);
-  if (!Number.isFinite(num)) return 0;
-  return Math.max(0, Math.min(1, num));
-}
+    $idleArea.innerHTML = sections.join('');
+    $idleArea.querySelectorAll('[data-slug]').forEach((btn) => {
+      btn.addEventListener('click', () => openOccupation(btn.dataset.slug));
+    });
+  }
 
-function formatPercent(value) {
-  return `${Math.round(clamp01(value) * 100)}%`;
-}
+  // ── Topbar center ──────────────────────────────────────────────────
+  function renderTopbarCenter() {
+    if (!$topCenter) return;
+    if (state.searchValue) {
+      $navLabel.textContent = state.searchValue.length > 18
+        ? state.searchValue.slice(0, 18) + '…'
+        : state.searchValue;
+      $topCenter.innerHTML = `
+        <button class="topbar-query" id="topbarQ" type="button" title="Refine search">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <strong>"${esc(state.searchValue)}"</strong>
+          <button class="topbar-query-x" id="topbarQX" type="button" title="Clear">×</button>
+        </button>`;
+      document.getElementById('topbarQ')?.addEventListener('click', (e) => {
+        if (e.target.id !== 'topbarQX') openOverlay();
+      });
+      document.getElementById('topbarQX')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.searchValue = '';
+        $navLabel.textContent = 'Search';
+        renderTopbarCenter();
+        renderHome();
+      });
+    } else {
+      $navLabel.textContent = 'Search';
+      $topCenter.innerHTML = '';
+    }
+  }
 
-function formatDecimal(value) {
-  return clamp01(value).toFixed(2);
-}
+  // ════════════════════════════════════════════════════════════════
+  // HOME VIEW
+  // ════════════════════════════════════════════════════════════════
+  function renderHome() {
+    applyFiltersAndSort();
+    renderTopbarCenter();
 
-function cleanString(value) {
-  if (value === null || value === undefined) return '';
-  return String(value).trim();
-}
+    const featured = [...state.occupations]
+      .sort((a, b) => (num(b.probability_of_computerisation) || 0) - (num(a.probability_of_computerisation) || 0))
+      .slice(0, 6);
 
-function slugify(value) {
-  return String(value || '')
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+    const recentList  = state.recent.map(findBySlug).filter(Boolean);
+    const favList     = state.favorites.map(findBySlug).filter(Boolean);
+    const results     = state.searchValue.trim()
+      ? getSuggestions(state.searchValue, 30).map((e) => e.item)
+      : state.filtered.slice(0, 30);
 
-function pill(value) {
-  return `<span class="pill">${escapeHtml(value)}</span>`;
-}
-
-function infoRow(label, value) {
-  return `
-    <div class="info-row">
-      <div class="info-row__label">${escapeHtml(label)}</div>
-      <div class="info-row__value">${value ? value : '<span class="muted">Not available</span>'}</div>
-    </div>
-  `;
-}
-
-function formatMultiline(text) {
-  if (!text) return '';
-  return escapeHtml(text).replace(/\n/g, '<br>');
-}
-
-function radialMeter(value, label) {
-  const pct = clamp01(value);
-  const angle = pct * 360;
-  return `
-    <div class="radial-wrap">
-      <div class="radial" style="--angle:${angle}deg;">
-        <div class="radial__inner">
-          <strong>${formatPercent(pct)}</strong>
-          <span>${escapeHtml(label)}</span>
+    $app.innerHTML = `
+      <!-- Results bar -->
+      <div class="results-bar fade-in">
+        <span class="results-count">${state.occupations.length.toLocaleString()} occupations</span>
+        ${state.searchValue ? `
+          <span class="results-tag">
+            "${esc(state.searchValue)}"
+            <button id="clearTagBtn" title="Clear">×</button>
+          </span>` : ''}
+        <div class="sort-chips">
+          <button class="chip ${state.sortBy === 'probability_of_computerisation' ? 'active' : ''}"
+            type="button" data-sort-by="sortBy" data-sort-val="probability_of_computerisation">Automation</button>
+          <button class="chip ${state.sortBy === 'speed_of_replacement_score' ? 'active' : ''}"
+            type="button" data-sort-by="sortBy" data-sort-val="speed_of_replacement_score">Speed</button>
+          <button class="chip ${state.sortBy === 'job_title' ? 'active' : ''}"
+            type="button" data-sort-by="sortBy" data-sort-val="job_title">A–Z</button>
+          <button class="chip" type="button" data-sort-by="sortDir"
+            data-sort-val="${state.sortDir === 'desc' ? 'asc' : 'desc'}">
+            ${state.sortDir === 'desc' ? '↓' : '↑'} ${state.sortDir === 'desc' ? 'Desc' : 'Asc'}
+          </button>
         </div>
       </div>
-    </div>
-  `;
-}
 
-function getPercentile(value, values) {
-  const valid = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
-  if (!valid.length) return 0;
-  const count = valid.filter((v) => v <= value).length;
-  return Math.round((count / valid.length) * 100);
-}
+      <!-- Dashboard grid -->
+      <section class="dashboard-grid fade-in">
 
-function loadLocal(key, fallback) {
-  try {
-    const value = localStorage.getItem(key);
-    return value ? JSON.parse(value) : fallback;
-  } catch {
-    return fallback;
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <section class="panel sidebar-card">
+            <div class="section-head">
+              <h2 class="section-label">Filters</h2>
+              <button id="resetBtn" class="ghost-button" type="button">Reset</button>
+            </div>
+            <div class="filters-grid">
+              ${filterSelect('risk_band',      'Risk band',       ['All', ...uniqVals('risk_band')])}
+              ${filterSelect('speed_category', 'Speed category',  ['All', ...uniqVals('speed_category')])}
+              ${filterSelect('confidence',     'Confidence',      ['All', ...uniqVals('confidence')])}
+            </div>
+          </section>
+
+          <section class="panel sidebar-card">
+            <div class="section-head"><h2 class="section-label">By risk</h2></div>
+            <div class="overlay-chip-row">
+              ${uniqVals('risk_band').map((v) => `
+                <button class="tag" type="button"
+                  data-fk="risk_band" data-fv="${escAttr(v)}">${esc(v)}</button>`).join('')}
+            </div>
+          </section>
+
+          <section class="panel sidebar-card">
+            <button class="primary-button" style="width:100%"
+              type="button" data-nav="#/compare">Compare occupations →</button>
+          </section>
+
+          ${recentList.length ? `
+            <section class="panel sidebar-card">
+              <div class="section-head">
+                <h2 class="section-label">Recent</h2>
+                <button id="clearRecentBtn" class="ghost-button" type="button">Clear</button>
+              </div>
+              <div class="stack">
+                ${recentList.map(miniLink).join('')}
+              </div>
+            </section>` : ''}
+
+          ${favList.length ? `
+            <section class="panel sidebar-card">
+              <div class="section-head"><h2 class="section-label">Favorites</h2></div>
+              <div class="stack">${favList.map(miniLink).join('')}</div>
+            </section>` : ''}
+        </aside>
+
+        <!-- Content -->
+        <div class="content-stack">
+          <section class="panel content-card">
+            <div class="section-head">
+              <h2 class="section-label">Highest automation risk</h2>
+            </div>
+            <div class="featured-grid">
+              ${featured.map(featuredCard).join('')}
+            </div>
+          </section>
+
+          <section class="panel content-card">
+            <div class="section-head">
+              <h2 class="section-label">All occupations</h2>
+              <span style="font-family:var(--f-mono);font-size:11px;color:var(--muted-2);">
+                ${results.length.toLocaleString()} shown
+              </span>
+            </div>
+            ${results.length ? `
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Occupation</th>
+                      <th>Risk</th>
+                      <th>Speed</th>
+                      <th>Automation</th>
+                      <th>Observed AI</th>
+                      <th>Confidence</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${results.map(tableRow).join('')}
+                  </tbody>
+                </table>
+              </div>` : `
+              <div class="empty-state">
+                <h3>No results</h3>
+                <p class="empty-copy">Try a different search or remove filters.</p>
+              </div>`}
+          </section>
+        </div>
+      </section>`;
+
+    wireHome();
   }
-}
 
-function saveLocal(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
-  }
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function levenshtein(a, b) {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-
-  const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
-  for (let j = 0; j <= a.length; j++) {
-    matrix[0][j] = j;
+  function wireHome() {
+    document.querySelectorAll('[data-open]').forEach((el) =>
+      el.addEventListener('click', () => openOccupation(el.dataset.open)));
+    document.querySelectorAll('[data-nav]').forEach((btn) =>
+      btn.addEventListener('click', () => { location.hash = btn.dataset.nav; }));
+    document.querySelectorAll('[data-select-filter]').forEach((sel) =>
+      sel.addEventListener('change', () => { state.filters[sel.dataset.selectFilter] = sel.value; renderHome(); }));
+    document.querySelectorAll('[data-fk]').forEach((btn) =>
+      btn.addEventListener('click', () => { state.filters[btn.dataset.fk] = btn.dataset.fv; renderHome(); }));
+    document.querySelectorAll('[data-sort-by]').forEach((btn) =>
+      btn.addEventListener('click', () => { state[btn.dataset.sortBy] = btn.dataset.sortVal; renderHome(); }));
+    document.getElementById('resetBtn')?.addEventListener('click', () => {
+      state.filters  = { risk_band: 'All', speed_category: 'All', confidence: 'All' };
+      state.sortBy   = 'probability_of_computerisation';
+      state.sortDir  = 'desc';
+      renderHome();
+    });
+    document.getElementById('clearRecentBtn')?.addEventListener('click', () => {
+      state.recent = []; writeStorage(KEYS.recent, []); renderHome();
+    });
+    document.getElementById('clearTagBtn')?.addEventListener('click', () => {
+      state.searchValue = ''; renderHome();
+    });
   }
 
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1,
-          matrix[i][j - 1] + 1,
-          matrix[i - 1][j] + 1
-        );
+  // ════════════════════════════════════════════════════════════════
+  // DETAIL VIEW
+  // ════════════════════════════════════════════════════════════════
+  function renderDetail() {
+    const o = findBySlug(state.currentSlug);
+    if (!o) {
+      $app.innerHTML = `
+        <section class="panel empty-state fade-in">
+          <h2>Occupation not found</h2>
+          <p class="empty-copy">The URL doesn't match any occupation in the dataset.</p>
+          <a class="primary-button" href="#/">← Back to search</a>
+        </section>`;
+      return;
+    }
+
+    rememberOcc(o.slug);
+    renderTopbarCenter();
+
+    const pctVal    = Math.round((num(o.probability_of_computerisation) || 0) * 100);
+    const pctClass  = riskPctClass(o.risk_band);
+    const percentile = percentileRank('probability_of_computerisation', o.probability_of_computerisation);
+    const isFav     = state.favorites.includes(o.slug);
+    const isCompare = state.compare.includes(o.slug);
+
+    $app.innerHTML = `
+      <section class="panel content-card fade-in">
+        <!-- Nav row -->
+        <div class="detail-nav">
+          <a class="back-link" href="#/">← Back</a>
+          <div class="inline-actions">
+            <button id="favBtn" class="favorite-chip ${isFav ? 'active' : ''}" type="button">
+              ${isFav ? '★ Favorited' : '☆ Favorite'}
+            </button>
+            <button id="cmpBtn" class="compare-chip ${isCompare ? 'active' : ''}" type="button">
+              ${isCompare ? '✓ In compare' : '+ Compare'}
+            </button>
+            <button id="cpyBtn" class="ghost-button" type="button">Copy link</button>
+            <button id="prtBtn" class="ghost-button" type="button">Print</button>
+          </div>
+        </div>
+
+        <!-- Hero: italic serif title + big colored % -->
+        <div class="occ-hero">
+          <div class="occ-title-col">
+            <div class="occ-tags">
+              ${pill(o.risk_band, 'risk')}
+              ${pill(o.speed_category, 'speed')}
+              ${pill(o.confidence, 'conf')}
+              <span class="risk-pill risk-unknown" style="font-size:10px;letter-spacing:.06em;">${esc(o['O*NET-SOC Code'] || '—')}</span>
+            </div>
+            <h1 class="occ-title">${esc(o.job_title)}</h1>
+            <p class="occ-desc">${esc(o.job_description || 'No description available.')}</p>
+          </div>
+          <div class="occ-risk-hero">
+            <div class="occ-risk-pct ${pctClass}">${pctVal}<span class="pct-sym">%</span></div>
+            <div class="occ-risk-label">Automation risk</div>
+          </div>
+        </div>
+
+        <!-- Body: scores + sidebar -->
+        <div class="detail-body">
+          <div class="detail-main">
+
+            <!-- Score breakdown bars -->
+            <div>
+              <span class="reasoning-head">Score breakdown</span>
+              <div class="score-breakdown">
+                ${SCORE_FIELDS.map((f) => scoreBar(o, f)).join('')}
+              </div>
+            </div>
+
+            <!-- Reasoning -->
+            <div>
+              <span class="reasoning-head">Why this score?</span>
+              <p class="reasoning-text">${esc(o.reasoning_short || 'No short reasoning available.')}</p>
+            </div>
+            ${o.reasoning_detailed ? `
+              <div>
+                <span class="reasoning-head">Detailed reasoning</span>
+                <div class="reasoning-bullets">
+                  ${String(o.reasoning_detailed).split('\n').map((l) => l.trim()).filter(Boolean)
+                    .map((l) => `<div class="reasoning-bullet">${esc(l)}</div>`).join('')}
+                </div>
+              </div>` : ''}
+          </div>
+
+          <!-- Sidebar -->
+          <aside class="detail-sidebar">
+            <!-- Percentile gauge -->
+            <div class="dsc">
+              <span class="dsc-label">Dataset percentile</span>
+              <div class="radial-wrap" style="padding:8px 0;">
+                <div class="radial" style="--v:${percentile / 100}">
+                  <div class="radial-inner">
+                    <span class="radial-val">${percentile}</span>
+                    <span class="radial-sub">percentile</span>
+                  </div>
+                </div>
+              </div>
+              <div class="score-row" style="margin-top:4px;">
+                <div class="score-head">
+                  <span class="score-label">Automation percentile</span>
+                  <span class="score-val">${percentile}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill ${riskFillClass(o.risk_band)}" style="width:${percentile}%"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Key bottleneck -->
+            ${o.key_bottleneck ? `
+              <div class="dsc">
+                <span class="dsc-label">Key bottleneck</span>
+                <div class="dsc-value">${esc(o.key_bottleneck)}</div>
+              </div>` : ''}
+
+            <!-- Assumptions -->
+            ${o.assumptions ? `
+              <div class="dsc">
+                <span class="dsc-label">Assumptions</span>
+                <div class="dsc-value">${esc(o.assumptions)}</div>
+              </div>` : ''}
+          </aside>
+        </div>
+      </section>`;
+
+    // Wire buttons
+    document.getElementById('favBtn')?.addEventListener('click', () => {
+      toggleStored('favorites', o.slug); renderDetail();
+    });
+    document.getElementById('cmpBtn')?.addEventListener('click', () => {
+      toggleCompare(o.slug); renderDetail();
+    });
+    document.getElementById('cpyBtn')?.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(location.href); pulse(document.getElementById('cpyBtn'), 'Copied!'); } catch (_) {}
+    });
+    document.getElementById('prtBtn')?.addEventListener('click', () => window.print());
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // COMPARE VIEW
+  // ════════════════════════════════════════════════════════════════
+  function renderCompare() {
+    const items = state.compare.map(findBySlug).filter(Boolean).slice(0, 2);
+    $app.innerHTML = `
+      <section class="panel content-card fade-in">
+        <div class="detail-nav">
+          <a class="back-link" href="#/">← Back</a>
+          <button id="clearCmpBtn" class="ghost-button" type="button">Clear compare</button>
+        </div>
+        <div style="margin-bottom:16px;">
+          <h2 style="font-family:var(--f-ui);font-weight:800;letter-spacing:-0.03em;margin:0 0 6px;">Compare occupations</h2>
+          <p style="color:var(--muted);font-size:.88rem;margin:0;">Open any occupation and click "+ Compare" to add it here.</p>
+        </div>
+        ${items.length ? `
+          <div class="compare-grid">
+            ${items.map(compareCard).join('')}
+          </div>` : `
+          <div class="empty-state">
+            <h3>Nothing selected yet</h3>
+            <p class="empty-copy">Open any occupation and click "+ Compare".</p>
+          </div>`}
+      </section>`;
+
+    document.getElementById('clearCmpBtn')?.addEventListener('click', () => {
+      state.compare = []; writeStorage(KEYS.compare, []); renderCompare();
+    });
+    document.querySelectorAll('[data-open]').forEach((btn) =>
+      btn.addEventListener('click', () => openOccupation(btn.dataset.open)));
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // HTML RENDER HELPERS
+  // ════════════════════════════════════════════════════════════════
+
+  function featuredCard(o) {
+    const v = num(o.probability_of_computerisation) ?? 0;
+    const pctNum  = Math.round(v * 100);
+    const fillCls = riskFillClass(o.risk_band);
+    const bigCls  = fillCls === 'high' ? 'high' : fillCls === 'medium' ? 'med' : 'low';
+    return `
+      <article class="featured-card" data-open="${escAttr(o.slug)}">
+        <div class="featured-title">${esc(o.job_title)}</div>
+        <div>
+          <span class="featured-big-num ${bigCls}">${pctNum}</span>
+          <span class="featured-sub">% automation risk</span>
+        </div>
+        <div class="featured-bar-wrap">
+          <div class="score-head">
+            ${pill(o.risk_band, 'risk')}
+            ${pill(o.speed_category, 'speed')}
+          </div>
+          <div class="progress-track" style="margin-top:6px;">
+            <div class="progress-fill ${fillCls}" style="width:${pctNum}%"></div>
+          </div>
+        </div>
+      </article>`;
+  }
+
+  function tableRow(o) {
+    return `
+      <tr data-open="${escAttr(o.slug)}">
+        <td>
+          <span class="t-occ-name">${esc(o.job_title)}</span>
+          <span class="t-occ-code">${esc(o['O*NET-SOC Code'] || '')}</span>
+        </td>
+        <td>${pill(o.risk_band, 'risk')}</td>
+        <td>${pill(o.speed_category, 'speed')}</td>
+        <td class="mono-val">${pct(o.probability_of_computerisation)}</td>
+        <td class="mono-val">${pct(o.observed_ai_coverage)}</td>
+        <td>${esc(o.confidence || '—')}</td>
+      </tr>`;
+  }
+
+  function scoreBar(o, field) {
+    const v       = num(o[field.key]);
+    const pctNum  = Math.round((v ?? 0) * 100);
+    const fillCls = riskFillClass(o.risk_band);
+    return `
+      <div class="sb-item">
+        <div class="sb-head">
+          <span class="sb-label">${esc(field.label)}</span>
+          <span class="sb-val">${v == null ? '—' : `${v.toFixed(2)} · ${pctNum}%`}</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill ${fillCls}" style="width:${pctNum}%"></div>
+        </div>
+      </div>`;
+  }
+
+  function compareCard(o) {
+    return `
+      <article class="compare-card">
+        <div class="compare-header">
+          <h3 class="compare-title">${esc(o.job_title)}</h3>
+          <div class="compare-meta">
+            ${pill(o.risk_band, 'risk')}
+            ${pill(o.speed_category, 'speed')}
+          </div>
+          <p style="font-size:.88rem;color:var(--text-2);margin:0;line-height:1.6;">
+            ${esc(o.job_description || 'No description.')}
+          </p>
+        </div>
+        <div class="score-bars">
+          ${SCORE_FIELDS.map((f) => {
+            const v = num(o[f.key]);
+            return `
+              <div class="score-row">
+                <div class="score-head">
+                  <span class="score-label">${esc(f.label)}</span>
+                  <span class="score-val">${v == null ? '—' : `${v.toFixed(2)}`}</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill ${riskFillClass(o.risk_band)}" style="width:${Math.round((v ?? 0) * 100)}%"></div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+        <button class="ghost-button" type="button" data-open="${escAttr(o.slug)}" style="width:100%;justify-content:center;">
+          Open profile →
+        </button>
+      </article>`;
+  }
+
+  function miniLink(o) {
+    return `
+      <button class="mini-occ-btn" type="button" data-open="${escAttr(o.slug)}">
+        <span class="mini-occ-name">${esc(o.job_title)}</span>
+        <span class="mini-occ-meta">${esc(o.risk_band || 'Unknown')} · ${pct(o.probability_of_computerisation)}</span>
+      </button>`;
+  }
+
+  function filterSelect(key, label, values) {
+    return `
+      <label>
+        <span class="field-label">${esc(label)}</span>
+        <select data-select-filter="${escAttr(key)}">
+          ${values.map((v) => `<option value="${escAttr(v)}" ${state.filters[key] === v ? 'selected' : ''}>${esc(v)}</option>`).join('')}
+        </select>
+      </label>`;
+  }
+
+  function pill(value, kind) {
+    const s   = String(value || 'Unknown');
+    const cls = `${kind}-${normalizeText(s).replace(/\s+/g, '-')}`;
+    return `<span class="${kind}-pill ${cls}">${esc(s)}</span>`;
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // SEARCH LOGIC (unchanged core algorithm)
+  // ════════════════════════════════════════════════════════════════
+  function getSuggestions(query, limit) {
+    const q = query.trim();
+    const results = q
+      ? state.occupations
+          .map((item) => ({ item, score: searchScore(item, q) }))
+          .filter((e) => e.score > 0)
+          .sort((a, b) => b.score - a.score)
+      : state.occupations.map((item, i) => ({ item, score: state.occupations.length - i }));
+    return results.slice(0, limit);
+  }
+
+  function searchScore(item, query) {
+    const q     = normalizeText(query);
+    if (!q) return 0;
+    const title = item.__titleNorm;
+    const desc  = item.__descNorm;
+    const blob  = item.__blob;
+
+    if (title === q)          return 2000;
+    if (title.startsWith(q))  return 1200 - title.length;
+    if (title.includes(q))    return 900  - title.indexOf(q);
+
+    const tw = title.split(' '), qw = q.split(' ');
+    let score = 0;
+    for (const w of qw) {
+      if (tw.some((t) => t.startsWith(w))) score += 160;
+      else if (blob.includes(w))           score += 70;
+      else {
+        const d = bestDist(w, tw);
+        if (d <= 1) score += 60;
+        else if (d === 2) score += 22;
       }
     }
+    if (desc.includes(q)) score += 65;
+    if (blob.includes(q)) score += 40;
+    return score;
   }
 
-  return matrix[b.length][a.length];
-}
+  function bestDist(word, words) {
+    let best = Infinity;
+    for (const w of words) {
+      if (Math.abs(w.length - word.length) > 2) continue;
+      best = Math.min(best, levenshtein(word, w));
+      if (best === 0) break;
+    }
+    return best;
+  }
+
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let prev = i - 1; dp[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const tmp = dp[j];
+        dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = tmp;
+      }
+    }
+    return dp[b.length];
+  }
+
+  function applyFiltersAndSort() {
+    state.filtered = state.occupations.filter((o) => {
+      if (state.filters.risk_band      !== 'All' && o.risk_band      !== state.filters.risk_band)      return false;
+      if (state.filters.speed_category !== 'All' && o.speed_category !== state.filters.speed_category) return false;
+      if (state.filters.confidence     !== 'All' && o.confidence     !== state.filters.confidence)     return false;
+      return !state.searchValue.trim() || searchScore(o, state.searchValue) > 0;
+    });
+    const dir = state.sortDir === 'asc' ? 1 : -1;
+    state.filtered.sort((a, b) => {
+      const l = a[state.sortBy], r = b[state.sortBy];
+      if (typeof l === 'string' || typeof r === 'string')
+        return String(l || '').localeCompare(String(r || '')) * dir;
+      return ((num(l) || 0) - (num(r) || 0)) * dir;
+    });
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // DATA / UTIL HELPERS
+  // ════════════════════════════════════════════════════════════════
+  function normalizeOccupation(item, index) {
+    const title = item.job_title || `Untitled ${index + 1}`;
+    const code  = item['O*NET-SOC Code'] || `occ-${index + 1}`;
+    const slug  = `${slugify(title)}-${slugify(code)}`;
+    const desc  = item.job_description || '';
+    return {
+      ...item,
+      slug,
+      __titleNorm: normalizeText(title),
+      __descNorm:  normalizeText(desc),
+      __blob: normalizeText([
+        title, desc,
+        item.reasoning_short, item.reasoning_detailed,
+        item.key_bottleneck, code
+      ].filter(Boolean).join(' '))
+    };
+  }
+
+  function percentileRank(field, value) {
+    const vals = state.occupations.map((o) => num(o[field])).filter((n) => n != null).sort((a, b) => a - b);
+    if (!vals.length || value == null) return 0;
+    let c = 0;
+    for (const v of vals) if (v <= value) c++;
+    return Math.round((c / vals.length) * 100);
+  }
+
+  function riskPctClass(band) {
+    const b = normalizeText(String(band || ''));
+    if (b.includes('high'))   return 'is-high';
+    if (b.includes('med') || b.includes('mod')) return 'is-medium';
+    if (b.includes('low'))    return 'is-low';
+    return '';
+  }
+
+  function riskFillClass(band) {
+    const b = normalizeText(String(band || ''));
+    if (b.includes('high'))   return 'high';
+    if (b.includes('med') || b.includes('mod')) return 'medium';
+    if (b.includes('low'))    return 'low';
+    return '';
+  }
+
+  function openOccupation(slug) {
+    if (!slug) return;
+    quietCloseOverlay();
+    location.hash = `#/occupation/${encodeURIComponent(slug)}`;
+  }
+
+  function findBySlug(slug) { return state.occupations.find((o) => o.slug === slug) || null; }
+  function uniqVals(key) { return [...new Set(state.occupations.map((o) => o[key]).filter(Boolean))].sort(); }
+
+  function rememberOcc(slug) {
+    state.recent = [slug, ...state.recent.filter((s) => s !== slug)].slice(0, 8);
+    writeStorage(KEYS.recent, state.recent);
+  }
+  function toggleStored(type, slug) {
+    const key  = type === 'favorites' ? KEYS.favorites : KEYS.recent;
+    const list = type === 'favorites' ? state.favorites : state.recent;
+    const next = list.includes(slug) ? list.filter((s) => s !== slug) : [slug, ...list].slice(0, 24);
+    if (type === 'favorites') state.favorites = next;
+    else state.recent = next;
+    writeStorage(key, next);
+  }
+  function toggleCompare(slug) {
+    state.compare = state.compare.includes(slug)
+      ? state.compare.filter((s) => s !== slug)
+      : [...state.compare, slug].slice(-2);
+    writeStorage(KEYS.compare, state.compare);
+  }
+
+  // ── Formatting ────────────────────────────────────────────────────
+  function pct(value) {
+    const n = num(value);
+    return n == null ? '—' : `${Math.round(n * 100)}%`;
+  }
+  function num(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  function normalizeText(v) {
+    return String(v || '').toLowerCase().normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  function slugify(v) { return normalizeText(v).replace(/\s+/g, '-'); }
+  function esc(v) {
+    return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  }
+  function escAttr(v) { return esc(v).replace(/`/g,'&#096;'); }
+
+  // ── Theme ──────────────────────────────────────────────────────────
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    $themeToggle.textContent = theme === 'light' ? 'Dark' : 'Light';
+  }
+  function preferredTheme() {
+    return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+
+  // ── Misc ───────────────────────────────────────────────────────────
+  function renderSkeleton() {
+    const t = document.getElementById('skeletonTemplate');
+    $app.innerHTML = '';
+    $app.appendChild(t.content.cloneNode(true));
+  }
+  function pulse(btn, text) {
+    if (!btn) return;
+    const orig = btn.textContent;
+    btn.textContent = text;
+    setTimeout(() => { btn.textContent = orig; }, 1300);
+  }
+  function readStorage(key, fb) {
+    try { const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; } catch { return fb; }
+  }
+  function writeStorage(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  }
+})();
