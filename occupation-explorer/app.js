@@ -57,10 +57,16 @@
     renderSkeleton();
 
     try {
-      const raw = await fetch(DATA_URL).then((r) => {
+      const json = await fetch(DATA_URL).then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       });
+      // Support both a bare array and the workbook envelope format:
+      // { sheets: { "Scored Occupations": { rows: [...] } } }
+      const raw = Array.isArray(json)
+        ? json
+        : json?.sheets?.['Scored Occupations']?.rows ?? [];
+      if (!raw.length) throw new Error('No occupation rows found in dataset.');
       state.occupations = raw.map(normalizeOccupation);
       state.filtered    = [...state.occupations];
 
