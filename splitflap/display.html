@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
 <title>Split-Flap Display</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%231a1a22'/><text x='16' y='23' text-anchor='middle' font-size='20' fill='%23e8d44d'>F</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -41,166 +42,128 @@ html, body {
 }
 
 .header {
-  position: fixed; top: 0; left: 0; right: 0;
-  height: 48px;
+  position: fixed; top: 0; left: 0; right: 0; height: 48px;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 20px;
   background: rgba(6,6,10,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.04);
   z-index: 100;
-  transition: opacity 0.4s;
 }
-
 .header-left, .header-right { display: flex; align-items: center; gap: 12px; }
 
 .status-dot {
   width: 8px; height: 8px; border-radius: 50%;
-  background: var(--disconnected);
-  box-shadow: 0 0 6px var(--disconnected);
+  background: var(--disconnected); box-shadow: 0 0 6px var(--disconnected);
   transition: all 0.3s;
 }
 .status-dot.connected { background: var(--connected); box-shadow: 0 0 8px var(--connected); }
 .status-dot.pairing { background: var(--pairing); box-shadow: 0 0 8px var(--pairing); animation: pulse 1.5s infinite; }
-
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
 .status-label { font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
 
 .logo {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700; font-size: 14px;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: var(--ui-text-bright);
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 14px;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--ui-text-bright);
   position: absolute; left: 50%; transform: translateX(-50%);
 }
 
 .hdr-btn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--ui-text);
-  padding: 6px 12px; border-radius: 6px;
-  font-size: 11px; font-family: inherit;
-  cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+  color: var(--ui-text); padding: 6px 12px; border-radius: 6px;
+  font-size: 11px; font-family: inherit; cursor: pointer;
+  transition: all 0.2s; letter-spacing: 0.3px;
 }
 .hdr-btn:hover { background: rgba(255,255,255,0.1); color: var(--ui-text-bright); }
 
 .board-container {
-  position: fixed;
-  top: 48px; left: 0; right: 0; bottom: 0;
-  display: flex; align-items: center; justify-content: center;
-  padding: 24px;
+  position: fixed; top: 48px; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center; padding: 24px;
 }
-
 .board {
-  display: flex; flex-direction: column;
-  gap: var(--row-gap);
-  background: var(--board-bg);
-  padding: 28px 32px; border-radius: 12px;
+  display: flex; flex-direction: column; gap: var(--row-gap);
+  background: var(--board-bg); padding: 28px 32px; border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.04);
   box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.6),
     inset 0 1px 0 rgba(255,255,255,0.03);
 }
-
 .board-row { display: flex; gap: var(--cell-gap); }
 
 .sf-cell {
   width: var(--cw); height: var(--ch);
-  position: relative; perspective: 400px;
-  border-radius: var(--cell-radius); overflow: visible;
+  position: relative; perspective: 400px; border-radius: var(--cell-radius);
 }
-
 .sf-static {
-  position: absolute; left: 0; right: 0;
-  overflow: hidden;
+  position: absolute; left: 0; right: 0; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-
 .sf-static.top {
   top: 0; height: 50%;
-  background: linear-gradient(180deg, var(--cell-top) 0%, var(--cell-face) 100%);
+  background: linear-gradient(180deg, var(--cell-top), var(--cell-face));
   border-radius: var(--cell-radius) var(--cell-radius) 0 0;
   border-bottom: 1px solid var(--split-line);
 }
-
 .sf-static.bot {
   bottom: 0; height: 50%;
-  background: linear-gradient(180deg, var(--cell-face) 0%, var(--cell-bot) 100%);
+  background: linear-gradient(180deg, var(--cell-face), var(--cell-bot));
   border-radius: 0 0 var(--cell-radius) var(--cell-radius);
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
-
 .sf-char {
   font-family: 'Oswald', sans-serif; font-weight: 700;
   font-size: var(--font-size); line-height: var(--ch);
-  color: var(--char-color);
-  text-shadow: 0 0 8px var(--char-glow);
+  color: var(--char-color); text-shadow: 0 0 8px var(--char-glow);
   position: absolute; width: 100%; text-align: center;
 }
-
 .sf-static.top .sf-char { top: 0; }
 .sf-static.bot .sf-char { bottom: 0; }
 
 .sf-flap {
-  position: absolute; left: 0; right: 0; height: 50%;
-  overflow: hidden;
+  position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
-  backface-visibility: hidden; -webkit-backface-visibility: hidden;
-  z-index: 10;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; z-index: 10;
 }
-
 .sf-flap.falling {
   top: 0; transform-origin: bottom center;
-  background: linear-gradient(180deg, var(--cell-top) 0%, var(--cell-face) 100%);
+  background: linear-gradient(180deg, var(--cell-top), var(--cell-face));
   border-radius: var(--cell-radius) var(--cell-radius) 0 0;
   animation: flapFall var(--flip-duration) ease-in forwards;
 }
-
 .sf-flap.rising {
   bottom: 0; transform-origin: top center;
-  background: linear-gradient(180deg, var(--cell-face) 0%, var(--cell-bot) 100%);
+  background: linear-gradient(180deg, var(--cell-face), var(--cell-bot));
   border-radius: 0 0 var(--cell-radius) var(--cell-radius);
   transform: rotateX(90deg);
   animation: flapRise var(--flip-duration) ease-out forwards;
 }
-
 .sf-flap .sf-char { position: absolute; width: 100%; text-align: center; }
 .sf-flap.falling .sf-char { top: 0; }
 .sf-flap.rising .sf-char { bottom: 0; }
+@keyframes flapFall { 0%{transform:rotateX(0deg)} 100%{transform:rotateX(-90deg)} }
+@keyframes flapRise { 0%{transform:rotateX(90deg)} 100%{transform:rotateX(0deg)} }
 
-@keyframes flapFall { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-90deg); } }
-@keyframes flapRise { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0deg); } }
-
-/* ── OVERLAY ── */
 .overlay {
   position: fixed; inset: 0;
   background: rgba(6,6,10,0.88);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   display: flex; align-items: center; justify-content: center;
-  z-index: 200;
-  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
 }
 .overlay.open { opacity: 1; pointer-events: all; }
 
 .pair-panel {
-  background: #12121a;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 36px;
-  max-width: 520px; width: 90%;
+  background: #12121a; border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px; padding: 32px; max-width: 560px; width: 92%;
   box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-  max-height: 90vh; overflow-y: auto;
+  max-height: 94vh; overflow-y: auto;
 }
-
 .pair-panel h2 {
-  font-family: 'Oswald', sans-serif; font-weight: 700;
-  font-size: 20px; letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 20px;
+  letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--ui-text-bright); margin-bottom: 8px;
 }
-
-.pair-panel > p {
-  font-size: 13px; line-height: 1.6; color: var(--ui-text); margin-bottom: 20px;
-}
+.pair-panel > p { font-size: 13px; line-height: 1.6; margin-bottom: 16px; }
 
 .step-num {
   display: inline-flex; align-items: center; justify-content: center;
@@ -208,19 +171,13 @@ html, body {
   background: var(--accent); color: #000;
   font-size: 12px; font-weight: 700; margin-right: 8px; flex-shrink: 0;
 }
-
-.pair-step {
-  display: flex; align-items: flex-start; margin-bottom: 16px;
-  font-size: 13px; color: var(--ui-text); line-height: 1.5;
-}
-
+.pair-step { display: flex; align-items: flex-start; margin-bottom: 14px; font-size: 13px; line-height: 1.5; }
 .pair-step-text { flex: 1; }
 
 .pair-textarea {
-  width: 100%; height: 80px;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
-  color: var(--ui-text-bright);
+  width: 100%; height: 76px;
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; color: var(--ui-text-bright);
   font-family: 'Courier New', monospace; font-size: 11px;
   padding: 10px; resize: none; margin-top: 8px; outline: none;
   transition: border-color 0.2s;
@@ -230,12 +187,10 @@ html, body {
 
 .pair-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 20px; border-radius: 8px; border: none;
+  padding: 10px 18px; border-radius: 8px; border: none;
   font-family: inherit; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s;
-  margin-top: 8px; margin-right: 8px;
+  cursor: pointer; transition: all 0.2s; margin-top: 8px; margin-right: 8px;
 }
-
 .pair-btn.primary { background: var(--accent); color: #000; }
 .pair-btn.primary:hover { background: #ffd633; }
 .pair-btn.secondary {
@@ -245,38 +200,44 @@ html, body {
 .pair-btn.secondary:hover { background: rgba(255,255,255,0.14); }
 .pair-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
-.pair-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 20px 0; }
-
+.pair-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 18px 0; }
 .pair-status-msg { font-size: 12px; color: var(--pairing); margin-top: 10px; min-height: 18px; }
 
 .pair-debug {
-  font-size: 10px; color: var(--ui-text); opacity: 0.4;
-  margin-top: 6px; font-family: 'Courier New', monospace;
-  word-break: break-all;
+  font-size: 10px; color: var(--ui-text); opacity: 0.6;
+  margin-top: 8px; font-family: 'Courier New', monospace;
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 140px; overflow-y: auto;
+  background: rgba(0,0,0,0.3); border-radius: 6px; padding: 8px;
 }
+
+.warn-banner {
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  font-size: 12px; color: var(--pairing); line-height: 1.5; display: none;
+}
+.warn-banner.show { display: block; }
 
 .demo-badge {
   position: fixed; bottom: 20px; right: 20px;
-  background: rgba(245,197,24,0.12);
-  border: 1px solid rgba(245,197,24,0.25);
-  color: var(--accent);
-  font-size: 11px; font-weight: 600;
+  background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.25);
+  color: var(--accent); font-size: 11px; font-weight: 600;
   letter-spacing: 1px; text-transform: uppercase;
-  padding: 6px 14px; border-radius: 6px;
-  cursor: pointer; transition: all 0.2s; z-index: 50;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+  transition: all 0.2s; z-index: 50;
 }
 .demo-badge:hover { background: rgba(245,197,24,0.2); }
 .demo-badge.hidden { display: none; }
 
 @media (max-width: 600px) {
   .board { padding: 16px 12px; border-radius: 8px; }
-  .pair-panel { padding: 24px; }
+  .pair-panel { padding: 20px; }
 }
 </style>
 </head>
 <body>
 
-<header class="header" id="header">
+<header class="header">
   <div class="header-left">
     <div class="status-dot" id="statusDot"></div>
     <span class="status-label" id="statusLabel">Disconnected</span>
@@ -296,6 +257,8 @@ html, body {
   <div class="pair-panel">
     <h2>Pair a Controller</h2>
     <p>Connect a phone or laptop to control this display — no server needed.</p>
+
+    <div class="warn-banner" id="warnBanner"></div>
 
     <div class="pair-step">
       <span class="step-num">1</span>
@@ -321,8 +284,11 @@ html, body {
 
     <div class="pair-divider"></div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <button class="pair-btn secondary" onclick="resetConnection()">Reset</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <div>
+        <button class="pair-btn secondary" onclick="resetConnection()">Reset</button>
+        <button class="pair-btn secondary" onclick="selfTest()">Self-Test</button>
+      </div>
       <button class="pair-btn secondary" onclick="togglePairPanel()">Close</button>
     </div>
 
@@ -335,7 +301,7 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   SPLIT-FLAP DISPLAY
+   SPLIT-FLAP DISPLAY v4 — full diagnostics
    ═══════════════════════════════════════════════════════════════ */
 
 const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:!?-/#@';
@@ -344,34 +310,45 @@ const DEFAULT_COLS = 20;
 
 let boardState = { rows: DEFAULT_ROWS, cols: DEFAULT_COLS, lines: [] };
 let cells = [];
-let pc = null;   // RTCPeerConnection
-let dc = null;   // RTCDataChannel
+let pc = null;
+let dc = null;
 let connState = 'disconnected';
 let wakeLock = null;
 let demoTimer = null;
+let checkingTimer = null;
 
-/* ─── Logging ─── */
-function log(...args) { console.log('[Display]', ...args); }
-
-/* ─── Safe base64 for SDP (handles Unicode) ─── */
-function encodeB64(obj) {
-  const json = JSON.stringify(obj);
-  const bytes = new TextEncoder().encode(json);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
+/* ─── Logging: ALWAYS goes to both console AND debug panel ─── */
+function dbg(msg) {
+  console.log('[Display]', msg);
+  const el = document.getElementById('pairDebug');
+  if (el) {
+    el.textContent += msg + '\n';
+    el.scrollTop = el.scrollHeight;
+  }
 }
 
+function clearDbg() {
+  const el = document.getElementById('pairDebug');
+  if (el) el.textContent = '';
+}
+
+/* ─── Base64 ─── */
+function encodeB64(obj) {
+  const b = new TextEncoder().encode(JSON.stringify(obj));
+  let s = '';
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
+}
 function decodeB64(str) {
-  const bin = atob(str);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return JSON.parse(new TextDecoder().decode(bytes));
+  const bin = atob(str.trim());
+  const b = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(b));
 }
 
 /* ═══ CHARACTER HELPERS ═══ */
 function sanitizeChar(ch) {
-  if (!ch || ch.length === 0) return ' ';
+  if (!ch || !ch.length) return ' ';
   const c = ch.toUpperCase();
   return CHARS.includes(c) ? c : ' ';
 }
@@ -380,174 +357,130 @@ function nextChar(ch) { return CHARS[(charIndex(ch) + 1) % CHARS.length]; }
 
 /* ═══ SPLIT-FLAP CELL ═══ */
 class SplitFlapCell {
-  constructor(parentEl) {
-    this.current = ' ';
-    this.target = ' ';
-    this.animating = false;
-
-    this.el = document.createElement('div');
-    this.el.className = 'sf-cell';
-
-    this.topEl = document.createElement('div');
-    this.topEl.className = 'sf-static top';
-    this.topChar = document.createElement('span');
-    this.topChar.className = 'sf-char';
-    this.topChar.textContent = ' ';
-    this.topEl.appendChild(this.topChar);
-
-    this.botEl = document.createElement('div');
-    this.botEl.className = 'sf-static bot';
-    this.botChar = document.createElement('span');
-    this.botChar.className = 'sf-char';
-    this.botChar.textContent = ' ';
-    this.botEl.appendChild(this.botChar);
-
-    this.el.appendChild(this.topEl);
-    this.el.appendChild(this.botEl);
-    parentEl.appendChild(this.el);
+  constructor(par) {
+    this.cur = ' '; this.tgt = ' '; this.anim = false;
+    this.el = document.createElement('div'); this.el.className = 'sf-cell';
+    this.topEl = document.createElement('div'); this.topEl.className = 'sf-static top';
+    this.topCh = document.createElement('span'); this.topCh.className = 'sf-char'; this.topCh.textContent = ' ';
+    this.topEl.appendChild(this.topCh);
+    this.botEl = document.createElement('div'); this.botEl.className = 'sf-static bot';
+    this.botCh = document.createElement('span'); this.botCh.className = 'sf-char'; this.botCh.textContent = ' ';
+    this.botEl.appendChild(this.botCh);
+    this.el.appendChild(this.topEl); this.el.appendChild(this.botEl);
+    par.appendChild(this.el);
   }
-
   setImmediate(ch) {
     const c = sanitizeChar(ch);
-    this.current = c; this.target = c;
-    this.topChar.textContent = c; this.botChar.textContent = c;
+    this.cur = c; this.tgt = c; this.topCh.textContent = c; this.botCh.textContent = c;
   }
-
   setTarget(ch) {
     const c = sanitizeChar(ch);
-    if (c === this.current && !this.animating) return;
-    this.target = c;
-    if (!this.animating) this._cycle();
+    if (c === this.cur && !this.anim) return;
+    this.tgt = c;
+    if (!this.anim) this._cycle();
   }
-
   _cycle() {
-    if (this.current === this.target) { this.animating = false; return; }
-    this.animating = true;
-    const nxt = nextChar(this.current);
-    this._flip(nxt, () => {
-      this.current = nxt;
-      this.current === this.target ? (this.animating = false) : this._cycle();
-    });
+    if (this.cur === this.tgt) { this.anim = false; return; }
+    this.anim = true;
+    const nxt = nextChar(this.cur);
+    this._flip(nxt, () => { this.cur = nxt; this.cur === this.tgt ? (this.anim = false) : this._cycle(); });
   }
-
-  _flip(newCh, done) {
-    const falling = document.createElement('div');
-    falling.className = 'sf-flap falling';
-    const fc = document.createElement('span');
-    fc.className = 'sf-char'; fc.textContent = this.current;
-    falling.appendChild(fc);
-
-    const rising = document.createElement('div');
-    rising.className = 'sf-flap rising';
-    const rc = document.createElement('span');
-    rc.className = 'sf-char'; rc.textContent = newCh;
-    rising.appendChild(rc);
-
-    this.el.appendChild(falling);
-    falling.addEventListener('animationend', () => {
-      this.topChar.textContent = newCh;
-      falling.remove();
-      this.el.appendChild(rising);
-      rising.addEventListener('animationend', () => {
-        this.botChar.textContent = newCh;
-        rising.remove();
-        done();
-      }, { once: true });
+  _flip(nc, done) {
+    const f = document.createElement('div'); f.className = 'sf-flap falling';
+    const fc = document.createElement('span'); fc.className = 'sf-char'; fc.textContent = this.cur;
+    f.appendChild(fc);
+    const r = document.createElement('div'); r.className = 'sf-flap rising';
+    const rc = document.createElement('span'); rc.className = 'sf-char'; rc.textContent = nc;
+    r.appendChild(rc);
+    this.el.appendChild(f);
+    f.addEventListener('animationend', () => {
+      this.topCh.textContent = nc; f.remove(); this.el.appendChild(r);
+      r.addEventListener('animationend', () => { this.botCh.textContent = nc; r.remove(); done(); }, { once: true });
     }, { once: true });
   }
 }
 
 /* ═══ BOARD ═══ */
 function buildBoard(rows, cols) {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-  cells = [];
-
+  const board = document.getElementById('board'); board.innerHTML = ''; cells = [];
   const ct = document.getElementById('boardContainer');
-  const availW = ct.clientWidth - 80;
-  const availH = ct.clientHeight - 80;
-
-  let cellW = Math.floor((availW - (cols - 1) * 3) / cols);
-  let cellH = Math.floor(cellW * 1.4);
-  const maxH = Math.floor((availH - (rows - 1) * 14) / rows);
-  if (cellH > maxH) { cellH = maxH; cellW = Math.floor(cellH / 1.4); }
-  cellW = Math.min(Math.max(cellW, 28), 110);
-  cellH = Math.min(Math.max(cellH, 40), 154);
-
-  document.documentElement.style.setProperty('--cw', cellW + 'px');
-  document.documentElement.style.setProperty('--ch', cellH + 'px');
-  document.documentElement.style.setProperty('--font-size', Math.floor(cellH * 0.7) + 'px');
-
+  const aW = ct.clientWidth - 80, aH = ct.clientHeight - 80;
+  let cW = Math.floor((aW - (cols - 1) * 3) / cols);
+  let cH = Math.floor(cW * 1.4);
+  const mH = Math.floor((aH - (rows - 1) * 14) / rows);
+  if (cH > mH) { cH = mH; cW = Math.floor(cH / 1.4); }
+  cW = Math.min(Math.max(cW, 28), 110); cH = Math.min(Math.max(cH, 40), 154);
+  document.documentElement.style.setProperty('--cw', cW + 'px');
+  document.documentElement.style.setProperty('--ch', cH + 'px');
+  document.documentElement.style.setProperty('--font-size', Math.floor(cH * 0.7) + 'px');
   for (let r = 0; r < rows; r++) {
-    const rowEl = document.createElement('div');
-    rowEl.className = 'board-row';
+    const rowEl = document.createElement('div'); rowEl.className = 'board-row';
     const rc = [];
     for (let c = 0; c < cols; c++) rc.push(new SplitFlapCell(rowEl));
-    cells.push(rc);
-    board.appendChild(rowEl);
+    cells.push(rc); board.appendChild(rowEl);
   }
-  boardState.rows = rows;
-  boardState.cols = cols;
+  boardState.rows = rows; boardState.cols = cols;
 }
 
 function updateBoard(lines) {
   boardState.lines = lines;
   for (let r = 0; r < cells.length; r++) {
-    const txt = (lines[r] || '').toUpperCase();
-    for (let c = 0; c < cells[r].length; c++) {
-      cells[r][c].setTarget(sanitizeChar(c < txt.length ? txt[c] : ' '));
-    }
+    const t = (lines[r] || '').toUpperCase();
+    for (let c = 0; c < cells[r].length; c++)
+      cells[r][c].setTarget(sanitizeChar(c < t.length ? t[c] : ' '));
   }
   saveState();
 }
 
 function setImmediateBoard(lines) {
   for (let r = 0; r < cells.length; r++) {
-    const txt = (lines[r] || '').toUpperCase();
-    for (let c = 0; c < cells[r].length; c++) {
-      cells[r][c].setImmediate(sanitizeChar(c < txt.length ? txt[c] : ' '));
-    }
+    const t = (lines[r] || '').toUpperCase();
+    for (let c = 0; c < cells[r].length; c++)
+      cells[r][c].setImmediate(sanitizeChar(c < t.length ? t[c] : ' '));
   }
 }
 
 /* ═══ PERSISTENCE ═══ */
-function saveState() {
-  try { localStorage.setItem('sf-display', JSON.stringify(boardState)); } catch(e) {}
-}
+function saveState() { try { localStorage.setItem('sf-display', JSON.stringify(boardState)); } catch(e) {} }
 function loadState() {
-  try {
-    const s = JSON.parse(localStorage.getItem('sf-display'));
-    return (s && s.rows && s.cols) ? s : null;
-  } catch(e) { return null; }
+  try { const s = JSON.parse(localStorage.getItem('sf-display')); return (s&&s.rows&&s.cols) ? s : null; }
+  catch(e) { return null; }
 }
 
-/* ═══ CONNECTION STATE ═══ */
-function setConnState(state) {
-  connState = state;
-  document.getElementById('statusDot').className = 'status-dot ' + state;
+/* ═══ UI STATE ═══ */
+function setConnState(s) {
+  connState = s;
+  document.getElementById('statusDot').className = 'status-dot ' + s;
   document.getElementById('statusLabel').textContent =
-    { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' }[state] || state;
-  document.getElementById('demoBadge').classList.toggle('hidden', state === 'connected');
+    { disconnected:'Disconnected', pairing:'Pairing…', connected:'Connected' }[s] || s;
+  document.getElementById('demoBadge').classList.toggle('hidden', s === 'connected');
 }
+function setPairStatus(m) { document.getElementById('pairStatus').textContent = m; }
 
-function setPairStatus(msg) { document.getElementById('pairStatus').textContent = msg; }
-
-function showDebug() {
-  const sig = pc ? pc.signalingState : '—';
-  const ice = pc ? pc.iceConnectionState : '—';
-  const gat = pc ? pc.iceGatheringState : '—';
-  document.getElementById('pairDebug').textContent = `sig:${sig} · ice:${ice} · gather:${gat}`;
+/* ═══ ENV CHECK ═══ */
+function checkEnv() {
+  const warn = document.getElementById('warnBanner');
+  const issues = [];
+  if (location.protocol === 'file:')
+    issues.push('⚠ file:// — WebRTC will not work. Use an HTTP server.');
+  if (location.protocol === 'http:' && !['localhost','127.0.0.1'].includes(location.hostname))
+    issues.push('⚠ HTTP without HTTPS — some browsers block WebRTC.');
+  if (issues.length) { warn.innerHTML = issues.join('<br>'); warn.classList.add('show'); }
 }
 
 /* ═══ WEBRTC ═══ */
 const RTC_CFG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
   ]
 };
 
 function cleanupPC() {
+  if (checkingTimer) { clearTimeout(checkingTimer); checkingTimer = null; }
   if (dc) { try { dc.close(); } catch(e) {} dc = null; }
   if (pc) { try { pc.close(); } catch(e) {} pc = null; }
 }
@@ -559,65 +492,73 @@ async function generateOffer() {
   const answerEl = document.getElementById('answerArea');
 
   try {
-    cleanupPC();
-
-    btn.disabled = true;
-    btn.textContent = 'Generating…';
-    offerEl.value = '';
-    answerEl.value = '';
-    btnCopy.style.display = 'none';
+    cleanupPC(); clearDbg();
+    btn.disabled = true; btn.textContent = 'Generating…';
+    offerEl.value = ''; answerEl.value = ''; btnCopy.style.display = 'none';
 
     pc = new RTCPeerConnection(RTC_CFG);
-    log('PC created');
+    dbg('PC created with ' + RTC_CFG.iceServers.length + ' ICE servers');
 
-    // Attach all state listeners
-    pc.onsignalingstatechange = () => { log('signalingState →', pc.signalingState); showDebug(); };
-    pc.oniceconnectionstatechange = () => {
-      log('iceConnectionState →', pc.iceConnectionState);
-      showDebug();
-      const s = pc.iceConnectionState;
-      if (s === 'connected' || s === 'completed') setConnState('connected');
-      else if (s === 'failed' || s === 'closed') setConnState('disconnected');
+    let candidateCount = 0;
+    let candidateTypes = {};
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        candidateCount++;
+        // Parse candidate string for type
+        const m = e.candidate.candidate.match(/typ (\w+)/);
+        const type = m ? m[1] : 'unknown';
+        candidateTypes[type] = (candidateTypes[type] || 0) + 1;
+        dbg('  candidate #' + candidateCount + ': ' + type + ' | ' + e.candidate.candidate.substring(0, 80));
+      } else {
+        dbg('ICE gathering done: ' + candidateCount + ' candidates');
+        dbg('  types: ' + JSON.stringify(candidateTypes));
+        if (candidateCount === 0) {
+          dbg('⚠ ZERO candidates gathered! WebRTC may be blocked.');
+          setPairStatus('Warning: no network candidates found. WebRTC may be blocked by browser or network.');
+        }
+      }
     };
-    pc.onicegatheringstatechange = () => { log('iceGatheringState →', pc.iceGatheringState); showDebug(); };
 
-    // DISPLAY is the offerer → creates DataChannel
+    pc.onsignalingstatechange = () => dbg('sig → ' + pc.signalingState);
+    pc.oniceconnectionstatechange = () => { dbg('ice → ' + pc.iceConnectionState); handleICE(); };
+    pc.onicegatheringstatechange = () => dbg('gather → ' + pc.iceGatheringState);
+    pc.onconnectionstatechange = () => dbg('conn → ' + (pc ? pc.connectionState : '?'));
+
     dc = pc.createDataChannel('splitflap', { ordered: true });
-    wireDataChannel(dc);
-    log('DataChannel created');
+    wireDC(dc);
+    dbg('DataChannel created');
 
-    // Create offer & set as local description
     const offer = await pc.createOffer();
-    log('Offer created');
-
     await pc.setLocalDescription(offer);
-    log('setLocalDescription done, signalingState:', pc.signalingState);
+    dbg('Offer set as local description');
 
     setConnState('pairing');
-    setPairStatus('Gathering network candidates…');
-    showDebug();
+    setPairStatus('Gathering network candidates (may take a few seconds)…');
 
-    // Wait for ICE gathering to finish
     await gatherICE(pc);
-    log('ICE gathering complete, signalingState:', pc.signalingState);
 
-    // Double-check state
     if (!pc || pc.signalingState !== 'have-local-offer') {
-      throw new Error('Peer connection left expected state: ' + (pc ? pc.signalingState : 'null'));
+      throw new Error('Bad state: ' + (pc ? pc.signalingState : 'null'));
     }
 
-    // Serialize the full local description (with candidates baked in)
+    // Count candidates in SDP
+    const sdpLines = pc.localDescription.sdp.split('\n');
+    const candLines = sdpLines.filter(l => l.startsWith('a=candidate'));
+    dbg('SDP contains ' + candLines.length + ' candidate lines');
+
     const code = encodeB64(pc.localDescription.toJSON());
+    dbg('Invite code length: ' + code.length + ' chars');
+
     offerEl.value = code;
     btnCopy.style.display = '';
-    setPairStatus('Invite code ready — copy it to the controller.');
-    showDebug();
+    setPairStatus('Invite code ready (' + candLines.length + ' candidates). Copy to controller.');
+
   } catch(e) {
-    log('generateOffer error:', e);
+    dbg('ERROR in generateOffer: ' + e.message);
     setPairStatus('Error: ' + e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generate Invite Code';
+    btn.disabled = false; btn.textContent = 'Generate Invite Code';
   }
 }
 
@@ -625,113 +566,237 @@ async function acceptAnswer() {
   const btn = document.getElementById('btnAcceptAnswer');
   const raw = document.getElementById('answerArea').value.trim();
 
-  if (!raw) { setPairStatus('Paste the response code from the controller first.'); return; }
+  if (!raw) { setPairStatus('Paste the response code first.'); return; }
+  if (!pc) { setPairStatus('Generate an invite code first (step 1).'); return; }
 
-  if (!pc) {
-    setPairStatus('Generate an invite code first (step 1).');
-    return;
-  }
-
-  // ── STATE GUARD ──
   const sig = pc.signalingState;
-  log('acceptAnswer: signalingState =', sig);
-  showDebug();
+  dbg('acceptAnswer called, sig=' + sig);
 
   if (sig !== 'have-local-offer') {
-    setPairStatus(
-      `Display is in "${sig}" state — expected "have-local-offer". ` +
-      'Click Reset then generate a new invite code.'
-    );
+    setPairStatus('State is "' + sig + '" — expected "have-local-offer". Reset and start over.');
     return;
   }
 
   try {
-    btn.disabled = true;
-    btn.textContent = 'Connecting…';
+    btn.disabled = true; btn.textContent = 'Connecting…';
 
     const desc = decodeB64(raw);
-    log('Decoded answer SDP, type:', desc.type);
+    dbg('Decoded SDP type: ' + desc.type);
 
     if (desc.type !== 'answer') {
-      setPairStatus('That looks like an invite code, not a response code. Paste the response from the controller.');
+      setPairStatus('Wrong code type ("' + desc.type + '"). Paste the RESPONSE code from controller.');
       return;
     }
 
+    // Count candidates in answer SDP
+    const candLines = desc.sdp.split('\n').filter(l => l.startsWith('a=candidate'));
+    dbg('Answer SDP contains ' + candLines.length + ' candidate lines');
+    candLines.forEach((l, i) => {
+      const m = l.match(/typ (\w+)/);
+      dbg('  remote candidate #' + (i+1) + ': ' + (m ? m[1] : '?'));
+    });
+
+    if (candLines.length === 0) {
+      dbg('⚠ Answer has ZERO candidates! Controller may not have gathered any.');
+      setPairStatus('Warning: response code has no network candidates. Controller WebRTC may be broken.');
+    }
+
     await pc.setRemoteDescription(new RTCSessionDescription(desc));
-    log('setRemoteDescription done, signalingState:', pc.signalingState);
-    setPairStatus('Connecting…');
-    showDebug();
+    dbg('Remote answer set, sig=' + pc.signalingState);
+    setPairStatus('Connecting… waiting for ICE pair to succeed.');
+
+    // Start a timeout — if still checking after 15s, diagnose
+    checkingTimer = setTimeout(() => {
+      if (pc && (pc.iceConnectionState === 'checking' || pc.iceConnectionState === 'new')) {
+        dbg('⚠ Still in "checking" after 15s — dumping stats…');
+        dumpICEStats();
+      }
+    }, 15000);
+
   } catch(e) {
-    log('acceptAnswer error:', e);
+    dbg('ERROR in acceptAnswer: ' + e.message);
     setPairStatus('Error: ' + e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Connect';
+    btn.disabled = false; btn.textContent = 'Connect';
+  }
+}
+
+function handleICE() {
+  if (!pc) return;
+  const s = pc.iceConnectionState;
+  if (s === 'connected' || s === 'completed') {
+    if (checkingTimer) { clearTimeout(checkingTimer); checkingTimer = null; }
+    setConnState('connected');
+    setPairStatus('Connected!');
+    dumpICEStats();
+  } else if (s === 'failed') {
+    if (checkingTimer) { clearTimeout(checkingTimer); checkingTimer = null; }
+    setConnState('disconnected');
+    dbg('ICE FAILED — no viable candidate pair');
+    setPairStatus('Connection failed. Check the debug log below for candidate details.');
+    dumpICEStats();
+  } else if (s === 'disconnected') {
+    dbg('ICE disconnected — waiting 5s for recovery');
+    setTimeout(() => {
+      if (pc && pc.iceConnectionState === 'disconnected') {
+        setConnState('disconnected');
+        setPairStatus('Connection lost.');
+        dbg('ICE still disconnected after 5s');
+        dumpICEStats();
+      }
+    }, 5000);
+  } else if (s === 'closed') {
+    setConnState('disconnected');
+  }
+}
+
+async function dumpICEStats() {
+  if (!pc) { dbg('No PC for stats'); return; }
+  try {
+    const stats = await pc.getStats();
+    let pairs = 0, localCands = 0, remoteCands = 0;
+    stats.forEach(report => {
+      if (report.type === 'candidate-pair') {
+        pairs++;
+        dbg('  pair: ' + report.state + ' local=' + report.localCandidateId + ' remote=' + report.remoteCandidateId +
+            (report.nominated ? ' NOMINATED' : '') +
+            (report.selected ? ' SELECTED' : ''));
+      }
+      if (report.type === 'local-candidate') {
+        localCands++;
+        dbg('  local-cand: ' + report.candidateType + ' ' + (report.protocol||'') + ' ' + (report.address||report.ip||'') + ':' + (report.port||''));
+      }
+      if (report.type === 'remote-candidate') {
+        remoteCands++;
+        dbg('  remote-cand: ' + report.candidateType + ' ' + (report.protocol||'') + ' ' + (report.address||report.ip||'') + ':' + (report.port||''));
+      }
+    });
+    dbg('Stats: ' + localCands + ' local, ' + remoteCands + ' remote, ' + pairs + ' pairs');
+    if (remoteCands === 0) {
+      dbg('⚠ ZERO remote candidates! The controller\'s answer had no usable candidates.');
+      dbg('⚠ Likely cause: controller WebRTC was blocked or the answer code was truncated.');
+    }
+    if (pairs === 0) {
+      dbg('⚠ ZERO candidate pairs! No connectivity check could be attempted.');
+    }
+  } catch(e) {
+    dbg('Stats error: ' + e.message);
   }
 }
 
 function gatherICE(conn) {
   return new Promise(resolve => {
     if (conn.iceGatheringState === 'complete') { resolve(); return; }
-
     let done = false;
     const finish = () => { if (done) return; done = true; resolve(); };
-
-    // Method 1: null candidate = gathering done
-    conn.addEventListener('icecandidate', e => {
-      if (e.candidate === null) { log('ICE: null candidate → done'); finish(); }
-    });
-
-    // Method 2: state event
+    conn.addEventListener('icecandidate', e => { if (e.candidate === null) finish(); });
     conn.addEventListener('icegatheringstatechange', () => {
-      if (conn.iceGatheringState === 'complete') { log('ICE: gatheringState → complete'); finish(); }
+      if (conn.iceGatheringState === 'complete') finish();
     });
-
-    // Method 3: safety timeout
-    setTimeout(() => { log('ICE: timeout (8s)'); finish(); }, 8000);
+    setTimeout(() => { dbg('ICE gather timeout (10s)'); finish(); }, 10000);
   });
 }
 
-function wireDataChannel(ch) {
+function wireDC(ch) {
   ch.onopen = () => {
-    log('DataChannel open');
+    dbg('DataChannel OPEN — connection fully working!');
     setConnState('connected');
     setPairStatus('Connected!');
-    showDebug();
     if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
     setTimeout(() => document.getElementById('pairOverlay').classList.remove('open'), 800);
     sendMsg({ type: 'board_config', rows: boardState.rows, cols: boardState.cols, lines: boardState.lines });
   };
   ch.onmessage = e => {
-    try { handleMsg(JSON.parse(e.data)); } catch(err) { log('bad msg', err); }
+    try { handleMsg(JSON.parse(e.data)); } catch(err) { dbg('Bad message: ' + err.message); }
   };
-  ch.onclose = () => { log('DataChannel closed'); setConnState('disconnected'); };
-  ch.onerror = e => { log('DataChannel error', e); };
+  ch.onclose = () => { dbg('DataChannel CLOSED'); setConnState('disconnected'); };
+  ch.onerror = e => dbg('DataChannel error');
 }
 
 function handleMsg(msg) {
   if (msg.type === 'state_update') {
-    if (msg.rows && msg.cols && (msg.rows !== boardState.rows || msg.cols !== boardState.cols)) {
+    if (msg.rows && msg.cols && (msg.rows !== boardState.rows || msg.cols !== boardState.cols))
       buildBoard(msg.rows, msg.cols);
-    }
     if (msg.lines) updateBoard(msg.lines);
   } else if (msg.type === 'ping') {
     sendMsg({ type: 'pong', ts: Date.now() });
   }
 }
 
-function sendMsg(obj) {
-  if (dc && dc.readyState === 'open') dc.send(JSON.stringify(obj));
-}
+function sendMsg(obj) { if (dc && dc.readyState === 'open') dc.send(JSON.stringify(obj)); }
 
 function resetConnection() {
-  cleanupPC();
+  cleanupPC(); clearDbg();
   setConnState('disconnected');
   document.getElementById('offerArea').value = '';
   document.getElementById('answerArea').value = '';
   document.getElementById('btnCopyOffer').style.display = 'none';
-  setPairStatus('Reset. Generate a new invite code to start over.');
-  showDebug();
+  setPairStatus('Reset. Generate a new invite code.');
+}
+
+/* ═══ SELF-TEST ═══ */
+async function selfTest() {
+  clearDbg();
+  dbg('=== SELF-TEST: creating loopback WebRTC connection ===');
+  setPairStatus('Running self-test…');
+
+  let pc1, pc2, dc1, dc2;
+  try {
+    pc1 = new RTCPeerConnection(RTC_CFG);
+    pc2 = new RTCPeerConnection(RTC_CFG);
+
+    let c1 = 0, c2 = 0;
+    pc1.onicecandidate = e => { if (e.candidate) { c1++; pc2.addIceCandidate(e.candidate); } };
+    pc2.onicecandidate = e => { if (e.candidate) { c2++; pc1.addIceCandidate(e.candidate); } };
+
+    dc1 = pc1.createDataChannel('test');
+
+    const dcReady = new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('DataChannel never opened (15s timeout)')), 15000);
+      pc2.ondatachannel = e => {
+        dc2 = e.channel;
+        dc2.onopen = () => { clearTimeout(timeout); resolve(); };
+      };
+    });
+
+    const offer = await pc1.createOffer();
+    await pc1.setLocalDescription(offer);
+    await pc2.setRemoteDescription(offer);
+    const answer = await pc2.createAnswer();
+    await pc2.setLocalDescription(answer);
+    await pc1.setRemoteDescription(answer);
+
+    dbg('Offer/answer exchanged, waiting for DataChannel…');
+    dbg('pc1 ice: ' + pc1.iceConnectionState + ' pc2 ice: ' + pc2.iceConnectionState);
+
+    await dcReady;
+
+    dbg('✅ SELF-TEST PASSED! DataChannel opened successfully.');
+    dbg('  pc1 candidates: ' + c1 + ', pc2 candidates: ' + c2);
+    dbg('  pc1 ice: ' + pc1.iceConnectionState + ', pc2 ice: ' + pc2.iceConnectionState);
+
+    // Test sending data
+    const testMsg = 'hello-' + Date.now();
+    const msgReceived = new Promise((resolve, reject) => {
+      const t = setTimeout(() => reject(new Error('Message not received')), 5000);
+      dc2.onmessage = e => { clearTimeout(t); resolve(e.data); };
+    });
+    dc1.send(testMsg);
+    const received = await msgReceived;
+    dbg('  Message test: sent "' + testMsg + '", received "' + received + '" — ' + (testMsg === received ? '✅ match' : '❌ mismatch'));
+
+    setPairStatus('Self-test PASSED. WebRTC works in this browser on this network.');
+
+  } catch(e) {
+    dbg('❌ SELF-TEST FAILED: ' + e.message);
+    dbg('WebRTC is blocked or broken in this environment.');
+    setPairStatus('Self-test FAILED: ' + e.message);
+  } finally {
+    try { dc1 && dc1.close(); } catch(e) {}
+    try { dc2 && dc2.close(); } catch(e) {}
+    try { pc1 && pc1.close(); } catch(e) {}
+    try { pc2 && pc2.close(); } catch(e) {}
+  }
 }
 
 /* ═══ UI ═══ */
@@ -756,29 +821,23 @@ function goFullscreen() {
 }
 
 async function requestWakeLock() {
-  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}
+  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
 }
 
 /* ═══ DEMO ═══ */
 const DEMOS = [
-  ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '],
-  ['   WELCOME TO THE   ', ' SPLIT-FLAP DISPLAY ', '    CONNECT YOUR    ', '     CONTROLLER     '],
-  ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '],
-  ['                    ', '   HELLO, WORLD!    ', '                    ', '   HAVE A NICE DAY  '],
+  ['   BERLIN  HBF      ','ICE 1234  PLATFORM 3','14:25  ON TIME      ','                    '],
+  ['   WELCOME TO THE   ',' SPLIT-FLAP DISPLAY ','    CONNECT YOUR    ','     CONTROLLER     '],
+  ['  FLIGHT   DEST     ','LH 1830  NEW YORK   ','AF 442   PARIS CDG  ','BA 937   LONDON LHR '],
+  ['                    ','   HELLO, WORLD!    ','                    ','   HAVE A NICE DAY  '],
 ];
 let demoIdx = 0;
-
 function runDemo() {
   if (connState === 'connected') return;
   if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-  showDemoMsg();
-  demoTimer = setInterval(showDemoMsg, 6000);
+  showDemoMsg(); demoTimer = setInterval(showDemoMsg, 6000);
 }
-
-function showDemoMsg() {
-  updateBoard(DEMOS[demoIdx % DEMOS.length]);
-  demoIdx++;
-}
+function showDemoMsg() { updateBoard(DEMOS[demoIdx++ % DEMOS.length]); }
 
 /* ═══ RESIZE ═══ */
 let rsz;
@@ -793,17 +852,14 @@ window.addEventListener('resize', () => {
 
 /* ═══ INIT ═══ */
 (function init() {
+  checkEnv();
   const s = loadState();
   buildBoard(s ? s.rows : DEFAULT_ROWS, s ? s.cols : DEFAULT_COLS);
-  if (s && s.lines && s.lines.length) {
-    setImmediateBoard(s.lines);
-    boardState.lines = s.lines;
-  }
+  if (s && s.lines && s.lines.length) { setImmediateBoard(s.lines); boardState.lines = s.lines; }
   requestWakeLock();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') requestWakeLock();
-  });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWakeLock(); });
   setConnState('disconnected');
+  console.log('[Display] Loaded. Open Pair panel to connect or click Self-Test to verify WebRTC.');
 })();
 </script>
 </body>
