@@ -2,327 +2,269 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
-<title>Split-Flap Display</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Split-Flap Controller</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg: #06060a;
-  --board-bg: #0c0c12;
-  --cell-face: #1a1a22;
-  --cell-top: #1e1e28;
-  --cell-bot: #16161e;
-  --split-line: #000000;
-  --char-color: #e8d44d;
-  --char-glow: rgba(232, 212, 77, 0.15);
-  --accent: #f5c518;
-  --ui-text: #8a8a9a;
-  --ui-text-bright: #c8c8d4;
-  --connected: #22c55e;
-  --disconnected: #ef4444;
-  --pairing: #f59e0b;
-  --cell-radius: 5px;
-  --cell-gap: 3px;
-  --row-gap: 14px;
-  --flip-duration: 70ms;
+  --bg: #08080e; --card-bg: #111118; --card-border: rgba(255,255,255,0.06);
+  --input-bg: #0c0c14; --accent: #f5c518; --accent-dim: rgba(245,197,24,0.15);
+  --text: #b0b0c0; --text-bright: #e0e0ec; --text-dim: #606070;
+  --connected: #22c55e; --disconnected: #ef4444; --pairing: #f59e0b;
+  --radius: 12px;
 }
-
 html, body {
-  width: 100%; height: 100%;
-  background: var(--bg);
-  color: var(--ui-text);
+  min-height: 100dvh; background: var(--bg); color: var(--text);
   font-family: 'Instrument Sans', system-ui, sans-serif;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
+  -webkit-font-smoothing: antialiased;
 }
-
-.header {
-  position: fixed; top: 0; left: 0; right: 0; height: 48px;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 20px;
-  background: rgba(6,6,10,0.85);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  z-index: 100;
-}
-
-.header-left, .header-right { display: flex; align-items: center; gap: 12px; }
-
-.status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--disconnected); box-shadow: 0 0 6px var(--disconnected);
-  transition: all 0.3s;
-}
-.status-dot.connected { background: var(--connected); box-shadow: 0 0 8px var(--connected); }
-.status-dot.pairing { background: var(--pairing); box-shadow: 0 0 8px var(--pairing); animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-
-.status-label { font-size: 12px; letter-spacing: 0.5px; text-transform: uppercase; }
-
-.logo {
-  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 14px;
-  letter-spacing: 2px; text-transform: uppercase; color: var(--ui-text-bright);
-  position: absolute; left: 50%; transform: translateX(-50%);
-}
-
-.hdr-btn {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-  color: var(--ui-text); padding: 6px 12px; border-radius: 6px;
-  font-size: 11px; font-family: inherit; cursor: pointer;
-  transition: all 0.2s; letter-spacing: 0.3px;
-}
-.hdr-btn:hover { background: rgba(255,255,255,0.1); color: var(--ui-text-bright); }
-
-.board-container {
-  position: fixed; top: 48px; left: 0; right: 0; bottom: 0;
-  display: flex; align-items: center; justify-content: center; padding: 24px;
-}
-
-.board {
-  display: flex; flex-direction: column; gap: var(--row-gap);
-  background: var(--board-bg); padding: 28px 32px; border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.04);
-  box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.6),
-    inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-.board-row { display: flex; gap: var(--cell-gap); }
-
-.sf-cell {
-  width: var(--cw); height: var(--ch);
-  position: relative; perspective: 400px;
-  border-radius: var(--cell-radius);
-}
-
-.sf-static {
-  position: absolute; left: 0; right: 0; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-}
-.sf-static.top {
-  top: 0; height: 50%;
-  background: linear-gradient(180deg, var(--cell-top), var(--cell-face));
-  border-radius: var(--cell-radius) var(--cell-radius) 0 0;
-  border-bottom: 1px solid var(--split-line);
-}
-.sf-static.bot {
-  bottom: 0; height: 50%;
-  background: linear-gradient(180deg, var(--cell-face), var(--cell-bot));
-  border-radius: 0 0 var(--cell-radius) var(--cell-radius);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.sf-char {
-  font-family: 'Oswald', sans-serif; font-weight: 700;
-  font-size: var(--font-size); line-height: var(--ch);
-  color: var(--char-color); text-shadow: 0 0 8px var(--char-glow);
-  position: absolute; width: 100%; text-align: center;
-}
-.sf-static.top .sf-char { top: 0; }
-.sf-static.bot .sf-char { bottom: 0; }
-
-.sf-flap {
-  position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
-  backface-visibility: hidden; -webkit-backface-visibility: hidden; z-index: 10;
-}
-.sf-flap.falling {
-  top: 0; transform-origin: bottom center;
-  background: linear-gradient(180deg, var(--cell-top), var(--cell-face));
-  border-radius: var(--cell-radius) var(--cell-radius) 0 0;
-  animation: flapFall var(--flip-duration) ease-in forwards;
-}
-.sf-flap.rising {
-  bottom: 0; transform-origin: top center;
-  background: linear-gradient(180deg, var(--cell-face), var(--cell-bot));
-  border-radius: 0 0 var(--cell-radius) var(--cell-radius);
-  transform: rotateX(90deg);
-  animation: flapRise var(--flip-duration) ease-out forwards;
-}
-.sf-flap .sf-char { position: absolute; width: 100%; text-align: center; }
-.sf-flap.falling .sf-char { top: 0; }
-.sf-flap.rising .sf-char { bottom: 0; }
-
-@keyframes flapFall { 0%{transform:rotateX(0deg)} 100%{transform:rotateX(-90deg)} }
-@keyframes flapRise { 0%{transform:rotateX(90deg)} 100%{transform:rotateX(0deg)} }
-
-/* ── OVERLAY ── */
-.overlay {
-  position: fixed; inset: 0;
-  background: rgba(6,6,10,0.88);
+.app { max-width: 480px; margin: 0 auto; padding: 0 16px 100px; }
+.app-header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,8,14,0.9);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  padding: 16px 0 12px; border-bottom: 1px solid var(--card-border);
+  margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
 }
-.overlay.open { opacity: 1; pointer-events: all; }
+.app-title {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 16px;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-bright);
+}
+.conn-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(239,68,68,0.1); color: var(--disconnected);
+  border: 1px solid rgba(239,68,68,0.2); transition: all 0.3s;
+}
+.conn-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.conn-badge.connected { background: rgba(34,197,94,0.1); color: var(--connected); border-color: rgba(34,197,94,0.2); }
+.conn-badge.pairing { background: rgba(245,158,11,0.1); color: var(--pairing); border-color: rgba(245,158,11,0.2); }
 
-.pair-panel {
-  background: #12121a; border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 36px; max-width: 540px; width: 90%;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
-  max-height: 92vh; overflow-y: auto;
+.card {
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
 }
-.pair-panel h2 {
-  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 20px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--ui-text-bright); margin-bottom: 8px;
+.card-title {
+  font-family: 'Oswald', sans-serif; font-weight: 500; font-size: 13px;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;
 }
-.pair-panel > p { font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
-
-.step-num {
+.pair-flow { display: flex; flex-direction: column; gap: 12px; }
+.pair-step-label {
+  font-size: 12px; font-weight: 600; color: var(--text);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.pair-step-num {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: var(--accent); color: #000;
-  font-size: 12px; font-weight: 700; margin-right: 8px; flex-shrink: 0;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #000; font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
-.pair-step { display: flex; align-items: flex-start; margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
-.pair-step-text { flex: 1; }
-
-.pair-textarea {
-  width: 100%; height: 80px;
-  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; color: var(--ui-text-bright);
-  font-family: 'Courier New', monospace; font-size: 11px;
-  padding: 10px; resize: none; margin-top: 8px; outline: none;
-  transition: border-color 0.2s;
+.pair-ta {
+  width: 100%; height: 72px; background: var(--input-bg);
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text-bright); font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 10px; resize: none; outline: none; transition: border-color 0.2s;
 }
-.pair-textarea:focus { border-color: var(--accent); }
-.pair-textarea::placeholder { color: rgba(255,255,255,0.2); }
-
-.pair-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 20px; border-radius: 8px; border: none;
-  font-family: inherit; font-size: 13px; font-weight: 600;
-  cursor: pointer; transition: all 0.2s; margin-top: 8px; margin-right: 8px;
-}
-.pair-btn.primary { background: var(--accent); color: #000; }
-.pair-btn.primary:hover { background: #ffd633; }
-.pair-btn.secondary {
-  background: rgba(255,255,255,0.08); color: var(--ui-text-bright);
-  border: 1px solid rgba(255,255,255,0.1);
-}
-.pair-btn.secondary:hover { background: rgba(255,255,255,0.14); }
-.pair-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
-
-.pair-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 20px 0; }
-.pair-status-msg { font-size: 12px; color: var(--pairing); margin-top: 10px; min-height: 18px; }
-
+.pair-ta:focus { border-color: var(--accent); }
+.pair-ta::placeholder { color: rgba(255,255,255,0.15); }
+.pair-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.pair-status { font-size: 12px; min-height: 18px; color: var(--pairing); margin-top: 6px; }
 .pair-debug {
-  font-size: 10px; color: var(--ui-text); opacity: 0.5;
-  margin-top: 6px; font-family: 'Courier New', monospace;
-  white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow-y: auto;
+  font-size: 10px; color: var(--text); opacity: 0.4; margin-top: 4px;
+  font-family: 'Courier New', monospace; white-space: pre-wrap;
+  word-break: break-all; max-height: 100px; overflow-y: auto;
 }
 
 .warn-banner {
   background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
-  border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;
-  font-size: 12px; color: var(--pairing); line-height: 1.5;
-  display: none;
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  font-size: 12px; color: var(--pairing); line-height: 1.5; display: none;
 }
 .warn-banner.show { display: block; }
 
-.demo-badge {
-  position: fixed; bottom: 20px; right: 20px;
-  background: rgba(245,197,24,0.12); border: 1px solid rgba(245,197,24,0.25);
-  color: var(--accent); font-size: 11px; font-weight: 600;
-  letter-spacing: 1px; text-transform: uppercase;
-  padding: 6px 14px; border-radius: 6px; cursor: pointer;
-  transition: all 0.2s; z-index: 50;
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-.demo-badge:hover { background: rgba(245,197,24,0.2); }
-.demo-badge.hidden { display: none; }
+.btn-primary { background: var(--accent); color: #000; }
+.btn-primary:hover { background: #ffd633; }
+.btn-primary:active { transform: scale(0.97); }
+.btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--card-border); }
+.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-bright); }
+.btn-danger { background: rgba(239,68,68,0.1); color: var(--disconnected); border: 1px solid rgba(239,68,68,0.15); }
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.btn-send {
+  width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.5px; border-radius: 10px;
+}
 
-@media (max-width: 600px) {
-  .board { padding: 16px 12px; border-radius: 8px; }
-  .pair-panel { padding: 24px; }
+.field-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-dim); margin-bottom: 6px;
+}
+.text-input {
+  width: 100%; padding: 12px 14px; background: var(--input-bg);
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text-bright); font-family: 'Courier New', monospace;
+  font-size: 14px; letter-spacing: 1px; text-transform: uppercase;
+  outline: none; transition: border-color 0.2s;
+}
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder {
+  color: rgba(255,255,255,0.12); text-transform: none;
+  font-family: 'Instrument Sans', system-ui, sans-serif; letter-spacing: 0;
+}
+.row-inputs { display: flex; flex-direction: column; gap: 10px; }
+.row-input-group { display: flex; align-items: center; gap: 10px; }
+.row-num {
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 14px;
+  color: var(--accent); width: 20px; text-align: center; flex-shrink: 0;
+}
+.config-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.config-field { flex: 1; }
+.config-input {
+  width: 100%; padding: 10px 12px; background: var(--input-bg);
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text-bright); font-family: inherit; font-size: 14px;
+  outline: none; text-align: center; transition: border-color 0.2s;
+}
+.config-input:focus { border-color: var(--accent); }
+
+.presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.preset-btn {
+  padding: 10px 8px; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text); font-family: inherit; font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.preset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-bright); }
+.preset-btn:active { transform: scale(0.97); }
+
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.toggle-label { font-size: 13px; color: var(--text); }
+.toggle {
+  position: relative; width: 44px; height: 24px;
+  background: rgba(255,255,255,0.1); border-radius: 12px;
+  cursor: pointer; transition: background 0.2s; border: none; padding: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(20px); }
+
+.divider { height: 1px; background: var(--card-border); margin: 12px 0; }
+.footer { text-align: center; padding: 24px 0; font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; }
+.kbd-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+.kbd {
+  display: inline-block; padding: 1px 5px; background: rgba(255,255,255,0.08);
+  border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px;
 }
 </style>
 </head>
 <body>
+<div class="app">
 
-<header class="header">
-  <div class="header-left">
-    <div class="status-dot" id="statusDot"></div>
-    <span class="status-label" id="statusLabel">Disconnected</span>
+  <div class="app-header">
+    <span class="app-title">Split·Flap Controller</span>
+    <div class="conn-badge" id="connBadge">
+      <span class="dot"></span>
+      <span id="connLabel">Disconnected</span>
+    </div>
   </div>
-  <span class="logo">Split·Flap</span>
-  <div class="header-right">
-    <button class="hdr-btn" onclick="togglePairPanel()">Pair</button>
-    <button class="hdr-btn" onclick="goFullscreen()">⛶</button>
-  </div>
-</header>
 
-<div class="board-container" id="boardContainer">
-  <div class="board" id="board"></div>
-</div>
-
-<div class="overlay" id="pairOverlay">
-  <div class="pair-panel">
-    <h2>Pair a Controller</h2>
-    <p>Connect a phone or laptop to control this display — no server needed.</p>
-
+  <!-- PAIRING -->
+  <div class="card" id="pairCard">
+    <div class="card-title">Pair with Display</div>
     <div class="warn-banner" id="warnBanner"></div>
-
-    <div class="pair-step">
-      <span class="step-num">1</span>
-      <div class="pair-step-text">
-        Generate an invite code, then copy it to the controller page.
-        <br>
-        <button class="pair-btn primary" id="btnGenOffer" onclick="generateOffer()">Generate Invite Code</button>
-        <button class="pair-btn secondary" id="btnCopyOffer" onclick="copyOffer()" style="display:none">Copy Code</button>
-        <textarea class="pair-textarea" id="offerArea" placeholder="Invite code will appear here…" readonly></textarea>
+    <div class="pair-flow">
+      <div>
+        <div class="pair-step-label"><span class="pair-step-num">1</span> Paste the invite code from the display</div>
+        <textarea class="pair-ta" id="offerInput" placeholder="Paste invite code here…"></textarea>
+        <div class="pair-actions">
+          <button class="btn btn-primary" id="btnCreateAnswer" onclick="createAnswer()">Generate Response</button>
+        </div>
       </div>
-    </div>
-
-    <div class="pair-divider"></div>
-
-    <div class="pair-step">
-      <span class="step-num">2</span>
-      <div class="pair-step-text">
-        Paste the response code from the controller, then click Connect.
-        <textarea class="pair-textarea" id="answerArea" placeholder="Paste response code from controller…"></textarea>
-        <button class="pair-btn primary" id="btnAcceptAnswer" onclick="acceptAnswer()">Connect</button>
+      <div class="divider"></div>
+      <div>
+        <div class="pair-step-label"><span class="pair-step-num">2</span> Copy response code back to the display</div>
+        <textarea class="pair-ta" id="answerOutput" placeholder="Response code will appear here…" readonly></textarea>
+        <div class="pair-actions">
+          <button class="btn btn-ghost" id="btnCopyAnswer" onclick="copyAnswer()" style="display:none">Copy Response</button>
+        </div>
       </div>
+      <div class="pair-actions" style="margin-top:4px;">
+        <button class="btn btn-danger" onclick="resetConn()">Reset</button>
+      </div>
+      <div class="pair-status" id="pairStatus"></div>
+      <div class="pair-debug" id="pairDebug"></div>
     </div>
-
-    <div class="pair-divider"></div>
-
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <button class="pair-btn secondary" onclick="resetConnection()">Reset</button>
-      <button class="pair-btn secondary" onclick="togglePairPanel()">Close</button>
-    </div>
-
-    <div class="pair-status-msg" id="pairStatus"></div>
-    <div class="pair-debug" id="pairDebug"></div>
   </div>
-</div>
 
-<div class="demo-badge" id="demoBadge" onclick="runDemo()">▶ Demo</div>
+  <!-- MESSAGE -->
+  <div class="card">
+    <div class="card-title">Board Message</div>
+    <div class="config-row">
+      <div class="config-field">
+        <div class="field-label">Rows</div>
+        <input type="number" class="config-input" id="cfgRows" value="4" min="1" max="12" onchange="onCfgChange()">
+      </div>
+      <div class="config-field">
+        <div class="field-label">Columns</div>
+        <input type="number" class="config-input" id="cfgCols" value="20" min="4" max="50" onchange="onCfgChange()">
+      </div>
+    </div>
+    <div class="row-inputs" id="rowInputs"></div>
+    <div style="margin-top:16px;">
+      <button class="btn btn-primary btn-send" onclick="sendUpdate()">Send to Display</button>
+      <div class="kbd-hint"><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to send</div>
+    </div>
+    <div class="divider"></div>
+    <div class="toggle-row">
+      <span class="toggle-label">Live update (send on keystroke)</span>
+      <button class="toggle" id="toggleLive" onclick="toggleLive()"></button>
+    </div>
+  </div>
+
+  <!-- PRESETS -->
+  <div class="card">
+    <div class="card-title">Quick Presets</div>
+    <div class="presets-grid" id="presetsGrid"></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="card">
+    <div class="card-title">Settings</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Collapse pairing after connect</span>
+      <button class="toggle on" id="toggleAutoCollapse" onclick="this.classList.toggle('on')"></button>
+    </div>
+  </div>
+
+  <div class="footer">Split·Flap — static files, zero servers</div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   SPLIT-FLAP DISPLAY — v3 with ICE diagnostics & TURN fallback
+   SPLIT-FLAP CONTROLLER — v3 with TURN & diagnostics
    ═══════════════════════════════════════════════════════════════ */
 
-const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:!?-/#@';
-const DEFAULT_ROWS = 4;
-const DEFAULT_COLS = 20;
-
-let boardState = { rows: DEFAULT_ROWS, cols: DEFAULT_COLS, lines: [] };
-let cells = [];
-let pc = null;
-let dc = null;
-let connState = 'disconnected';
-let wakeLock = null;
-let demoTimer = null;
+let pc = null, dc = null, connState = 'disconnected', liveMode = false;
+let rows = 4, cols = 20;
 let iceLog = [];
 
-function log(...a) { console.log('[Display]', ...a); }
+function log(...a) { console.log('[Controller]', ...a); }
 
-/* ─── Base64 ─── */
+/* ─── Base64 (identical to display.html) ─── */
 function encodeB64(obj) {
   const b = new TextEncoder().encode(JSON.stringify(obj));
   let s = '';
@@ -336,169 +278,129 @@ function decodeB64(str) {
   return JSON.parse(new TextDecoder().decode(b));
 }
 
-/* ═══ CHARACTER HELPERS ═══ */
-function sanitizeChar(ch) {
-  if (!ch || !ch.length) return ' ';
-  const c = ch.toUpperCase();
-  return CHARS.includes(c) ? c : ' ';
+/* ═══ PRESETS ═══ */
+const PRESETS = [
+  { label: '✈ Departures', lines: ['  FLIGHT   DEST     ','LH 1830  NEW YORK   ','AF 442   PARIS CDG  ','BA 937   LONDON LHR '] },
+  { label: '🚆 Train Station', lines: ['   BERLIN  HBF      ','ICE 1234  PLATFORM 3','14:25  ON TIME      ','                    '] },
+  { label: '👋 Welcome', lines: ['                    ','      WELCOME!      ','                    ','   HAVE A NICE DAY  '] },
+  { label: '⏰ Current Time', lines: null },
+  { label: '📋 Meeting Room', lines: ['  CONFERENCE ROOM A ','  MEETING IN SESSION','  DO NOT DISTURB    ','                    '] },
+  { label: '🎉 Event', lines: ['                    ','    PRODUCT LAUNCH  ','    MARCH 2026      ','   ALL ARE WELCOME  '] },
+  { label: '☕ Café Menu', lines: [' ESPRESSO     3.50  ',' CAPPUCCINO   4.00  ',' FLAT WHITE   4.50  ',' MATCHA       5.00  '] },
+  { label: '🧹 Clear Board', lines: ['','','',''] },
+];
+
+/* ═══ INIT ═══ */
+function init() {
+  checkEnvironment();
+  loadSaved();
+  buildRowInputs();
+  buildPresets();
+  setConnState('disconnected');
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendUpdate(); }
+  });
 }
-function charIndex(ch) { const i = CHARS.indexOf(ch); return i >= 0 ? i : 0; }
-function nextChar(ch) { return CHARS[(charIndex(ch) + 1) % CHARS.length]; }
 
-/* ═══ SPLIT-FLAP CELL ═══ */
-class SplitFlapCell {
-  constructor(par) {
-    this.cur = ' '; this.tgt = ' '; this.anim = false;
-    this.el = document.createElement('div');
-    this.el.className = 'sf-cell';
+function checkEnvironment() {
+  const warn = document.getElementById('warnBanner');
+  const issues = [];
+  if (location.protocol === 'file:')
+    issues.push('⚠ Opened from file:// — WebRTC may not work. Serve over HTTP/HTTPS instead.');
+  if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+    issues.push('⚠ Served over HTTP. Some browsers restrict WebRTC without HTTPS.');
+  if (issues.length) { warn.innerHTML = issues.join('<br>'); warn.classList.add('show'); }
+}
 
-    this.topEl = document.createElement('div');
-    this.topEl.className = 'sf-static top';
-    this.topCh = document.createElement('span');
-    this.topCh.className = 'sf-char'; this.topCh.textContent = ' ';
-    this.topEl.appendChild(this.topCh);
+function loadSaved() {
+  try {
+    const p = JSON.parse(localStorage.getItem('sf-ctrl'));
+    if (!p) return;
+    rows = p.rows || 4; cols = p.cols || 20;
+    document.getElementById('cfgRows').value = rows;
+    document.getElementById('cfgCols').value = cols;
+    if (p.lines) setTimeout(() => {
+      const inputs = document.querySelectorAll('.row-text-input');
+      p.lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
+    }, 0);
+  } catch(e) {}
+}
 
-    this.botEl = document.createElement('div');
-    this.botEl.className = 'sf-static bot';
-    this.botCh = document.createElement('span');
-    this.botCh.className = 'sf-char'; this.botCh.textContent = ' ';
-    this.botEl.appendChild(this.botCh);
+function saveState() {
+  try {
+    const lines = Array.from(document.querySelectorAll('.row-text-input')).map(i => i.value);
+    localStorage.setItem('sf-ctrl', JSON.stringify({ rows, cols, lines }));
+  } catch(e) {}
+}
 
-    this.el.appendChild(this.topEl);
-    this.el.appendChild(this.botEl);
-    par.appendChild(this.el);
-  }
-
-  setImmediate(ch) {
-    const c = sanitizeChar(ch);
-    this.cur = c; this.tgt = c;
-    this.topCh.textContent = c; this.botCh.textContent = c;
-  }
-
-  setTarget(ch) {
-    const c = sanitizeChar(ch);
-    if (c === this.cur && !this.anim) return;
-    this.tgt = c;
-    if (!this.anim) this._cycle();
-  }
-
-  _cycle() {
-    if (this.cur === this.tgt) { this.anim = false; return; }
-    this.anim = true;
-    const nxt = nextChar(this.cur);
-    this._flip(nxt, () => {
-      this.cur = nxt;
-      this.cur === this.tgt ? (this.anim = false) : this._cycle();
-    });
-  }
-
-  _flip(nc, done) {
-    const f = document.createElement('div'); f.className = 'sf-flap falling';
-    const fc = document.createElement('span'); fc.className = 'sf-char'; fc.textContent = this.cur;
-    f.appendChild(fc);
-    const r = document.createElement('div'); r.className = 'sf-flap rising';
-    const rc = document.createElement('span'); rc.className = 'sf-char'; rc.textContent = nc;
-    r.appendChild(rc);
-
-    this.el.appendChild(f);
-    f.addEventListener('animationend', () => {
-      this.topCh.textContent = nc; f.remove();
-      this.el.appendChild(r);
-      r.addEventListener('animationend', () => {
-        this.botCh.textContent = nc; r.remove(); done();
-      }, { once: true });
-    }, { once: true });
+/* ═══ ROW INPUTS ═══ */
+function buildRowInputs() {
+  const ct = document.getElementById('rowInputs'); ct.innerHTML = '';
+  for (let i = 0; i < rows; i++) {
+    const g = document.createElement('div'); g.className = 'row-input-group';
+    const n = document.createElement('span'); n.className = 'row-num'; n.textContent = i + 1;
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'text-input row-text-input';
+    inp.maxLength = cols; inp.placeholder = `Row ${i + 1}`;
+    inp.autocomplete = 'off'; inp.autocorrect = 'off';
+    inp.autocapitalize = 'characters'; inp.spellcheck = false;
+    inp.addEventListener('input', () => { saveState(); if (liveMode) sendUpdate(); });
+    g.appendChild(n); g.appendChild(inp); ct.appendChild(g);
   }
 }
 
-/* ═══ BOARD ═══ */
-function buildBoard(rows, cols) {
-  const board = document.getElementById('board');
-  board.innerHTML = ''; cells = [];
-  const ct = document.getElementById('boardContainer');
-  const aW = ct.clientWidth - 80, aH = ct.clientHeight - 80;
-  let cW = Math.floor((aW - (cols - 1) * 3) / cols);
-  let cH = Math.floor(cW * 1.4);
-  const mH = Math.floor((aH - (rows - 1) * 14) / rows);
-  if (cH > mH) { cH = mH; cW = Math.floor(cH / 1.4); }
-  cW = Math.min(Math.max(cW, 28), 110);
-  cH = Math.min(Math.max(cH, 40), 154);
-  document.documentElement.style.setProperty('--cw', cW + 'px');
-  document.documentElement.style.setProperty('--ch', cH + 'px');
-  document.documentElement.style.setProperty('--font-size', Math.floor(cH * 0.7) + 'px');
-  for (let r = 0; r < rows; r++) {
-    const rowEl = document.createElement('div'); rowEl.className = 'board-row';
-    const rc = [];
-    for (let c = 0; c < cols; c++) rc.push(new SplitFlapCell(rowEl));
-    cells.push(rc); board.appendChild(rowEl);
-  }
-  boardState.rows = rows; boardState.cols = cols;
+function onCfgChange() {
+  rows = Math.max(1, Math.min(12, parseInt(document.getElementById('cfgRows').value) || 4));
+  cols = Math.max(4, Math.min(50, parseInt(document.getElementById('cfgCols').value) || 20));
+  document.getElementById('cfgRows').value = rows;
+  document.getElementById('cfgCols').value = cols;
+  buildRowInputs(); saveState();
 }
 
-function updateBoard(lines) {
-  boardState.lines = lines;
-  for (let r = 0; r < cells.length; r++) {
-    const t = (lines[r] || '').toUpperCase();
-    for (let c = 0; c < cells[r].length; c++)
-      cells[r][c].setTarget(sanitizeChar(c < t.length ? t[c] : ' '));
-  }
-  saveState();
+/* ═══ PRESETS ═══ */
+function buildPresets() {
+  const grid = document.getElementById('presetsGrid');
+  PRESETS.forEach((p,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn'; btn.textContent = p.label;
+    btn.onclick = () => applyPreset(i);
+    grid.appendChild(btn);
+  });
 }
 
-function setImmediateBoard(lines) {
-  for (let r = 0; r < cells.length; r++) {
-    const t = (lines[r] || '').toUpperCase();
-    for (let c = 0; c < cells[r].length; c++)
-      cells[r][c].setImmediate(sanitizeChar(c < t.length ? t[c] : ' '));
+function applyPreset(idx) {
+  const p = PRESETS[idx];
+  let lines = p.lines;
+  if (lines === null) {
+    const now = new Date();
+    const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2,'0'));
+    const d = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }).toUpperCase();
+    lines = ['', `      ${t[0]}:${t[1]}:${t[2]}       `, '',
+      d.substring(0,20).padStart(Math.floor((20 + d.substring(0,20).length)/2)).padEnd(20)];
   }
-}
-
-/* ═══ PERSISTENCE ═══ */
-function saveState() { try { localStorage.setItem('sf-display', JSON.stringify(boardState)); } catch(e) {} }
-function loadState() {
-  try { const s = JSON.parse(localStorage.getItem('sf-display')); return (s && s.rows && s.cols) ? s : null; }
-  catch(e) { return null; }
+  buildRowInputs();
+  const inputs = document.querySelectorAll('.row-text-input');
+  lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
+  saveState(); sendUpdate();
 }
 
 /* ═══ CONNECTION STATE ═══ */
 function setConnState(s) {
   connState = s;
-  document.getElementById('statusDot').className = 'status-dot ' + s;
-  document.getElementById('statusLabel').textContent =
+  document.getElementById('connBadge').className = 'conn-badge ' + s;
+  document.getElementById('connLabel').textContent =
     { disconnected:'Disconnected', pairing:'Pairing…', connected:'Connected' }[s] || s;
-  document.getElementById('demoBadge').classList.toggle('hidden', s === 'connected');
 }
 
 function setPairStatus(m) { document.getElementById('pairStatus').textContent = m; }
 function addDebug(m) {
-  iceLog.push(m);
-  if (iceLog.length > 30) iceLog.shift();
-  document.getElementById('pairDebug').textContent = iceLog.join('\n');
+  iceLog.push(m); if (iceLog.length > 30) iceLog.shift();
   const el = document.getElementById('pairDebug');
+  el.textContent = iceLog.join('\n');
   el.scrollTop = el.scrollHeight;
 }
 
-/* ═══ PROTOCOL CHECK ═══ */
-function checkEnvironment() {
-  const warn = document.getElementById('warnBanner');
-  const issues = [];
-
-  if (location.protocol === 'file:') {
-    issues.push('⚠ Opened from file:// — WebRTC may not work. Serve over HTTP/HTTPS instead (e.g. python3 -m http.server).');
-  }
-  if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    issues.push('⚠ Served over HTTP, not HTTPS. Some browsers restrict WebRTC on insecure origins. Use HTTPS or localhost.');
-  }
-
-  if (issues.length) {
-    warn.innerHTML = issues.join('<br>');
-    warn.classList.add('show');
-  }
-}
-
 /* ═══ WEBRTC ═══ */
-
-// Multiple STUN + free TURN relays for NAT traversal
 const RTC_CFG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -506,7 +408,6 @@ const RTC_CFG = {
     { urls: 'stun:stun2.l.google.com:19302' },
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
-    // Free TURN relays from metered.ca (public, no signup needed)
     {
       urls: 'turn:a.relay.metered.ca:80',
       username: 'e8dd65b92c81dbe13a512990',
@@ -536,22 +437,24 @@ function cleanupPC() {
   if (pc) { try { pc.close(); } catch(e) {} pc = null; }
 }
 
-async function generateOffer() {
-  const btn = document.getElementById('btnGenOffer');
-  const btnCopy = document.getElementById('btnCopyOffer');
-  const offerEl = document.getElementById('offerArea');
-  const answerEl = document.getElementById('answerArea');
+async function createAnswer() {
+  const btn = document.getElementById('btnCreateAnswer');
+  const btnCopy = document.getElementById('btnCopyAnswer');
+  const answerOut = document.getElementById('answerOutput');
 
   try {
+    const raw = document.getElementById('offerInput').value.trim();
+    if (!raw) { setPairStatus('Paste the invite code from the display first.'); return; }
+
     cleanupPC();
     iceLog = [];
-    btn.disabled = true; btn.textContent = 'Generating…';
-    offerEl.value = ''; answerEl.value = ''; btnCopy.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Processing…';
+    answerOut.value = ''; btnCopy.style.display = 'none';
 
     pc = new RTCPeerConnection(RTC_CFG);
     addDebug('PeerConnection created');
 
-    // Log every ICE candidate
+    // Log ICE candidates
     pc.onicecandidate = (e) => {
       if (e.candidate) {
         const c = e.candidate;
@@ -566,117 +469,67 @@ async function generateOffer() {
     pc.onsignalingstatechange = () => addDebug('sig → ' + pc.signalingState);
     pc.oniceconnectionstatechange = () => {
       addDebug('ice → ' + pc.iceConnectionState);
-      handleICE();
+      const s = pc.iceConnectionState;
+      if (s === 'connected' || s === 'completed') setConnState('connected');
+      else if (s === 'failed') {
+        setConnState('disconnected');
+        setPairStatus('Connection failed. Try Reset and pair again. Ensure both devices can reach the internet.');
+      } else if (s === 'disconnected') {
+        addDebug('ICE disconnected — waiting for recovery…');
+        setPairStatus('Connection interrupted…');
+        setTimeout(() => {
+          if (pc && pc.iceConnectionState === 'disconnected') {
+            setConnState('disconnected');
+            setPairStatus('Connection lost. Reset and re-pair.');
+          }
+        }, 5000);
+      } else if (s === 'closed') {
+        setConnState('disconnected');
+      }
     };
     pc.onicegatheringstatechange = () => addDebug('gather → ' + pc.iceGatheringState);
     pc.onconnectionstatechange = () => addDebug('conn → ' + pc.connectionState);
 
-    // Display creates DataChannel (offerer)
-    dc = pc.createDataChannel('splitflap', { ordered: true });
-    wireDC(dc);
-    addDebug('DataChannel created');
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    addDebug('Local offer set, sig: ' + pc.signalingState);
+    // Controller is answerer → receives DataChannel
+    pc.ondatachannel = e => {
+      addDebug('Received DataChannel');
+      dc = e.channel;
+      wireDC(dc);
+    };
 
     setConnState('pairing');
+
+    const offerDesc = decodeB64(raw);
+    addDebug('Decoded offer, type: ' + offerDesc.type);
+
+    if (offerDesc.type !== 'offer') {
+      throw new Error('Expected an offer, got "' + offerDesc.type + '". Copy the invite code from the display.');
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(offerDesc));
+    addDebug('Remote offer set, sig: ' + pc.signalingState);
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    addDebug('Local answer set, sig: ' + pc.signalingState);
+
     setPairStatus('Gathering network candidates…');
 
     await gatherICE(pc);
     addDebug('Gathering done, sig: ' + pc.signalingState);
 
-    if (!pc || pc.signalingState !== 'have-local-offer') {
-      throw new Error('Bad state after ICE: ' + (pc ? pc.signalingState : 'null'));
-    }
-
     const code = encodeB64(pc.localDescription.toJSON());
-    offerEl.value = code;
+    answerOut.value = code;
     btnCopy.style.display = '';
-    setPairStatus('Invite code ready — copy it to the controller.');
+    setPairStatus('Response code ready — copy it back to the display.');
 
   } catch(e) {
-    log('generateOffer error:', e);
+    log('createAnswer error:', e);
     setPairStatus('Error: ' + e.message);
     addDebug('ERROR: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Generate Invite Code';
-  }
-}
-
-async function acceptAnswer() {
-  const btn = document.getElementById('btnAcceptAnswer');
-  const raw = document.getElementById('answerArea').value.trim();
-
-  if (!raw) { setPairStatus('Paste the response code first.'); return; }
-  if (!pc) { setPairStatus('Generate an invite code first (step 1).'); return; }
-
-  const sig = pc.signalingState;
-  addDebug('Accept answer, sig: ' + sig);
-
-  if (sig !== 'have-local-offer') {
-    setPairStatus(`State is "${sig}" — expected "have-local-offer". Click Reset and start over.`);
-    return;
-  }
-
-  try {
-    btn.disabled = true; btn.textContent = 'Connecting…';
-    const desc = decodeB64(raw);
-    addDebug('Decoded SDP type: ' + desc.type);
-
-    if (desc.type !== 'answer') {
-      setPairStatus('That\'s an invite code, not a response. Paste the response code from the controller.');
-      return;
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(desc));
-    addDebug('Remote answer set, sig: ' + pc.signalingState);
-    setPairStatus('Connecting… waiting for ICE to establish.');
-
-  } catch(e) {
-    log('acceptAnswer error:', e);
-    setPairStatus('Error: ' + e.message);
-    addDebug('ERROR: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Connect';
-  }
-}
-
-function handleICE() {
-  if (!pc) return;
-  const s = pc.iceConnectionState;
-  if (s === 'connected' || s === 'completed') {
-    setConnState('connected');
-    setPairStatus('Connected!');
-  } else if (s === 'failed') {
     setConnState('disconnected');
-    setPairStatus('Connection failed. Both devices may need to be on the same network, or use HTTPS. Click Reset to try again.');
-    addDebug('ICE FAILED — no viable candidate pair found');
-  } else if (s === 'disconnected') {
-    // Disconnected can be temporary — wait 5s before declaring failure
-    addDebug('ICE disconnected — waiting for recovery…');
-    setPairStatus('Connection interrupted — attempting recovery…');
-    setTimeout(() => {
-      if (pc && pc.iceConnectionState === 'disconnected') {
-        addDebug('ICE still disconnected after 5s — trying ICE restart');
-        tryICERestart();
-      }
-    }, 5000);
-  } else if (s === 'closed') {
-    setConnState('disconnected');
-  }
-}
-
-async function tryICERestart() {
-  if (!pc || pc.signalingState === 'closed') return;
-  try {
-    addDebug('Attempting ICE restart…');
-    const offer = await pc.createOffer({ iceRestart: true });
-    await pc.setLocalDescription(offer);
-    addDebug('ICE restart offer set — but manual signaling means the remote side won\'t get it automatically.');
-    setPairStatus('ICE restart attempted. If still failing, Reset and re-pair.');
-  } catch(e) {
-    addDebug('ICE restart failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Generate Response';
   }
 }
 
@@ -685,10 +538,7 @@ function gatherICE(conn) {
     if (conn.iceGatheringState === 'complete') { resolve(); return; }
     let done = false;
     const finish = () => { if (done) return; done = true; resolve(); };
-
-    conn.addEventListener('icecandidate', e => {
-      if (e.candidate === null) finish();
-    });
+    conn.addEventListener('icecandidate', e => { if (e.candidate === null) finish(); });
     conn.addEventListener('icegatheringstatechange', () => {
       if (conn.iceGatheringState === 'complete') finish();
     });
@@ -701,104 +551,67 @@ function wireDC(ch) {
     addDebug('DataChannel OPEN');
     setConnState('connected');
     setPairStatus('Connected!');
-    if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-    setTimeout(() => document.getElementById('pairOverlay').classList.remove('open'), 800);
-    sendMsg({ type: 'board_config', rows: boardState.rows, cols: boardState.cols, lines: boardState.lines });
+    if (document.getElementById('toggleAutoCollapse').classList.contains('on'))
+      document.getElementById('pairCard').style.display = 'none';
+    sendUpdate();
   };
   ch.onmessage = e => {
-    try { handleMsg(JSON.parse(e.data)); } catch(err) { log('bad msg', err); }
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'board_config') {
+        if (msg.rows) { rows = msg.rows; document.getElementById('cfgRows').value = rows; }
+        if (msg.cols) { cols = msg.cols; document.getElementById('cfgCols').value = cols; }
+        if (msg.lines && msg.lines.length) {
+          buildRowInputs();
+          const inputs = document.querySelectorAll('.row-text-input');
+          msg.lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
+        }
+      }
+    } catch(err) {}
   };
-  ch.onclose = () => { addDebug('DataChannel CLOSED'); setConnState('disconnected'); };
+  ch.onclose = () => {
+    addDebug('DataChannel CLOSED');
+    setConnState('disconnected');
+    setPairStatus('Connection closed.');
+    document.getElementById('pairCard').style.display = '';
+  };
   ch.onerror = e => addDebug('DataChannel error');
 }
 
-function handleMsg(msg) {
-  if (msg.type === 'state_update') {
-    if (msg.rows && msg.cols && (msg.rows !== boardState.rows || msg.cols !== boardState.cols))
-      buildBoard(msg.rows, msg.cols);
-    if (msg.lines) updateBoard(msg.lines);
-  } else if (msg.type === 'ping') {
-    sendMsg({ type: 'pong', ts: Date.now() });
-  }
-}
-
-function sendMsg(obj) {
-  if (dc && dc.readyState === 'open') dc.send(JSON.stringify(obj));
-}
-
-function resetConnection() {
-  cleanupPC();
-  iceLog = [];
-  setConnState('disconnected');
-  document.getElementById('offerArea').value = '';
-  document.getElementById('answerArea').value = '';
-  document.getElementById('btnCopyOffer').style.display = 'none';
-  document.getElementById('pairDebug').textContent = '';
-  setPairStatus('Reset. Generate a new invite code to start over.');
-}
-
-/* ═══ UI ═══ */
-function togglePairPanel() { document.getElementById('pairOverlay').classList.toggle('open'); }
-
-async function copyOffer() {
+async function copyAnswer() {
   try {
-    await navigator.clipboard.writeText(document.getElementById('offerArea').value);
-    setPairStatus('Copied to clipboard!');
+    await navigator.clipboard.writeText(document.getElementById('answerOutput').value);
+    setPairStatus('Copied! Paste this into the display page.');
   } catch(e) {
-    document.getElementById('offerArea').select();
+    document.getElementById('answerOutput').select();
     setPairStatus('Select all and copy manually.');
   }
 }
 
-function goFullscreen() {
-  const el = document.documentElement;
-  if (!document.fullscreenElement)
-    (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el);
-  else
-    (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
-}
-
-async function requestWakeLock() {
-  try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
-}
-
-/* ═══ DEMO ═══ */
-const DEMOS = [
-  ['   BERLIN  HBF      ','ICE 1234  PLATFORM 3','14:25  ON TIME      ','                    '],
-  ['   WELCOME TO THE   ',' SPLIT-FLAP DISPLAY ','    CONNECT YOUR    ','     CONTROLLER     '],
-  ['  FLIGHT   DEST     ','LH 1830  NEW YORK   ','AF 442   PARIS CDG  ','BA 937   LONDON LHR '],
-  ['                    ','   HELLO, WORLD!    ','                    ','   HAVE A NICE DAY  '],
-];
-let demoIdx = 0;
-function runDemo() {
-  if (connState === 'connected') return;
-  if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-  showDemoMsg();
-  demoTimer = setInterval(showDemoMsg, 6000);
-}
-function showDemoMsg() { updateBoard(DEMOS[demoIdx++ % DEMOS.length]); }
-
-/* ═══ RESIZE ═══ */
-let rsz;
-window.addEventListener('resize', () => {
-  clearTimeout(rsz);
-  rsz = setTimeout(() => {
-    const ln = boardState.lines;
-    buildBoard(boardState.rows, boardState.cols);
-    if (ln && ln.length) setImmediateBoard(ln);
-  }, 250);
-});
-
-/* ═══ INIT ═══ */
-(function init() {
-  checkEnvironment();
-  const s = loadState();
-  buildBoard(s ? s.rows : DEFAULT_ROWS, s ? s.cols : DEFAULT_COLS);
-  if (s && s.lines && s.lines.length) { setImmediateBoard(s.lines); boardState.lines = s.lines; }
-  requestWakeLock();
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWakeLock(); });
+function resetConn() {
+  cleanupPC(); iceLog = [];
   setConnState('disconnected');
-})();
+  document.getElementById('offerInput').value = '';
+  document.getElementById('answerOutput').value = '';
+  document.getElementById('btnCopyAnswer').style.display = 'none';
+  document.getElementById('pairCard').style.display = '';
+  document.getElementById('pairDebug').textContent = '';
+  setPairStatus('Reset. Ready to pair again.');
+}
+
+/* ═══ SEND ═══ */
+function sendUpdate() {
+  const lines = Array.from(document.querySelectorAll('.row-text-input')).map(i => i.value);
+  if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ type:'state_update', rows, cols, lines }));
+  saveState();
+}
+
+function toggleLive() {
+  liveMode = !liveMode;
+  document.getElementById('toggleLive').classList.toggle('on', liveMode);
+}
+
+init();
 </script>
 </body>
 </html>
