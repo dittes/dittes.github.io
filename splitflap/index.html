@@ -15,8 +15,7 @@
 }
 html, body {
   min-height: 100vh; background: var(--bg); color: var(--text);
-  font-family: 'Instrument Sans', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: 'Instrument Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased;
 }
 .page { max-width: 680px; margin: 0 auto; padding: 60px 24px 80px; }
 .hero { text-align: center; margin-bottom: 56px; }
@@ -29,25 +28,23 @@ html, body {
 .hero h1 {
   font-family: 'Oswald', sans-serif; font-weight: 700;
   font-size: clamp(36px, 7vw, 56px); letter-spacing: 3px;
-  text-transform: uppercase; color: var(--text-bright); line-height: 1.1;
-  margin-bottom: 16px;
+  text-transform: uppercase; color: var(--text-bright); line-height: 1.1; margin-bottom: 16px;
 }
 .hero h1 span { color: var(--accent); }
 .hero p { font-size: 16px; line-height: 1.7; max-width: 480px; margin: 0 auto; }
 
 .launchers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 48px; }
 @media (max-width: 520px) { .launchers { grid-template-columns: 1fr; } }
-
 .launch-card {
   display: flex; flex-direction: column;
   background: var(--card-bg); border: 1px solid var(--border);
   border-radius: 16px; padding: 28px 24px;
-  text-decoration: none; color: inherit;
-  transition: all 0.2s; position: relative; overflow: hidden;
+  text-decoration: none; color: inherit; transition: all 0.2s;
+  position: relative; overflow: hidden;
 }
 .launch-card::before {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(245,197,24,0.03) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(245,197,24,0.03), transparent 60%);
   opacity: 0; transition: opacity 0.3s;
 }
 .launch-card:hover::before { opacity: 1; }
@@ -55,21 +52,15 @@ html, body {
 .launch-icon { font-size: 32px; margin-bottom: 16px; }
 .launch-card h2 {
   font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 18px;
-  letter-spacing: 1px; text-transform: uppercase;
-  color: var(--text-bright); margin-bottom: 8px;
+  letter-spacing: 1px; text-transform: uppercase; color: var(--text-bright); margin-bottom: 8px;
 }
 .launch-card p { font-size: 13px; line-height: 1.6; flex: 1; }
-.launch-tag {
-  display: inline-block; margin-top: 16px; font-size: 11px;
-  font-weight: 600; color: var(--accent); letter-spacing: 0.5px;
-}
+.launch-tag { display: inline-block; margin-top: 16px; font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; }
 
 .section-title {
   font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 16px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--text-bright); margin-bottom: 24px;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-bright); margin-bottom: 24px;
 }
-
 .steps {
   display: flex; flex-direction: column; gap: 1px;
   background: var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 48px;
@@ -90,6 +81,10 @@ html, body {
 }
 .faq-item h3 { font-size: 13px; font-weight: 600; color: var(--text-bright); margin-bottom: 8px; }
 .faq-item p { font-size: 13px; line-height: 1.6; }
+.faq-item code {
+  background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;
+  font-family: 'Courier New', monospace; font-size: 12px; color: var(--accent);
+}
 
 .footer {
   text-align: center; font-size: 11px; color: var(--text-dim);
@@ -126,53 +121,57 @@ html, body {
       <span class="step-num">1</span>
       <div class="step-content">
         <h3>Open both pages</h3>
-        <p>Open Display on your TV/monitor and Controller on your phone. They can be on different devices.</p>
+        <p>Open Display on your TV/monitor and Controller on your phone or laptop.</p>
       </div>
     </div>
     <div class="step">
       <span class="step-num">2</span>
       <div class="step-content">
         <h3>Generate invite code on Display</h3>
-        <p>Click "Pair" in the header → "Generate Invite Code." Wait for the code, then copy it.</p>
+        <p>Click "Pair" → "Generate Invite Code." Wait for the code (a few seconds while network candidates are gathered), then copy it.</p>
       </div>
     </div>
     <div class="step">
       <span class="step-num">3</span>
       <div class="step-content">
-        <h3>Paste into Controller</h3>
-        <p>Paste the invite code into the controller and click "Generate Response." Copy the response code.</p>
+        <h3>Paste into Controller & generate response</h3>
+        <p>Paste the invite code into the controller and click "Generate Response." Wait for the response code, then copy it.</p>
       </div>
     </div>
     <div class="step">
       <span class="step-num">4</span>
       <div class="step-content">
-        <h3>Paste response into Display</h3>
-        <p>Paste the response code into the display's step 2 field and click "Connect." You're live.</p>
+        <h3>Paste response into Display & connect</h3>
+        <p>Paste the response code into the display's step 2 field and click "Connect." The connection establishes within seconds.</p>
       </div>
     </div>
   </div>
 
-  <div class="section-title">Good to know</div>
+  <div class="section-title">Troubleshooting</div>
   <div class="faq">
     <div class="faq-item">
+      <h3>Connection goes to "disconnected" immediately</h3>
+      <p>This usually means the two browsers can't reach each other at the network level. The most reliable fix: <strong>serve the files over HTTPS</strong> (or localhost). Opening from <code>file://</code> disables WebRTC in most browsers. Use <code>python3 -m http.server</code> for a quick local server, or deploy to any static host (GitHub Pages, Netlify, Cloudflare Pages).</p>
+    </div>
+    <div class="faq-item">
+      <h3>Works on same machine but not across devices</h3>
+      <p>Both devices need internet access for the STUN/TURN relay servers to work. If behind a corporate firewall or VPN, try using your phone's mobile data instead of Wi-Fi. The system includes TURN relay servers as fallback for restrictive networks.</p>
+    </div>
+    <div class="faq-item">
+      <h3>I see "ICE candidate: host" but no "srflx" or "relay"</h3>
+      <p>This means STUN/TURN servers couldn't be reached. Check internet connectivity. Host-only candidates work when both devices are on the same local network.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Best setup for a TV?</h3>
+      <p>Open display.html in Chrome on a device connected to the TV (HDMI, Chromecast, smart TV browser). Click ⛶ for fullscreen. The display will try to keep the screen awake via the Wake Lock API.</p>
+    </div>
+    <div class="faq-item">
       <h3>Do I need a server?</h3>
-      <p>No. Host these three files anywhere — GitHub Pages, Netlify, Cloudflare Pages, or even open them from your hard drive.</p>
+      <p>Not a backend server — but the files should be served over HTTP/HTTPS for WebRTC to work reliably. Any static file host works: <code>python3 -m http.server</code>, GitHub Pages, Netlify, or Cloudflare Pages.</p>
     </div>
     <div class="faq-item">
-      <h3>How does it work without a server?</h3>
-      <p>WebRTC peer-to-peer connection. The invite/response codes replace the signaling server with a manual copy-paste step.</p>
-    </div>
-    <div class="faq-item">
-      <h3>Will it work across networks?</h3>
-      <p>Uses Google's public STUN servers for NAT traversal. Works on most networks. Very restrictive firewalls may block it — same network is most reliable.</p>
-    </div>
-    <div class="faq-item">
-      <h3>Best TV setup?</h3>
-      <p>Open display.html in Chrome, click the fullscreen button ⛶ in the header. The display attempts to keep the screen awake.</p>
-    </div>
-    <div class="faq-item">
-      <h3>Can I reload?</h3>
-      <p>Both pages save state to localStorage. After reload the display shows what was last on the board. You'll need to re-pair though.</p>
+      <h3>Can I reload without losing the board?</h3>
+      <p>Yes — both pages save state to localStorage. The display restores its last content on reload. You will need to re-pair though, since WebRTC connections don't persist across page loads.</p>
     </div>
   </div>
 
