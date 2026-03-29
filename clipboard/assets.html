@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard Icons, Emojis & PNG Assets</title>
+    <meta name="description" content="Download a transparent clipboard png, find the perfect clipboard icon, or quickly grab the clipboard emoji copy and paste code for your project.">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .asset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; }
+        .asset-card { text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; }
+        .emoji-display { font-size: 4rem; margin-bottom: 16px; cursor: pointer; transition: transform 0.2s; }
+        .emoji-display:hover { transform: scale(1.1); }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--text-main); color: white; padding: 12px 24px; border-radius: 8px; opacity: 0; transition: opacity 0.3s; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Clipboard Hub</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="assets.html">Assets</a>
+                <a href="disambiguation.html">More</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header>
+            <h1>Clipboard Visuals & Assets</h1>
+            <p>Need a graphic for your UI or a quick symbol for a chat? Browse our collection of <strong>clipboard transparent</strong> files, emojis, and icons.</p>
+        </header>
+
+        <div class="asset-grid">
+            <section class="card asset-card">
+                <div class="emoji-display" id="copyEmoji" title="Click to copy">📋</div>
+                <h2>The Emoji</h2>
+                <p style="font-size: 0.9rem;">The standard <strong>clipboard emoji copy and paste</strong> instantly by clicking the icon above.</p>
+            </section>
+
+            <section class="card asset-card">
+                <div style="width: 64px; height: 80px; border: 4px solid var(--primary); border-radius: 8px; position: relative; margin-bottom: 16px;">
+                    <div style="position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 32px; height: 12px; background: var(--primary); border-radius: 4px;"></div>
+                </div>
+                <h2>Vector & PNGs</h2>
+                <p style="font-size: 0.9rem;">Looking for a crisp <strong>clipboard icon</strong>, a high-res <strong>clipboard png</strong>, or classic <strong>clipboard clipart</strong>? Check out our <a href="#">design library</a>.</p>
+            </section>
+
+            <section class="card asset-card">
+                <div style="font-size: 2.5rem; color: var(--text-muted); margin-bottom: 16px;">🧊</div>
+                <h2>3D Models & Art</h2>
+                <p style="font-size: 0.9rem;">For game devs and artists, we link to the best <strong>clipboard 3d model</strong> files and realistic <strong>clipboard drawing</strong> references.</p>
+            </section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast">Emoji Copied!</div>
+
+    <footer class="footer">
+        <p>&copy; 2026 Clipboard Hub & Manager. Free assets for creators.</p>
+    </footer>
+
+    <script>
+        document.getElementById('copyEmoji').addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText('📋');
+                const toast = document.getElementById('toast');
+                toast.style.opacity = '1';
+                setTimeout(() => toast.style.opacity = '0', 2000);
+            } catch (err) {
+                console.error('Failed to copy emoji', err);
+            }
+        });
+    </script>
+</body>
+</html>
