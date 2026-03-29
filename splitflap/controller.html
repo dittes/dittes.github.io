@@ -33,339 +33,184 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── LAYOUT ── */
-.app {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 16px 100px;
-}
+.app { max-width: 480px; margin: 0 auto; padding: 0 16px 100px; }
 
-/* ── HEADER ── */
 .app-header {
   position: sticky; top: 0; z-index: 50;
   background: rgba(8,8,14,0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   padding: 16px 0 12px;
   border-bottom: 1px solid var(--card-border);
   margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: flex; align-items: center; justify-content: space-between;
 }
 
 .app-title {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase;
   color: var(--text-bright);
 }
 
 .conn-badge {
   display: flex; align-items: center; gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  background: rgba(239,68,68,0.1);
-  color: var(--disconnected);
-  border: 1px solid rgba(239,68,68,0.2);
-  transition: all 0.3s;
+  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(239,68,68,0.1); color: var(--disconnected);
+  border: 1px solid rgba(239,68,68,0.2); transition: all 0.3s;
 }
-.conn-badge .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: currentColor;
-}
-.conn-badge.connected {
-  background: rgba(34,197,94,0.1);
-  color: var(--connected);
-  border-color: rgba(34,197,94,0.2);
-}
-.conn-badge.pairing {
-  background: rgba(245,158,11,0.1);
-  color: var(--pairing);
-  border-color: rgba(245,158,11,0.2);
-}
+.conn-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.conn-badge.connected { background: rgba(34,197,94,0.1); color: var(--connected); border-color: rgba(34,197,94,0.2); }
+.conn-badge.pairing { background: rgba(245,158,11,0.1); color: var(--pairing); border-color: rgba(245,158,11,0.2); }
 
-/* ── CARDS ── */
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 20px; margin-bottom: 16px;
 }
 
 .card-title {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 14px;
+  font-family: 'Oswald', sans-serif; font-weight: 500;
+  font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 14px;
 }
 
-/* ── PAIRING ── */
 .pair-flow { display: flex; flex-direction: column; gap: 12px; }
 
 .pair-step-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text);
-  margin-bottom: 6px;
-  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
 }
 
 .pair-step-num {
-  display: inline-flex;
-  align-items: center; justify-content: center;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #000;
-  font-size: 11px;
-  font-weight: 700;
-  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
 
 .pair-ta {
-  width: 100%;
-  height: 72px;
+  width: 100%; height: 72px;
   background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border: 1px solid var(--card-border); border-radius: 8px;
   color: var(--text-bright);
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  padding: 10px;
-  resize: none;
-  outline: none;
-  transition: border-color 0.2s;
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 10px; resize: none; outline: none; transition: border-color 0.2s;
 }
 .pair-ta:focus { border-color: var(--accent); }
 .pair-ta::placeholder { color: rgba(255,255,255,0.15); }
 
 .pair-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
 
-.pair-status {
-  font-size: 12px;
-  min-height: 18px;
-  color: var(--pairing);
-  margin-top: 6px;
+.pair-status { font-size: 12px; min-height: 18px; color: var(--pairing); margin-top: 6px; }
+
+.pair-debug {
+  font-size: 10px; color: var(--text); opacity: 0.4;
+  margin-top: 4px; font-family: 'Courier New', monospace;
 }
 
-/* ── BUTTONS ── */
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 10px 18px;
-  border-radius: 8px;
-  border: none;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 18px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
-
-.btn-primary {
-  background: var(--accent);
-  color: #000;
-}
+.btn-primary { background: var(--accent); color: #000; }
 .btn-primary:hover { background: #ffd633; }
 .btn-primary:active { transform: scale(0.97); }
-
-.btn-ghost {
-  background: rgba(255,255,255,0.06);
-  color: var(--text);
-  border: 1px solid var(--card-border);
-}
+.btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--card-border); }
 .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-bright); }
-
-.btn-danger {
-  background: rgba(239,68,68,0.1);
-  color: var(--disconnected);
-  border: 1px solid rgba(239,68,68,0.15);
-}
+.btn-danger { background: rgba(239,68,68,0.1); color: var(--disconnected); border: 1px solid rgba(239,68,68,0.15); }
 .btn-danger:hover { background: rgba(239,68,68,0.2); }
-
-.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 
 .btn-send {
-  width: 100%;
-  padding: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  border-radius: 10px;
+  width: 100%; padding: 14px;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.5px; border-radius: 10px;
 }
 
-/* ── INPUTS ── */
 .field-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--text-dim); margin-bottom: 6px;
 }
 
 .text-input {
-  width: 100%;
-  padding: 12px 14px;
+  width: 100%; padding: 12px 14px;
   background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border: 1px solid var(--card-border); border-radius: 8px;
   color: var(--text-bright);
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  outline: none;
-  transition: border-color 0.2s;
+  font-family: 'Courier New', monospace; font-size: 14px;
+  letter-spacing: 1px; text-transform: uppercase;
+  outline: none; transition: border-color 0.2s;
 }
 .text-input:focus { border-color: var(--accent); }
 .text-input::placeholder {
-  color: rgba(255,255,255,0.12);
-  text-transform: none;
-  font-family: 'Instrument Sans', system-ui, sans-serif;
-  letter-spacing: 0;
+  color: rgba(255,255,255,0.12); text-transform: none;
+  font-family: 'Instrument Sans', system-ui, sans-serif; letter-spacing: 0;
 }
 
 .row-inputs { display: flex; flex-direction: column; gap: 10px; }
-
-.row-input-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.row-input-group { display: flex; align-items: center; gap: 10px; }
 .row-num {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  color: var(--accent);
-  width: 20px;
-  text-align: center;
-  flex-shrink: 0;
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: 14px; color: var(--accent);
+  width: 20px; text-align: center; flex-shrink: 0;
 }
 
-.config-row {
-  display: flex; gap: 10px; margin-bottom: 16px;
-}
-
+.config-row { display: flex; gap: 10px; margin-bottom: 16px; }
 .config-field { flex: 1; }
-
 .config-input {
-  width: 100%;
-  padding: 10px 12px;
+  width: 100%; padding: 10px 12px;
   background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  color: var(--text-bright);
-  font-family: inherit;
-  font-size: 14px;
-  outline: none;
-  text-align: center;
-  transition: border-color 0.2s;
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text-bright); font-family: inherit; font-size: 14px;
+  outline: none; text-align: center; transition: border-color 0.2s;
 }
 .config-input:focus { border-color: var(--accent); }
 
-/* ── PRESETS ── */
-.presets-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
+.presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 .preset-btn {
   padding: 10px 8px;
   background: rgba(255,255,255,0.04);
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  border: 1px solid var(--card-border); border-radius: 8px;
+  color: var(--text); font-family: inherit;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
 .preset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-bright); }
 .preset-btn:active { transform: scale(0.97); }
 
-/* ── TOGGLE ── */
-.toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 0;
-}
-
+.toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .toggle-label { font-size: 13px; color: var(--text); }
 
 .toggle {
-  position: relative;
-  width: 44px; height: 24px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s;
-  border: none;
-  padding: 0;
+  position: relative; width: 44px; height: 24px;
+  background: rgba(255,255,255,0.1); border-radius: 12px;
+  cursor: pointer; transition: background 0.2s; border: none; padding: 0;
 }
 .toggle.on { background: var(--accent); }
 .toggle::after {
-  content: '';
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #fff;
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
   transition: transform 0.2s;
 }
 .toggle.on::after { transform: translateX(20px); }
 
-/* ── SECTION DIVIDER ── */
-.divider {
-  height: 1px;
-  background: var(--card-border);
-  margin: 12px 0;
-}
+.divider { height: 1px; background: var(--card-border); margin: 12px 0; }
 
-/* ── FOOTER ── */
 .footer {
-  text-align: center;
-  padding: 24px 0;
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.5px;
+  text-align: center; padding: 24px 0;
+  font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px;
 }
 
-/* ── KEYBOARD HINT ── */
-.kbd-hint {
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 6px;
-}
-.kbd { 
-  display: inline-block;
-  padding: 1px 5px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 3px;
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
+.kbd-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
+.kbd {
+  display: inline-block; padding: 1px 5px;
+  background: rgba(255,255,255,0.08); border-radius: 3px;
+  font-family: 'Courier New', monospace; font-size: 10px;
 }
 </style>
 </head>
@@ -373,7 +218,6 @@ html, body {
 
 <div class="app">
 
-  <!-- HEADER -->
   <div class="app-header">
     <span class="app-title">Split·Flap Controller</span>
     <div class="conn-badge" id="connBadge">
@@ -382,11 +226,10 @@ html, body {
     </div>
   </div>
 
-  <!-- PAIRING CARD -->
+  <!-- PAIRING -->
   <div class="card" id="pairCard">
     <div class="card-title">Pair with Display</div>
     <div class="pair-flow">
-
       <div>
         <div class="pair-step-label"><span class="pair-step-num">1</span> Paste the invite code from the display</div>
         <textarea class="pair-ta" id="offerInput" placeholder="Paste invite code here…"></textarea>
@@ -394,9 +237,7 @@ html, body {
           <button class="btn btn-primary" id="btnCreateAnswer" onclick="createAnswer()">Generate Response</button>
         </div>
       </div>
-
       <div class="divider"></div>
-
       <div>
         <div class="pair-step-label"><span class="pair-step-num">2</span> Copy response code back to the display</div>
         <textarea class="pair-ta" id="answerOutput" placeholder="Response code will appear here…" readonly></textarea>
@@ -404,56 +245,46 @@ html, body {
           <button class="btn btn-ghost" id="btnCopyAnswer" onclick="copyAnswer()" style="display:none">Copy Response</button>
         </div>
       </div>
-
       <div class="pair-actions" style="margin-top: 4px;">
         <button class="btn btn-danger" onclick="resetConn()">Reset</button>
       </div>
-
       <div class="pair-status" id="pairStatus"></div>
+      <div class="pair-debug" id="pairDebug"></div>
     </div>
   </div>
 
-  <!-- MESSAGE CARD -->
+  <!-- MESSAGE -->
   <div class="card" id="msgCard">
     <div class="card-title">Board Message</div>
-
     <div class="config-row">
       <div class="config-field">
         <div class="field-label">Rows</div>
-        <input type="number" class="config-input" id="cfgRows" value="4" min="1" max="12" onchange="onConfigChange()">
+        <input type="number" class="config-input" id="cfgRows" value="4" min="1" max="12" onchange="onCfgChange()">
       </div>
       <div class="config-field">
         <div class="field-label">Columns</div>
-        <input type="number" class="config-input" id="cfgCols" value="20" min="4" max="50" onchange="onConfigChange()">
+        <input type="number" class="config-input" id="cfgCols" value="20" min="4" max="50" onchange="onCfgChange()">
       </div>
     </div>
-
     <div class="row-inputs" id="rowInputs"></div>
-
     <div style="margin-top: 16px;">
-      <button class="btn btn-primary btn-send" id="btnSend" onclick="sendUpdate()">
-        Send to Display
-      </button>
-      <div class="kbd-hint">
-        <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to send
-      </div>
+      <button class="btn btn-primary btn-send" id="btnSend" onclick="sendUpdate()">Send to Display</button>
+      <div class="kbd-hint"><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to send</div>
     </div>
-
     <div class="divider"></div>
-
     <div class="toggle-row">
       <span class="toggle-label">Live update (send on every keystroke)</span>
       <button class="toggle" id="toggleLive" onclick="toggleLive()"></button>
     </div>
   </div>
 
-  <!-- PRESETS CARD -->
+  <!-- PRESETS -->
   <div class="card">
     <div class="card-title">Quick Presets</div>
     <div class="presets-grid" id="presetsGrid"></div>
   </div>
 
-  <!-- SETTINGS CARD -->
+  <!-- SETTINGS -->
   <div class="card">
     <div class="card-title">Settings</div>
     <div class="toggle-row">
@@ -462,13 +293,13 @@ html, body {
     </div>
   </div>
 
-  <div class="footer">Split·Flap — static file, zero servers</div>
+  <div class="footer">Split·Flap — static files, zero servers</div>
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    SPLIT-FLAP CONTROLLER
-   ═══════════════════════════════════════════ */
+   ═══════════════════════════════════════════════════════════════ */
 
 let pc = null;
 let dc = null;
@@ -476,96 +307,98 @@ let connState = 'disconnected';
 let liveMode = false;
 let rows = 4, cols = 20;
 
-/* ── PRESETS ── */
+function log(...args) { console.log('[Controller]', ...args); }
+
+/* ─── Base64 (must match display.html) ─── */
+function encodeB64(obj) {
+  const json = JSON.stringify(obj);
+  const bytes = new TextEncoder().encode(json);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function decodeB64(str) {
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ═══ PRESETS ═══ */
 const PRESETS = [
-  { label: '✈ Departures', rows: 4, cols: 20, lines: ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '] },
-  { label: '🚆 Train Station', rows: 4, cols: 20, lines: ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '] },
-  { label: '👋 Welcome', rows: 4, cols: 20, lines: ['                    ', '      WELCOME!      ', '                    ', '   HAVE A NICE DAY  '] },
-  { label: '⏰ Current Time', rows: 4, cols: 20, lines: null },
-  { label: '📋 Meeting Room', rows: 4, cols: 20, lines: ['  CONFERENCE ROOM A ', '  MEETING IN SESSION', '  DO NOT DISTURB    ', '                    '] },
-  { label: '🎉 Event', rows: 4, cols: 20, lines: ['                    ', '    PRODUCT LAUNCH  ', '    MARCH 2026      ', '   ALL ARE WELCOME  '] },
-  { label: '☕ Café Menu', rows: 4, cols: 20, lines: [' ESPRESSO     3.50  ', ' CAPPUCCINO   4.00  ', ' FLAT WHITE   4.50  ', ' MATCHA       5.00  '] },
-  { label: '🧹 Clear Board', rows: 4, cols: 20, lines: ['', '', '', ''] },
+  { label: '✈ Departures', lines: ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '] },
+  { label: '🚆 Train Station', lines: ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '] },
+  { label: '👋 Welcome', lines: ['                    ', '      WELCOME!      ', '                    ', '   HAVE A NICE DAY  '] },
+  { label: '⏰ Current Time', lines: null },
+  { label: '📋 Meeting Room', lines: ['  CONFERENCE ROOM A ', '  MEETING IN SESSION', '  DO NOT DISTURB    ', '                    '] },
+  { label: '🎉 Event', lines: ['                    ', '    PRODUCT LAUNCH  ', '    MARCH 2026      ', '   ALL ARE WELCOME  '] },
+  { label: '☕ Café Menu', lines: [' ESPRESSO     3.50  ', ' CAPPUCCINO   4.00  ', ' FLAT WHITE   4.50  ', ' MATCHA       5.00  '] },
+  { label: '🧹 Clear Board', lines: ['', '', '', ''] },
 ];
 
-/* ── INIT ── */
+/* ═══ INIT ═══ */
 function init() {
   loadSaved();
   buildRowInputs();
   buildPresets();
   setConnState('disconnected');
 
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      e.preventDefault();
-      sendUpdate();
-    }
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendUpdate(); }
   });
 }
 
 function loadSaved() {
   try {
-    const s = localStorage.getItem('sf-ctrl-state');
-    if (s) {
-      const p = JSON.parse(s);
-      rows = p.rows || 4;
-      cols = p.cols || 20;
-      document.getElementById('cfgRows').value = rows;
-      document.getElementById('cfgCols').value = cols;
-      // Lines restored in buildRowInputs
-      if (p.lines) {
-        setTimeout(() => {
-          const inputs = document.querySelectorAll('.row-text-input');
-          p.lines.forEach((line, i) => {
-            if (inputs[i]) inputs[i].value = line;
-          });
-        }, 0);
-      }
+    const p = JSON.parse(localStorage.getItem('sf-ctrl'));
+    if (!p) return;
+    rows = p.rows || 4;
+    cols = p.cols || 20;
+    document.getElementById('cfgRows').value = rows;
+    document.getElementById('cfgCols').value = cols;
+    if (p.lines) {
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('.row-text-input');
+        p.lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
+      }, 0);
     }
   } catch(e) {}
 }
 
 function saveState() {
   try {
-    const inputs = document.querySelectorAll('.row-text-input');
-    const lines = Array.from(inputs).map(i => i.value);
-    localStorage.setItem('sf-ctrl-state', JSON.stringify({ rows, cols, lines }));
+    const lines = Array.from(document.querySelectorAll('.row-text-input')).map(i => i.value);
+    localStorage.setItem('sf-ctrl', JSON.stringify({ rows, cols, lines }));
   } catch(e) {}
 }
 
-/* ── ROW INPUTS ── */
+/* ═══ ROW INPUTS ═══ */
 function buildRowInputs() {
-  const container = document.getElementById('rowInputs');
-  container.innerHTML = '';
+  const ct = document.getElementById('rowInputs');
+  ct.innerHTML = '';
   for (let i = 0; i < rows; i++) {
-    const group = document.createElement('div');
-    group.className = 'row-input-group';
+    const g = document.createElement('div');
+    g.className = 'row-input-group';
 
-    const num = document.createElement('span');
-    num.className = 'row-num';
-    num.textContent = i + 1;
+    const n = document.createElement('span');
+    n.className = 'row-num'; n.textContent = i + 1;
 
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'text-input row-text-input';
-    input.maxLength = cols;
-    input.placeholder = `Row ${i + 1} — up to ${cols} characters`;
-    input.setAttribute('autocomplete', 'off');
-    input.setAttribute('autocorrect', 'off');
-    input.setAttribute('autocapitalize', 'characters');
-    input.setAttribute('spellcheck', 'false');
-    input.addEventListener('input', () => {
-      saveState();
-      if (liveMode) sendUpdate();
-    });
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.className = 'text-input row-text-input';
+    inp.maxLength = cols;
+    inp.placeholder = `Row ${i + 1}`;
+    inp.autocomplete = 'off'; inp.autocorrect = 'off';
+    inp.autocapitalize = 'characters'; inp.spellcheck = false;
+    inp.addEventListener('input', () => { saveState(); if (liveMode) sendUpdate(); });
 
-    group.appendChild(num);
-    group.appendChild(input);
-    container.appendChild(group);
+    g.appendChild(n); g.appendChild(inp);
+    ct.appendChild(g);
   }
 }
 
-function onConfigChange() {
+function onCfgChange() {
   rows = Math.max(1, Math.min(12, parseInt(document.getElementById('cfgRows').value) || 4));
   cols = Math.max(4, Math.min(50, parseInt(document.getElementById('cfgCols').value) || 20));
   document.getElementById('cfgRows').value = rows;
@@ -574,7 +407,7 @@ function onConfigChange() {
   saveState();
 }
 
-/* ── PRESETS ── */
+/* ═══ PRESETS ═══ */
 function buildPresets() {
   const grid = document.getElementById('presetsGrid');
   PRESETS.forEach((p, i) => {
@@ -586,164 +419,191 @@ function buildPresets() {
   });
 }
 
-function applyPreset(index) {
-  const p = PRESETS[index];
+function applyPreset(idx) {
+  const p = PRESETS[idx];
   let lines = p.lines;
-
-  // Special: current time
   if (lines === null) {
     const now = new Date();
-    const h = String(now.getHours()).padStart(2, '0');
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const s = String(now.getSeconds()).padStart(2, '0');
-    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
-    lines = [
-      '                    ',
-      `      ${h}:${m}:${s}       `,
-      '                    ',
-      dateStr.substring(0, 20).padStart(Math.floor((20 + dateStr.substring(0, 20).length) / 2)).padEnd(20),
-    ];
+    const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2, '0'));
+    const d = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+    lines = ['', `      ${t[0]}:${t[1]}:${t[2]}       `, '', d.substring(0, 20).padStart(Math.floor((20 + d.substring(0, 20).length) / 2)).padEnd(20)];
   }
-
-  if (p.rows) { rows = p.rows; document.getElementById('cfgRows').value = rows; }
-  if (p.cols) { cols = p.cols; document.getElementById('cfgCols').value = cols; }
   buildRowInputs();
-
   const inputs = document.querySelectorAll('.row-text-input');
-  lines.forEach((line, i) => {
-    if (inputs[i]) inputs[i].value = line;
-  });
-
+  lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
   saveState();
   sendUpdate();
 }
 
-/* ── CONNECTION ── */
+/* ═══ CONNECTION STATE ═══ */
 function setConnState(state) {
   connState = state;
   const badge = document.getElementById('connBadge');
-  const label = document.getElementById('connLabel');
   badge.className = 'conn-badge ' + state;
-  const labels = { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' };
-  label.textContent = labels[state] || state;
+  document.getElementById('connLabel').textContent =
+    { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' }[state] || state;
 }
 
-function setPairStatus(msg) {
-  document.getElementById('pairStatus').textContent = msg;
+function setPairStatus(msg) { document.getElementById('pairStatus').textContent = msg; }
+
+function showDebug() {
+  const sig = pc ? pc.signalingState : '—';
+  const ice = pc ? pc.iceConnectionState : '—';
+  document.getElementById('pairDebug').textContent = `sig:${sig} · ice:${ice}`;
 }
 
-/* ── WEBRTC ── */
-const RTC_CONFIG = {
+/* ═══ WEBRTC ═══ */
+const RTC_CFG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
   ]
 };
 
+function cleanupPC() {
+  if (dc) { try { dc.close(); } catch(e) {} dc = null; }
+  if (pc) { try { pc.close(); } catch(e) {} pc = null; }
+}
+
 async function createAnswer() {
+  const btn = document.getElementById('btnCreateAnswer');
+  const btnCopy = document.getElementById('btnCopyAnswer');
+  const answerOut = document.getElementById('answerOutput');
+
   try {
     const raw = document.getElementById('offerInput').value.trim();
     if (!raw) { setPairStatus('Paste the invite code from the display first.'); return; }
 
-    if (pc) { pc.close(); pc = null; dc = null; }
+    cleanupPC();
+    btn.disabled = true;
+    btn.textContent = 'Processing…';
+    answerOut.value = '';
+    btnCopy.style.display = 'none';
 
-    pc = new RTCPeerConnection(RTC_CONFIG);
-    setConnState('pairing');
-    setPairStatus('Processing invite code…');
+    pc = new RTCPeerConnection(RTC_CFG);
+    log('PC created');
 
-    pc.ondatachannel = (e) => {
-      dc = e.channel;
-      setupDC(dc);
-    };
-
+    // State listeners
+    pc.onsignalingstatechange = () => { log('sig →', pc.signalingState); showDebug(); };
     pc.oniceconnectionstatechange = () => {
-      if (!pc) return;
+      log('ice →', pc.iceConnectionState);
+      showDebug();
       const s = pc.iceConnectionState;
       if (s === 'connected' || s === 'completed') setConnState('connected');
-      else if (s === 'disconnected' || s === 'failed' || s === 'closed') setConnState('disconnected');
+      else if (s === 'failed' || s === 'closed') setConnState('disconnected');
     };
 
-    const offerSDP = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    await pc.setRemoteDescription(new RTCSessionDescription(offerSDP));
+    // Controller is the answerer → receives DataChannel from offerer
+    pc.ondatachannel = e => {
+      log('Received DataChannel');
+      dc = e.channel;
+      wireDC(dc);
+    };
 
+    setConnState('pairing');
+
+    // Decode the offer
+    const offerDesc = decodeB64(raw);
+    log('Decoded offer, type:', offerDesc.type);
+
+    if (offerDesc.type !== 'offer') {
+      throw new Error('Expected an offer but got "' + offerDesc.type + '". Make sure you copied the invite code from the display.');
+    }
+
+    // Set remote description (the offer)
+    await pc.setRemoteDescription(new RTCSessionDescription(offerDesc));
+    log('Remote description set, sig:', pc.signalingState);
+
+    // Create answer
     const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    log('Answer created');
 
-    setPairStatus('Gathering network info…');
+    await pc.setLocalDescription(answer);
+    log('Local description set, sig:', pc.signalingState);
+
+    setPairStatus('Gathering network candidates…');
+    showDebug();
 
     // Wait for ICE
-    await waitForICE(pc);
+    await gatherICE(pc);
+    log('ICE done, sig:', pc.signalingState);
 
-    const sdp = JSON.stringify(pc.localDescription);
-    const code = btoa(unescape(encodeURIComponent(sdp)));
-    document.getElementById('answerOutput').value = code;
-    document.getElementById('btnCopyAnswer').style.display = '';
-    setPairStatus('Response code ready — copy it and paste in the display.');
-  } catch (e) {
-    console.error('Create answer failed:', e);
-    setPairStatus('Invalid invite code. Check and try again.');
+    if (!pc || pc.signalingState !== 'stable') {
+      // After setRemoteDescription(offer) + setLocalDescription(answer), state should be stable
+      log('Unexpected state:', pc ? pc.signalingState : 'null');
+    }
+
+    // Encode the complete local description
+    const code = encodeB64(pc.localDescription.toJSON());
+    answerOut.value = code;
+    btnCopy.style.display = '';
+    setPairStatus('Response code ready — copy it back to the display.');
+    showDebug();
+
+  } catch(e) {
+    log('createAnswer error:', e);
+    setPairStatus('Error: ' + e.message);
     setConnState('disconnected');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Response';
   }
 }
 
-function waitForICE(conn) {
-  return new Promise((resolve) => {
+function gatherICE(conn) {
+  return new Promise(resolve => {
     if (conn.iceGatheringState === 'complete') { resolve(); return; }
-    const check = () => {
-      if (conn.iceGatheringState === 'complete') {
-        conn.removeEventListener('icegatheringstatechange', check);
-        resolve();
-      }
-    };
-    conn.addEventListener('icegatheringstatechange', check);
-    setTimeout(resolve, 5000);
+    let done = false;
+    const finish = () => { if (done) return; done = true; resolve(); };
+
+    conn.addEventListener('icecandidate', e => {
+      if (e.candidate === null) { log('ICE: null candidate'); finish(); }
+    });
+    conn.addEventListener('icegatheringstatechange', () => {
+      if (conn.iceGatheringState === 'complete') { log('ICE: complete'); finish(); }
+    });
+    setTimeout(() => { log('ICE: timeout (8s)'); finish(); }, 8000);
   });
 }
 
-function setupDC(channel) {
-  channel.onopen = () => {
+function wireDC(ch) {
+  ch.onopen = () => {
+    log('DataChannel open');
     setConnState('connected');
     setPairStatus('Connected! You can now control the display.');
-
-    // Auto-collapse pairing card
+    showDebug();
     if (document.getElementById('toggleAutoCollapse').classList.contains('on')) {
       document.getElementById('pairCard').style.display = 'none';
     }
-
-    // Send current state
     sendUpdate();
   };
-
-  channel.onmessage = (e) => {
+  ch.onmessage = e => {
     try {
       const msg = JSON.parse(e.data);
       if (msg.type === 'board_config') {
-        // Sync config from display
         if (msg.rows) { rows = msg.rows; document.getElementById('cfgRows').value = rows; }
         if (msg.cols) { cols = msg.cols; document.getElementById('cfgCols').value = cols; }
         if (msg.lines && msg.lines.length) {
           buildRowInputs();
           const inputs = document.querySelectorAll('.row-text-input');
-          msg.lines.forEach((line, i) => {
-            if (inputs[i]) inputs[i].value = line;
-          });
+          msg.lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
         }
       }
     } catch(err) {}
   };
-
-  channel.onclose = () => {
+  ch.onclose = () => {
+    log('DataChannel closed');
     setConnState('disconnected');
     setPairStatus('Connection closed.');
     document.getElementById('pairCard').style.display = '';
   };
+  ch.onerror = e => log('DataChannel error', e);
 }
 
 async function copyAnswer() {
-  const text = document.getElementById('answerOutput').value;
   try {
-    await navigator.clipboard.writeText(text);
-    setPairStatus('Copied! Paste this in the display page.');
+    await navigator.clipboard.writeText(document.getElementById('answerOutput').value);
+    setPairStatus('Copied! Paste this into the display page.');
   } catch(e) {
     document.getElementById('answerOutput').select();
     setPairStatus('Select all and copy manually.');
@@ -751,28 +611,20 @@ async function copyAnswer() {
 }
 
 function resetConn() {
-  if (dc) { try { dc.close(); } catch(e){} dc = null; }
-  if (pc) { try { pc.close(); } catch(e){} pc = null; }
+  cleanupPC();
   setConnState('disconnected');
   document.getElementById('offerInput').value = '';
   document.getElementById('answerOutput').value = '';
   document.getElementById('btnCopyAnswer').style.display = 'none';
   document.getElementById('pairCard').style.display = '';
   setPairStatus('Reset. Ready to pair again.');
+  showDebug();
 }
 
-/* ── SEND ── */
+/* ═══ SEND ═══ */
 function sendUpdate() {
-  const inputs = document.querySelectorAll('.row-text-input');
-  const lines = Array.from(inputs).map(i => i.value);
-
-  const msg = {
-    type: 'state_update',
-    rows: rows,
-    cols: cols,
-    lines: lines,
-  };
-
+  const lines = Array.from(document.querySelectorAll('.row-text-input')).map(i => i.value);
+  const msg = { type: 'state_update', rows, cols, lines };
   if (dc && dc.readyState === 'open') {
     dc.send(JSON.stringify(msg));
   }
@@ -784,7 +636,7 @@ function toggleLive() {
   document.getElementById('toggleLive').classList.toggle('on', liveMode);
 }
 
-/* ── STARTUP ── */
+/* ═══ START ═══ */
 init();
 </script>
 </body>
