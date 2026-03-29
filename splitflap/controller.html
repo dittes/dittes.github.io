@@ -8,49 +8,30 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --bg: #08080e;
-  --card-bg: #111118;
-  --card-border: rgba(255,255,255,0.06);
-  --input-bg: #0c0c14;
-  --accent: #f5c518;
-  --accent-dim: rgba(245,197,24,0.15);
-  --text: #b0b0c0;
-  --text-bright: #e0e0ec;
-  --text-dim: #606070;
-  --connected: #22c55e;
-  --disconnected: #ef4444;
-  --pairing: #f59e0b;
+  --bg: #08080e; --card-bg: #111118; --card-border: rgba(255,255,255,0.06);
+  --input-bg: #0c0c14; --accent: #f5c518; --accent-dim: rgba(245,197,24,0.15);
+  --text: #b0b0c0; --text-bright: #e0e0ec; --text-dim: #606070;
+  --connected: #22c55e; --disconnected: #ef4444; --pairing: #f59e0b;
   --radius: 12px;
 }
-
 html, body {
-  min-height: 100dvh;
-  background: var(--bg);
-  color: var(--text);
+  min-height: 100dvh; background: var(--bg); color: var(--text);
   font-family: 'Instrument Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-
 .app { max-width: 480px; margin: 0 auto; padding: 0 16px 100px; }
-
 .app-header {
   position: sticky; top: 0; z-index: 50;
   background: rgba(8,8,14,0.9);
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-  padding: 16px 0 12px;
-  border-bottom: 1px solid var(--card-border);
-  margin-bottom: 20px;
-  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 12px; border-bottom: 1px solid var(--card-border);
+  margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;
 }
-
 .app-title {
-  font-family: 'Oswald', sans-serif; font-weight: 700;
-  font-size: 16px; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--text-bright);
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 16px;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-bright);
 }
-
 .conn-badge {
   display: flex; align-items: center; gap: 6px;
   font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
@@ -63,51 +44,45 @@ html, body {
 .conn-badge.pairing { background: rgba(245,158,11,0.1); color: var(--pairing); border-color: rgba(245,158,11,0.2); }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius);
-  padding: 20px; margin-bottom: 16px;
+  background: var(--card-bg); border: 1px solid var(--card-border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
 }
-
 .card-title {
-  font-family: 'Oswald', sans-serif; font-weight: 500;
-  font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase;
-  color: var(--text-dim); margin-bottom: 14px;
+  font-family: 'Oswald', sans-serif; font-weight: 500; font-size: 13px;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 14px;
 }
-
 .pair-flow { display: flex; flex-direction: column; gap: 12px; }
-
 .pair-step-label {
   font-size: 12px; font-weight: 600; color: var(--text);
   margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
 }
-
 .pair-step-num {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 50%;
-  background: var(--accent); color: #000;
-  font-size: 11px; font-weight: 700; flex-shrink: 0;
+  background: var(--accent); color: #000; font-size: 11px; font-weight: 700; flex-shrink: 0;
 }
-
 .pair-ta {
-  width: 100%; height: 72px;
-  background: var(--input-bg);
+  width: 100%; height: 72px; background: var(--input-bg);
   border: 1px solid var(--card-border); border-radius: 8px;
-  color: var(--text-bright);
-  font-family: 'Courier New', monospace; font-size: 11px;
+  color: var(--text-bright); font-family: 'Courier New', monospace; font-size: 11px;
   padding: 10px; resize: none; outline: none; transition: border-color 0.2s;
 }
 .pair-ta:focus { border-color: var(--accent); }
 .pair-ta::placeholder { color: rgba(255,255,255,0.15); }
-
 .pair-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
-
 .pair-status { font-size: 12px; min-height: 18px; color: var(--pairing); margin-top: 6px; }
-
 .pair-debug {
-  font-size: 10px; color: var(--text); opacity: 0.4;
-  margin-top: 4px; font-family: 'Courier New', monospace;
+  font-size: 10px; color: var(--text); opacity: 0.4; margin-top: 4px;
+  font-family: 'Courier New', monospace; white-space: pre-wrap;
+  word-break: break-all; max-height: 100px; overflow-y: auto;
 }
+
+.warn-banner {
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  font-size: 12px; color: var(--pairing); line-height: 1.5; display: none;
+}
+.warn-banner.show { display: block; }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
@@ -124,24 +99,20 @@ html, body {
 .btn-danger { background: rgba(239,68,68,0.1); color: var(--disconnected); border: 1px solid rgba(239,68,68,0.15); }
 .btn-danger:hover { background: rgba(239,68,68,0.2); }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-
 .btn-send {
-  width: 100%; padding: 14px;
-  font-size: 15px; font-weight: 700; letter-spacing: 0.5px; border-radius: 10px;
+  width: 100%; padding: 14px; font-size: 15px; font-weight: 700;
+  letter-spacing: 0.5px; border-radius: 10px;
 }
 
 .field-label {
   font-size: 11px; font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.8px; color: var(--text-dim); margin-bottom: 6px;
 }
-
 .text-input {
-  width: 100%; padding: 12px 14px;
-  background: var(--input-bg);
+  width: 100%; padding: 12px 14px; background: var(--input-bg);
   border: 1px solid var(--card-border); border-radius: 8px;
-  color: var(--text-bright);
-  font-family: 'Courier New', monospace; font-size: 14px;
-  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-bright); font-family: 'Courier New', monospace;
+  font-size: 14px; letter-spacing: 1px; text-transform: uppercase;
   outline: none; transition: border-color 0.2s;
 }
 .text-input:focus { border-color: var(--accent); }
@@ -149,20 +120,16 @@ html, body {
   color: rgba(255,255,255,0.12); text-transform: none;
   font-family: 'Instrument Sans', system-ui, sans-serif; letter-spacing: 0;
 }
-
 .row-inputs { display: flex; flex-direction: column; gap: 10px; }
 .row-input-group { display: flex; align-items: center; gap: 10px; }
 .row-num {
-  font-family: 'Oswald', sans-serif; font-weight: 700;
-  font-size: 14px; color: var(--accent);
-  width: 20px; text-align: center; flex-shrink: 0;
+  font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 14px;
+  color: var(--accent); width: 20px; text-align: center; flex-shrink: 0;
 }
-
 .config-row { display: flex; gap: 10px; margin-bottom: 16px; }
 .config-field { flex: 1; }
 .config-input {
-  width: 100%; padding: 10px 12px;
-  background: var(--input-bg);
+  width: 100%; padding: 10px 12px; background: var(--input-bg);
   border: 1px solid var(--card-border); border-radius: 8px;
   color: var(--text-bright); font-family: inherit; font-size: 14px;
   outline: none; text-align: center; transition: border-color 0.2s;
@@ -170,13 +137,10 @@ html, body {
 .config-input:focus { border-color: var(--accent); }
 
 .presets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
 .preset-btn {
-  padding: 10px 8px;
-  background: rgba(255,255,255,0.04);
+  padding: 10px 8px; background: rgba(255,255,255,0.04);
   border: 1px solid var(--card-border); border-radius: 8px;
-  color: var(--text); font-family: inherit;
-  font-size: 12px; font-weight: 500;
+  color: var(--text); font-family: inherit; font-size: 12px; font-weight: 500;
   cursor: pointer; transition: all 0.15s; text-align: center;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
 }
@@ -185,7 +149,6 @@ html, body {
 
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
 .toggle-label { font-size: 13px; color: var(--text); }
-
 .toggle {
   position: relative; width: 44px; height: 24px;
   background: rgba(255,255,255,0.1); border-radius: 12px;
@@ -200,22 +163,15 @@ html, body {
 .toggle.on::after { transform: translateX(20px); }
 
 .divider { height: 1px; background: var(--card-border); margin: 12px 0; }
-
-.footer {
-  text-align: center; padding: 24px 0;
-  font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px;
-}
-
+.footer { text-align: center; padding: 24px 0; font-size: 11px; color: var(--text-dim); letter-spacing: 0.5px; }
 .kbd-hint { font-size: 10px; color: var(--text-dim); margin-top: 6px; }
 .kbd {
-  display: inline-block; padding: 1px 5px;
-  background: rgba(255,255,255,0.08); border-radius: 3px;
-  font-family: 'Courier New', monospace; font-size: 10px;
+  display: inline-block; padding: 1px 5px; background: rgba(255,255,255,0.08);
+  border-radius: 3px; font-family: 'Courier New', monospace; font-size: 10px;
 }
 </style>
 </head>
 <body>
-
 <div class="app">
 
   <div class="app-header">
@@ -229,6 +185,7 @@ html, body {
   <!-- PAIRING -->
   <div class="card" id="pairCard">
     <div class="card-title">Pair with Display</div>
+    <div class="warn-banner" id="warnBanner"></div>
     <div class="pair-flow">
       <div>
         <div class="pair-step-label"><span class="pair-step-num">1</span> Paste the invite code from the display</div>
@@ -245,7 +202,7 @@ html, body {
           <button class="btn btn-ghost" id="btnCopyAnswer" onclick="copyAnswer()" style="display:none">Copy Response</button>
         </div>
       </div>
-      <div class="pair-actions" style="margin-top: 4px;">
+      <div class="pair-actions" style="margin-top:4px;">
         <button class="btn btn-danger" onclick="resetConn()">Reset</button>
       </div>
       <div class="pair-status" id="pairStatus"></div>
@@ -254,7 +211,7 @@ html, body {
   </div>
 
   <!-- MESSAGE -->
-  <div class="card" id="msgCard">
+  <div class="card">
     <div class="card-title">Board Message</div>
     <div class="config-row">
       <div class="config-field">
@@ -267,13 +224,13 @@ html, body {
       </div>
     </div>
     <div class="row-inputs" id="rowInputs"></div>
-    <div style="margin-top: 16px;">
-      <button class="btn btn-primary btn-send" id="btnSend" onclick="sendUpdate()">Send to Display</button>
+    <div style="margin-top:16px;">
+      <button class="btn btn-primary btn-send" onclick="sendUpdate()">Send to Display</button>
       <div class="kbd-hint"><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to send</div>
     </div>
     <div class="divider"></div>
     <div class="toggle-row">
-      <span class="toggle-label">Live update (send on every keystroke)</span>
+      <span class="toggle-label">Live update (send on keystroke)</span>
       <button class="toggle" id="toggleLive" onclick="toggleLive()"></button>
     </div>
   </div>
@@ -298,71 +255,74 @@ html, body {
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   SPLIT-FLAP CONTROLLER
+   SPLIT-FLAP CONTROLLER — v3 with TURN & diagnostics
    ═══════════════════════════════════════════════════════════════ */
 
-let pc = null;
-let dc = null;
-let connState = 'disconnected';
-let liveMode = false;
+let pc = null, dc = null, connState = 'disconnected', liveMode = false;
 let rows = 4, cols = 20;
+let iceLog = [];
 
-function log(...args) { console.log('[Controller]', ...args); }
+function log(...a) { console.log('[Controller]', ...a); }
 
-/* ─── Base64 (must match display.html) ─── */
+/* ─── Base64 (identical to display.html) ─── */
 function encodeB64(obj) {
-  const json = JSON.stringify(obj);
-  const bytes = new TextEncoder().encode(json);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin);
+  const b = new TextEncoder().encode(JSON.stringify(obj));
+  let s = '';
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
 }
-
 function decodeB64(str) {
   const bin = atob(str);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return JSON.parse(new TextDecoder().decode(bytes));
+  const b = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(b));
 }
 
 /* ═══ PRESETS ═══ */
 const PRESETS = [
-  { label: '✈ Departures', lines: ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '] },
-  { label: '🚆 Train Station', lines: ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '] },
-  { label: '👋 Welcome', lines: ['                    ', '      WELCOME!      ', '                    ', '   HAVE A NICE DAY  '] },
+  { label: '✈ Departures', lines: ['  FLIGHT   DEST     ','LH 1830  NEW YORK   ','AF 442   PARIS CDG  ','BA 937   LONDON LHR '] },
+  { label: '🚆 Train Station', lines: ['   BERLIN  HBF      ','ICE 1234  PLATFORM 3','14:25  ON TIME      ','                    '] },
+  { label: '👋 Welcome', lines: ['                    ','      WELCOME!      ','                    ','   HAVE A NICE DAY  '] },
   { label: '⏰ Current Time', lines: null },
-  { label: '📋 Meeting Room', lines: ['  CONFERENCE ROOM A ', '  MEETING IN SESSION', '  DO NOT DISTURB    ', '                    '] },
-  { label: '🎉 Event', lines: ['                    ', '    PRODUCT LAUNCH  ', '    MARCH 2026      ', '   ALL ARE WELCOME  '] },
-  { label: '☕ Café Menu', lines: [' ESPRESSO     3.50  ', ' CAPPUCCINO   4.00  ', ' FLAT WHITE   4.50  ', ' MATCHA       5.00  '] },
-  { label: '🧹 Clear Board', lines: ['', '', '', ''] },
+  { label: '📋 Meeting Room', lines: ['  CONFERENCE ROOM A ','  MEETING IN SESSION','  DO NOT DISTURB    ','                    '] },
+  { label: '🎉 Event', lines: ['                    ','    PRODUCT LAUNCH  ','    MARCH 2026      ','   ALL ARE WELCOME  '] },
+  { label: '☕ Café Menu', lines: [' ESPRESSO     3.50  ',' CAPPUCCINO   4.00  ',' FLAT WHITE   4.50  ',' MATCHA       5.00  '] },
+  { label: '🧹 Clear Board', lines: ['','','',''] },
 ];
 
 /* ═══ INIT ═══ */
 function init() {
+  checkEnvironment();
   loadSaved();
   buildRowInputs();
   buildPresets();
   setConnState('disconnected');
-
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); sendUpdate(); }
   });
+}
+
+function checkEnvironment() {
+  const warn = document.getElementById('warnBanner');
+  const issues = [];
+  if (location.protocol === 'file:')
+    issues.push('⚠ Opened from file:// — WebRTC may not work. Serve over HTTP/HTTPS instead.');
+  if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+    issues.push('⚠ Served over HTTP. Some browsers restrict WebRTC without HTTPS.');
+  if (issues.length) { warn.innerHTML = issues.join('<br>'); warn.classList.add('show'); }
 }
 
 function loadSaved() {
   try {
     const p = JSON.parse(localStorage.getItem('sf-ctrl'));
     if (!p) return;
-    rows = p.rows || 4;
-    cols = p.cols || 20;
+    rows = p.rows || 4; cols = p.cols || 20;
     document.getElementById('cfgRows').value = rows;
     document.getElementById('cfgCols').value = cols;
-    if (p.lines) {
-      setTimeout(() => {
-        const inputs = document.querySelectorAll('.row-text-input');
-        p.lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
-      }, 0);
-    }
+    if (p.lines) setTimeout(() => {
+      const inputs = document.querySelectorAll('.row-text-input');
+      p.lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
+    }, 0);
   } catch(e) {}
 }
 
@@ -375,26 +335,17 @@ function saveState() {
 
 /* ═══ ROW INPUTS ═══ */
 function buildRowInputs() {
-  const ct = document.getElementById('rowInputs');
-  ct.innerHTML = '';
+  const ct = document.getElementById('rowInputs'); ct.innerHTML = '';
   for (let i = 0; i < rows; i++) {
-    const g = document.createElement('div');
-    g.className = 'row-input-group';
-
-    const n = document.createElement('span');
-    n.className = 'row-num'; n.textContent = i + 1;
-
+    const g = document.createElement('div'); g.className = 'row-input-group';
+    const n = document.createElement('span'); n.className = 'row-num'; n.textContent = i + 1;
     const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.className = 'text-input row-text-input';
-    inp.maxLength = cols;
-    inp.placeholder = `Row ${i + 1}`;
+    inp.type = 'text'; inp.className = 'text-input row-text-input';
+    inp.maxLength = cols; inp.placeholder = `Row ${i + 1}`;
     inp.autocomplete = 'off'; inp.autocorrect = 'off';
     inp.autocapitalize = 'characters'; inp.spellcheck = false;
     inp.addEventListener('input', () => { saveState(); if (liveMode) sendUpdate(); });
-
-    g.appendChild(n); g.appendChild(inp);
-    ct.appendChild(g);
+    g.appendChild(n); g.appendChild(inp); ct.appendChild(g);
   }
 }
 
@@ -403,17 +354,15 @@ function onCfgChange() {
   cols = Math.max(4, Math.min(50, parseInt(document.getElementById('cfgCols').value) || 20));
   document.getElementById('cfgRows').value = rows;
   document.getElementById('cfgCols').value = cols;
-  buildRowInputs();
-  saveState();
+  buildRowInputs(); saveState();
 }
 
 /* ═══ PRESETS ═══ */
 function buildPresets() {
   const grid = document.getElementById('presetsGrid');
-  PRESETS.forEach((p, i) => {
+  PRESETS.forEach((p,i) => {
     const btn = document.createElement('button');
-    btn.className = 'preset-btn';
-    btn.textContent = p.label;
+    btn.className = 'preset-btn'; btn.textContent = p.label;
     btn.onclick = () => applyPreset(i);
     grid.appendChild(btn);
   });
@@ -424,40 +373,63 @@ function applyPreset(idx) {
   let lines = p.lines;
   if (lines === null) {
     const now = new Date();
-    const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2, '0'));
-    const d = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
-    lines = ['', `      ${t[0]}:${t[1]}:${t[2]}       `, '', d.substring(0, 20).padStart(Math.floor((20 + d.substring(0, 20).length) / 2)).padEnd(20)];
+    const t = [now.getHours(), now.getMinutes(), now.getSeconds()].map(v => String(v).padStart(2,'0'));
+    const d = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }).toUpperCase();
+    lines = ['', `      ${t[0]}:${t[1]}:${t[2]}       `, '',
+      d.substring(0,20).padStart(Math.floor((20 + d.substring(0,20).length)/2)).padEnd(20)];
   }
   buildRowInputs();
   const inputs = document.querySelectorAll('.row-text-input');
-  lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
-  saveState();
-  sendUpdate();
+  lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
+  saveState(); sendUpdate();
 }
 
 /* ═══ CONNECTION STATE ═══ */
-function setConnState(state) {
-  connState = state;
-  const badge = document.getElementById('connBadge');
-  badge.className = 'conn-badge ' + state;
+function setConnState(s) {
+  connState = s;
+  document.getElementById('connBadge').className = 'conn-badge ' + s;
   document.getElementById('connLabel').textContent =
-    { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' }[state] || state;
+    { disconnected:'Disconnected', pairing:'Pairing…', connected:'Connected' }[s] || s;
 }
 
-function setPairStatus(msg) { document.getElementById('pairStatus').textContent = msg; }
-
-function showDebug() {
-  const sig = pc ? pc.signalingState : '—';
-  const ice = pc ? pc.iceConnectionState : '—';
-  document.getElementById('pairDebug').textContent = `sig:${sig} · ice:${ice}`;
+function setPairStatus(m) { document.getElementById('pairStatus').textContent = m; }
+function addDebug(m) {
+  iceLog.push(m); if (iceLog.length > 30) iceLog.shift();
+  const el = document.getElementById('pairDebug');
+  el.textContent = iceLog.join('\n');
+  el.scrollTop = el.scrollHeight;
 }
 
 /* ═══ WEBRTC ═══ */
 const RTC_CFG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    {
+      urls: 'turn:a.relay.metered.ca:80',
+      username: 'e8dd65b92c81dbe13a512990',
+      credential: '5VoqBFalVLWpBSJf',
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:80?transport=tcp',
+      username: 'e8dd65b92c81dbe13a512990',
+      credential: '5VoqBFalVLWpBSJf',
+    },
+    {
+      urls: 'turn:a.relay.metered.ca:443',
+      username: 'e8dd65b92c81dbe13a512990',
+      credential: '5VoqBFalVLWpBSJf',
+    },
+    {
+      urls: 'turns:a.relay.metered.ca:443?transport=tcp',
+      username: 'e8dd65b92c81dbe13a512990',
+      credential: '5VoqBFalVLWpBSJf',
+    },
+  ],
+  iceCandidatePoolSize: 4,
 };
 
 function cleanupPC() {
@@ -475,78 +447,89 @@ async function createAnswer() {
     if (!raw) { setPairStatus('Paste the invite code from the display first.'); return; }
 
     cleanupPC();
-    btn.disabled = true;
-    btn.textContent = 'Processing…';
-    answerOut.value = '';
-    btnCopy.style.display = 'none';
+    iceLog = [];
+    btn.disabled = true; btn.textContent = 'Processing…';
+    answerOut.value = ''; btnCopy.style.display = 'none';
 
     pc = new RTCPeerConnection(RTC_CFG);
-    log('PC created');
+    addDebug('PeerConnection created');
 
-    // State listeners
-    pc.onsignalingstatechange = () => { log('sig →', pc.signalingState); showDebug(); };
-    pc.oniceconnectionstatechange = () => {
-      log('ice →', pc.iceConnectionState);
-      showDebug();
-      const s = pc.iceConnectionState;
-      if (s === 'connected' || s === 'completed') setConnState('connected');
-      else if (s === 'failed' || s === 'closed') setConnState('disconnected');
+    // Log ICE candidates
+    pc.onicecandidate = (e) => {
+      if (e.candidate) {
+        const c = e.candidate;
+        const type = c.type || (c.candidate && c.candidate.match(/typ (\w+)/) || [])[1] || '?';
+        const proto = c.protocol || (c.candidate && c.candidate.match(/udp|tcp/i) || ['?'])[0] || '?';
+        addDebug(`ICE candidate: ${type} ${proto} ${c.address || ''}`);
+      } else {
+        addDebug('ICE gathering complete (null candidate)');
+      }
     };
 
-    // Controller is the answerer → receives DataChannel from offerer
+    pc.onsignalingstatechange = () => addDebug('sig → ' + pc.signalingState);
+    pc.oniceconnectionstatechange = () => {
+      addDebug('ice → ' + pc.iceConnectionState);
+      const s = pc.iceConnectionState;
+      if (s === 'connected' || s === 'completed') setConnState('connected');
+      else if (s === 'failed') {
+        setConnState('disconnected');
+        setPairStatus('Connection failed. Try Reset and pair again. Ensure both devices can reach the internet.');
+      } else if (s === 'disconnected') {
+        addDebug('ICE disconnected — waiting for recovery…');
+        setPairStatus('Connection interrupted…');
+        setTimeout(() => {
+          if (pc && pc.iceConnectionState === 'disconnected') {
+            setConnState('disconnected');
+            setPairStatus('Connection lost. Reset and re-pair.');
+          }
+        }, 5000);
+      } else if (s === 'closed') {
+        setConnState('disconnected');
+      }
+    };
+    pc.onicegatheringstatechange = () => addDebug('gather → ' + pc.iceGatheringState);
+    pc.onconnectionstatechange = () => addDebug('conn → ' + pc.connectionState);
+
+    // Controller is answerer → receives DataChannel
     pc.ondatachannel = e => {
-      log('Received DataChannel');
+      addDebug('Received DataChannel');
       dc = e.channel;
       wireDC(dc);
     };
 
     setConnState('pairing');
 
-    // Decode the offer
     const offerDesc = decodeB64(raw);
-    log('Decoded offer, type:', offerDesc.type);
+    addDebug('Decoded offer, type: ' + offerDesc.type);
 
     if (offerDesc.type !== 'offer') {
-      throw new Error('Expected an offer but got "' + offerDesc.type + '". Make sure you copied the invite code from the display.');
+      throw new Error('Expected an offer, got "' + offerDesc.type + '". Copy the invite code from the display.');
     }
 
-    // Set remote description (the offer)
     await pc.setRemoteDescription(new RTCSessionDescription(offerDesc));
-    log('Remote description set, sig:', pc.signalingState);
+    addDebug('Remote offer set, sig: ' + pc.signalingState);
 
-    // Create answer
     const answer = await pc.createAnswer();
-    log('Answer created');
-
     await pc.setLocalDescription(answer);
-    log('Local description set, sig:', pc.signalingState);
+    addDebug('Local answer set, sig: ' + pc.signalingState);
 
     setPairStatus('Gathering network candidates…');
-    showDebug();
 
-    // Wait for ICE
     await gatherICE(pc);
-    log('ICE done, sig:', pc.signalingState);
+    addDebug('Gathering done, sig: ' + pc.signalingState);
 
-    if (!pc || pc.signalingState !== 'stable') {
-      // After setRemoteDescription(offer) + setLocalDescription(answer), state should be stable
-      log('Unexpected state:', pc ? pc.signalingState : 'null');
-    }
-
-    // Encode the complete local description
     const code = encodeB64(pc.localDescription.toJSON());
     answerOut.value = code;
     btnCopy.style.display = '';
     setPairStatus('Response code ready — copy it back to the display.');
-    showDebug();
 
   } catch(e) {
     log('createAnswer error:', e);
     setPairStatus('Error: ' + e.message);
+    addDebug('ERROR: ' + e.message);
     setConnState('disconnected');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Generate Response';
+    btn.disabled = false; btn.textContent = 'Generate Response';
   }
 }
 
@@ -555,26 +538,21 @@ function gatherICE(conn) {
     if (conn.iceGatheringState === 'complete') { resolve(); return; }
     let done = false;
     const finish = () => { if (done) return; done = true; resolve(); };
-
-    conn.addEventListener('icecandidate', e => {
-      if (e.candidate === null) { log('ICE: null candidate'); finish(); }
-    });
+    conn.addEventListener('icecandidate', e => { if (e.candidate === null) finish(); });
     conn.addEventListener('icegatheringstatechange', () => {
-      if (conn.iceGatheringState === 'complete') { log('ICE: complete'); finish(); }
+      if (conn.iceGatheringState === 'complete') finish();
     });
-    setTimeout(() => { log('ICE: timeout (8s)'); finish(); }, 8000);
+    setTimeout(() => { addDebug('ICE gather timeout (10s)'); finish(); }, 10000);
   });
 }
 
 function wireDC(ch) {
   ch.onopen = () => {
-    log('DataChannel open');
+    addDebug('DataChannel OPEN');
     setConnState('connected');
-    setPairStatus('Connected! You can now control the display.');
-    showDebug();
-    if (document.getElementById('toggleAutoCollapse').classList.contains('on')) {
+    setPairStatus('Connected!');
+    if (document.getElementById('toggleAutoCollapse').classList.contains('on'))
       document.getElementById('pairCard').style.display = 'none';
-    }
     sendUpdate();
   };
   ch.onmessage = e => {
@@ -586,18 +564,18 @@ function wireDC(ch) {
         if (msg.lines && msg.lines.length) {
           buildRowInputs();
           const inputs = document.querySelectorAll('.row-text-input');
-          msg.lines.forEach((l, i) => { if (inputs[i]) inputs[i].value = l; });
+          msg.lines.forEach((l,i) => { if (inputs[i]) inputs[i].value = l; });
         }
       }
     } catch(err) {}
   };
   ch.onclose = () => {
-    log('DataChannel closed');
+    addDebug('DataChannel CLOSED');
     setConnState('disconnected');
     setPairStatus('Connection closed.');
     document.getElementById('pairCard').style.display = '';
   };
-  ch.onerror = e => log('DataChannel error', e);
+  ch.onerror = e => addDebug('DataChannel error');
 }
 
 async function copyAnswer() {
@@ -611,23 +589,20 @@ async function copyAnswer() {
 }
 
 function resetConn() {
-  cleanupPC();
+  cleanupPC(); iceLog = [];
   setConnState('disconnected');
   document.getElementById('offerInput').value = '';
   document.getElementById('answerOutput').value = '';
   document.getElementById('btnCopyAnswer').style.display = 'none';
   document.getElementById('pairCard').style.display = '';
+  document.getElementById('pairDebug').textContent = '';
   setPairStatus('Reset. Ready to pair again.');
-  showDebug();
 }
 
 /* ═══ SEND ═══ */
 function sendUpdate() {
   const lines = Array.from(document.querySelectorAll('.row-text-input')).map(i => i.value);
-  const msg = { type: 'state_update', rows, cols, lines };
-  if (dc && dc.readyState === 'open') {
-    dc.send(JSON.stringify(msg));
-  }
+  if (dc && dc.readyState === 'open') dc.send(JSON.stringify({ type:'state_update', rows, cols, lines }));
   saveState();
 }
 
@@ -636,7 +611,6 @@ function toggleLive() {
   document.getElementById('toggleLive').classList.toggle('on', liveMode);
 }
 
-/* ═══ START ═══ */
 init();
 </script>
 </body>
