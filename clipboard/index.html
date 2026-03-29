@@ -3,501 +3,491 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clipboard Viewer</title>
+    <title>Clipboard Inbox</title>
     <style>
         :root {
-            --bg-color: #f4f4f5;
-            --card-bg: #ffffff;
-            --text-main: #18181b;
-            --text-muted: #71717a;
-            --border-color: #e4e4e7;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
+            --bg-page: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
             --danger: #ef4444;
             --danger-hover: #dc2626;
             --success: #10b981;
             --warning: #f59e0b;
-            --radius: 8px;
+            --radius: 12px;
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: var(--font-family);
-            background-color: var(--bg-color);
+            background-color: var(--bg-page);
             color: var(--text-main);
             line-height: 1.5;
-            padding: 1rem;
             display: flex;
             justify-content: center;
+            padding: 2rem 1rem;
         }
 
-        .container {
+        .app-container {
             width: 100%;
-            max-width: 640px;
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 1.5rem;
+            max-width: 768px;
             display: flex;
             flex-direction: column;
-            gap: 1.25rem;
+            gap: 1.5rem;
         }
 
+        /* Header & Controls */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
         }
 
-        h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
+        .brand h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .brand p { font-size: 0.875rem; color: var(--text-muted); }
 
-        .badge {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.25rem 0.6rem;
-            border-radius: 9999px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .badge.idle { background: #e4e4e7; color: #3f3f46; }
-        .badge.running { background: #d1fae5; color: #065f46; }
-        .badge.error, .badge.denied { background: #fee2e2; color: #991b1b; }
-        .badge.warning { background: #fef3c7; color: #92400e; }
-
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
             gap: 0.5rem;
-        }
-
-        button {
-            font-family: inherit;
             font-size: 0.875rem;
-            font-weight: 500;
+            font-weight: 600;
             padding: 0.5rem 1rem;
-            border: none;
-            border-radius: var(--radius);
-            cursor: pointer;
-            transition: background-color 0.2s, opacity 0.2s;
-            background-color: #e4e4e7;
-            color: var(--text-main);
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .status-badge.running { background: #d1fae5; color: #065f46; }
+        .status-badge.error { background: #fee2e2; color: #991b1b; }
+
+        .pulse {
+            width: 8px; height: 8px; border-radius: 50%;
+            background-color: currentColor;
+        }
+        .running .pulse { animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
-        button:hover:not(:disabled) { background-color: #d4d4d8; }
-        
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        /* Buttons */
+        button {
+            font-family: inherit; font-size: 0.875rem; font-weight: 500;
+            padding: 0.5rem 1rem; border: none; border-radius: 6px;
+            cursor: pointer; transition: all 0.2s;
+            background-color: #f1f5f9; color: var(--text-main);
+            display: inline-flex; align-items: center; gap: 0.5rem;
         }
-
+        button:hover { background-color: #e2e8f0; }
         button.primary { background-color: var(--primary); color: white; }
-        button.primary:hover:not(:disabled) { background-color: var(--primary-hover); }
-
+        button.primary:hover { background-color: var(--primary-hover); }
         button.danger { background-color: var(--danger); color: white; }
-        button.danger:hover:not(:disabled) { background-color: var(--danger-hover); }
+        button.danger:hover { background-color: var(--danger-hover); }
+        button.icon-btn { padding: 0.4rem; background: transparent; font-size: 1rem; }
+        button.icon-btn:hover { background: #f1f5f9; }
 
-        .settings {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-muted);
+        /* Toolbar */
+        .toolbar {
+            display: flex; gap: 1rem; flex-wrap: wrap;
+            background: var(--bg-card); padding: 1rem;
+            border-radius: var(--radius); box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+        .search-bar {
+            flex: 1; min-width: 200px;
+            padding: 0.5rem 1rem; border: 1px solid var(--border);
+            border-radius: 6px; font-family: inherit; font-size: 0.875rem;
+        }
+        .search-bar:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2); }
+        
+        .filters { display: flex; gap: 0.5rem; }
+        .filter-btn { background: transparent; border: 1px solid var(--border); }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* Inbox List */
+        .inbox { display: flex; flex-direction: column; gap: 1rem; }
+        
+        .empty-state {
+            text-align: center; padding: 3rem; color: var(--text-muted);
+            background: var(--bg-card); border-radius: var(--radius);
+            border: 1px dashed var(--border);
         }
 
-        input[type="number"] {
-            width: 80px;
-            padding: 0.25rem 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-family: inherit;
+        .clip-card {
+            background: var(--bg-card); border-radius: var(--radius);
+            border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .clip-card:hover { box-shadow: var(--shadow); }
+        .clip-card.pinned { border-left: 4px solid var(--warning); }
+        .clip-card.task-done { opacity: 0.6; }
+
+        .card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0.75rem 1rem; border-bottom: 1px solid var(--border);
+            background: #f8fafc; border-radius: 11px 11px 0 0;
+        }
+        .card-meta { display: flex; align-items: center; gap: 0.75rem; font-size: 0.75rem; color: var(--text-muted); }
+        .card-actions { display: flex; gap: 0.25rem; }
+
+        .card-body { padding: 1rem; display: flex; gap: 0.75rem; align-items: flex-start; }
+        
+        .task-checkbox {
+            width: 1.25rem; height: 1.25rem; margin-top: 0.1rem;
+            cursor: pointer; accent-color: var(--primary);
         }
 
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.875rem;
-            resize: vertical;
-            background-color: #fafafa;
-            color: var(--text-main);
+        .clip-text {
+            flex: 1; font-family: ui-monospace, monospace; font-size: 0.875rem;
+            white-space: pre-wrap; word-break: break-word; color: var(--text-main);
+        }
+        .task-done .clip-text { text-decoration: line-through; color: var(--text-muted); }
+
+        .card-footer {
+            padding: 0.75rem 1rem; border-top: 1px dashed var(--border);
+            display: flex; gap: 0.5rem; flex-wrap: wrap; background: #fafafa;
+            border-radius: 0 0 11px 11px;
+        }
+        
+        .badge {
+            font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 4px;
+            background: #e0e7ff; color: #3730a3; font-weight: 600; text-transform: uppercase;
         }
 
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
-
-        .history-section {
-            border-top: 1px solid var(--border-color);
-            padding-top: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .history-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-header h2 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .history-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            background: #fafafa;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 0.5rem 0.75rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.8rem;
-            word-break: break-word;
-            white-space: pre-wrap;
-            position: relative;
-        }
-
-        .history-timestamp {
-            display: block;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-bottom: 0.25rem;
-            font-family: var(--font-family);
-        }
-
-        .empty-history {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            font-style: italic;
-        }
-
-        .note {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            background: #f8fafc;
-            padding: 0.75rem;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-        }
-
-        @media (max-width: 480px) {
-            .controls { flex-direction: column; }
-            button { width: 100%; }
-        }
+        /* Utilities */
+        .hidden { display: none !important; }
+        .danger-text { color: var(--danger); }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Clipboard Viewer</h1>
-            <span id="statusBadge" class="badge idle">Idle</span>
-        </header>
-
-        <div class="controls">
-            <button id="btnStart" class="primary">Start Monitoring</button>
-            <button id="btnStop" class="danger" disabled>Stop Monitoring</button>
-            <button id="btnReadOnce">Read Once</button>
-            <button id="btnCopy">Copy Shown Text</button>
+<div class="app-container">
+    <header>
+        <div class="brand">
+            <h1>Clipboard Inbox</h1>
+            <p>Capture, organize, and act on copied text.</p>
         </div>
-
-        <div class="settings">
-            <label for="pollInterval">Poll Interval (ms):</label>
-            <input type="number" id="pollInterval" value="700" min="250" max="5000">
-        </div>
-
-        <textarea id="mainTextarea" readonly placeholder="Clipboard text will appear here..."></textarea>
-
-        <div class="history-section">
-            <div class="history-header">
-                <h2>History</h2>
-                <button id="btnClearHistory">Clear History</button>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+            <div id="statusBadge" class="status-badge">
+                <div class="pulse"></div>
+                <span id="statusText">Idle</span>
             </div>
-            <div id="historyList" class="history-list">
-                <div class="empty-history">No history yet.</div>
-            </div>
+            <button id="btnToggleEngine" class="primary">▶ Start Capturing</button>
         </div>
+    </header>
 
-        <div class="note">
-            <strong>Note:</strong> Best experienced in Chromium-based browsers. Safari/Firefox may require repeated user interaction due to stricter security policies. Requires HTTPS or localhost.
+    <div class="toolbar">
+        <input type="text" id="searchInput" class="search-bar" placeholder="Search your clipboard history...">
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="pinned">📌 Pinned</button>
+            <button class="filter-btn" data-filter="tasks">✓ Tasks</button>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+            <button id="btnExport" title="Export to JSON">📥 Export</button>
+            <button id="btnClear" class="danger" title="Clear All Unpinned">🗑️ Clear</button>
         </div>
     </div>
 
-    <script>
-        // State management
-        const state = {
-            isMonitoring: false,
-            lastText: '',
-            intervalMs: 700,
-            timerId: null,
-            history: [] // { text: string, timestamp: string }
-        };
+    <main id="inboxList" class="inbox">
+        </main>
+</div>
 
-        // DOM Elements
-        const el = {
-            statusBadge: document.getElementById('statusBadge'),
-            btnStart: document.getElementById('btnStart'),
-            btnStop: document.getElementById('btnStop'),
-            btnReadOnce: document.getElementById('btnReadOnce'),
-            btnCopy: document.getElementById('btnCopy'),
-            btnClearHistory: document.getElementById('btnClearHistory'),
-            pollInterval: document.getElementById('pollInterval'),
-            mainTextarea: document.getElementById('mainTextarea'),
-            historyList: document.getElementById('historyList')
-        };
+<script>
+    /**
+     * STATE MANAGEMENT
+     */
+    const STORAGE_KEY = 'clipboard_inbox_v1';
+    
+    const state = {
+        isMonitoring: false,
+        lastText: '',
+        intervalId: null,
+        searchQuery: '',
+        currentFilter: 'all', // all | pinned | tasks
+        items: JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
+    };
 
-        // Utilities
-        function setStatus(text, type) {
-            el.statusBadge.textContent = text;
-            el.statusBadge.className = `badge ${type}`;
-        }
+    function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
+    }
 
-        function getTimestamp() {
-            return new Date().toLocaleTimeString();
-        }
-
-        function renderHistory() {
-            if (state.history.length === 0) {
-                el.historyList.innerHTML = '<div class="empty-history">No history yet.</div>';
-                return;
-            }
-
-            el.historyList.innerHTML = '';
-            state.history.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'history-item';
-                
-                const timeSpan = document.createElement('span');
-                timeSpan.className = 'history-timestamp';
-                timeSpan.textContent = item.timestamp;
-                
-                const textNode = document.createTextNode(item.text);
-                
-                div.appendChild(timeSpan);
-                div.appendChild(textNode);
-                el.historyList.appendChild(div);
-            });
-        }
-
-        function addToHistory(text) {
-            if (!text) return;
-            
-            // Prevent consecutive duplicates in history
-            if (state.history.length > 0 && state.history[0].text === text) {
-                return;
-            }
-
-            state.history.unshift({ text, timestamp: getTimestamp() });
-            
-            if (state.history.length > 20) {
-                state.history = state.history.slice(0, 20);
-            }
-            
-            renderHistory();
-        }
-
-        function handleNewText(text) {
-            if (text && text !== state.lastText) {
-                state.lastText = text;
-                el.mainTextarea.value = text;
-                addToHistory(text);
-            } else if (!text && state.lastText !== '') {
-                // Clipboard was cleared
-                state.lastText = '';
-                el.mainTextarea.value = '';
-            }
-        }
-
-        function checkBrowserSupport() {
-            if (!window.isSecureContext) {
-                setStatus('Insecure Context', 'error');
-                el.mainTextarea.value = 'Error: Clipboard API requires a secure context (HTTPS or localhost).';
-                return false;
-            }
-            if (!navigator.clipboard || !navigator.clipboard.readText) {
-                setStatus('Unsupported', 'error');
-                el.mainTextarea.value = 'Error: Your browser does not support the modern Clipboard API (navigator.clipboard.readText).';
-                return false;
-            }
-            return true;
-        }
-
-        function handleClipboardError(err) {
-            console.warn('Clipboard read failed:', err);
-            if (err.name === 'NotAllowedError') {
-                setStatus('Permission Denied', 'denied');
-                el.mainTextarea.value = 'Error: Permission to read clipboard was denied.';
-                stopMonitoring();
-            } else if (err.name === 'DataError') {
-                setStatus('Empty/Non-text', 'warning');
-                // Don't stop monitoring, just ignore non-text data
-            } else {
-                setStatus('Error', 'error');
-                el.mainTextarea.value = `Error reading clipboard: ${err.message}`;
-            }
-        }
-
-        // Core Functions
-        async function readClipboardOnce() {
-            if (!checkBrowserSupport()) return false;
-            
-            try {
-                const text = await navigator.clipboard.readText();
-                handleNewText(text);
-                if (!state.isMonitoring) {
-                    setStatus('Read Success', 'running');
-                    setTimeout(() => setStatus('Idle', 'idle'), 2000);
-                }
-                return true;
-            } catch (err) {
-                handleClipboardError(err);
-                return false;
-            }
-        }
-
-        async function poll() {
-            if (!state.isMonitoring || document.hidden) return;
-
-            try {
-                const text = await navigator.clipboard.readText();
-                handleNewText(text);
-                setStatus('Running', 'running');
-            } catch (err) {
-                handleClipboardError(err);
-            }
-
-            if (state.isMonitoring) {
-                state.timerId = setTimeout(poll, state.intervalMs);
-            }
-        }
-
-        async function startMonitoring() {
-            if (!checkBrowserSupport()) return;
-
-            // Optional enhancement: Check permission gracefully if supported
-            if (navigator.permissions && navigator.permissions.query) {
-                try {
-                    const perm = await navigator.permissions.query({ name: 'clipboard-read' });
-                    if (perm.state === 'denied') {
-                        setStatus('Permission Denied', 'denied');
-                        el.mainTextarea.value = 'Error: Clipboard permission is denied in browser settings.';
-                        return;
-                    }
-                } catch (e) {
-                    // Ignore, not all browsers support 'clipboard-read' query
-                }
-            }
-
-            // Attempt first read to trigger prompt / validate access
-            const success = await readClipboardOnce();
-            if (!success) return; // readClipboardOnce handles its own error states
-
-            state.isMonitoring = true;
-            el.btnStart.disabled = true;
-            el.btnStop.disabled = false;
-            
-            // Start loop
-            state.timerId = setTimeout(poll, state.intervalMs);
-        }
-
-        function stopMonitoring() {
-            state.isMonitoring = false;
-            clearTimeout(state.timerId);
-            state.timerId = null;
-            
-            el.btnStart.disabled = false;
-            el.btnStop.disabled = true;
-            
-            if (el.statusBadge.className.includes('running')) {
-                setStatus('Idle', 'idle');
-            }
-        }
-
-        async function copyShownText() {
-            const text = el.mainTextarea.value;
-            if (!text) return;
-
-            try {
-                await navigator.clipboard.writeText(text);
-                const prevStatus = el.statusBadge.textContent;
-                const prevClass = el.statusBadge.className.replace('badge ', '');
-                
-                setStatus('Copied!', 'running');
-                
-                setTimeout(() => {
-                    if (state.isMonitoring) {
-                        setStatus('Running', 'running');
-                    } else if (el.statusBadge.textContent === 'Copied!') {
-                        setStatus(prevStatus, prevClass);
-                    }
-                }, 2000);
-            } catch (err) {
-                setStatus('Copy Failed', 'error');
-                console.error('Failed to write to clipboard:', err);
-            }
-        }
-
-        // Event Listeners
-        el.btnStart.addEventListener('click', startMonitoring);
-        el.btnStop.addEventListener('click', stopMonitoring);
-        el.btnReadOnce.addEventListener('click', readClipboardOnce);
-        el.btnCopy.addEventListener('click', copyShownText);
+    /**
+     * CORE ENGINE
+     */
+    async function readClipboard() {
+        if (!state.isMonitoring || document.hidden) return;
         
-        el.btnClearHistory.addEventListener('click', () => {
-            state.history = [];
-            renderHistory();
-        });
-
-        el.pollInterval.addEventListener('change', (e) => {
-            let val = parseInt(e.target.value, 10);
-            if (isNaN(val) || val < 250) val = 250;
-            if (val > 5000) val = 5000;
-            e.target.value = val;
-            state.intervalMs = val;
-        });
-
-        // Handle page visibility
-        document.addEventListener('visibilitychange', () => {
-            if (state.isMonitoring) {
-                if (document.hidden) {
-                    clearTimeout(state.timerId);
-                    setStatus('Paused (Hidden)', 'warning');
-                } else {
-                    setStatus('Running', 'running');
-                    poll(); // Resume polling immediately
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim() !== '' && text !== state.lastText) {
+                // Prevent duplicate consecutive inputs
+                if (state.items.length === 0 || state.items[0].text !== text) {
+                    state.lastText = text;
+                    addClip(text);
                 }
             }
+        } catch (err) {
+            console.warn("Clipboard read error:", err);
+            if (err.name === 'NotAllowedError') {
+                stopMonitoring();
+                updateStatus('Permission Denied', 'error');
+                alert("Clipboard permission is required to monitor. Please allow it in your browser settings.");
+            }
+        }
+    }
+
+    async function toggleMonitoring() {
+        if (state.isMonitoring) {
+            stopMonitoring();
+        } else {
+            // Test permission explicitly first
+            try {
+                await navigator.clipboard.readText();
+                startMonitoring();
+            } catch (err) {
+                alert("Please click 'Allow' when the browser asks for Clipboard permissions.");
+            }
+        }
+    }
+
+    function startMonitoring() {
+        state.isMonitoring = true;
+        document.getElementById('btnToggleEngine').innerHTML = '⏸ Pause Capturing';
+        document.getElementById('btnToggleEngine').classList.replace('primary', 'danger');
+        updateStatus('Listening...', 'running');
+        state.intervalId = setInterval(readClipboard, 800);
+    }
+
+    function stopMonitoring() {
+        state.isMonitoring = false;
+        clearInterval(state.intervalId);
+        document.getElementById('btnToggleEngine').innerHTML = '▶ Start Capturing';
+        document.getElementById('btnToggleEngine').classList.replace('danger', 'primary');
+        updateStatus('Paused', '');
+    }
+
+    function updateStatus(text, type) {
+        const badge = document.getElementById('statusBadge');
+        document.getElementById('statusText').innerText = text;
+        badge.className = `status-badge ${type}`;
+    }
+
+    /**
+     * DATA MANAGEMENT
+     */
+    function addClip(text) {
+        const newItem = {
+            id: 'clip_' + Date.now(),
+            text: text,
+            timestamp: Date.now(),
+            pinned: false,
+            isTask: false,
+            isDone: false
+        };
+        
+        state.items.unshift(newItem);
+        
+        // Auto-cleanup: keep max 150 unpinned items to save localStorage limits
+        let unpinned = state.items.filter(i => !i.pinned);
+        if (unpinned.length > 150) {
+            // Find oldest unpinned and remove
+            for (let i = state.items.length - 1; i >= 0; i--) {
+                if (!state.items[i].pinned) {
+                    state.items.splice(i, 1);
+                    break;
+                }
+            }
+        }
+        
+        saveState();
+        renderInbox();
+    }
+
+    function deleteClip(id) {
+        state.items = state.items.filter(i => i.id !== id);
+        saveState();
+        renderInbox();
+    }
+
+    function togglePin(id) {
+        const item = state.items.find(i => i.id === id);
+        if(item) { item.pinned = !item.pinned; saveState(); renderInbox(); }
+    }
+
+    function toggleTaskMode(id) {
+        const item = state.items.find(i => i.id === id);
+        if(item) { item.isTask = !item.isTask; saveState(); renderInbox(); }
+    }
+
+    function toggleTaskDone(id) {
+        const item = state.items.find(i => i.id === id);
+        if(item) { item.isDone = !item.isDone; saveState(); renderInbox(); }
+    }
+
+    async function copyToClipboard(text, btnElement) {
+        try {
+            await navigator.clipboard.writeText(text);
+            state.lastText = text; // Prevent auto-capturing our own paste
+            const original = btnElement.innerHTML;
+            btnElement.innerHTML = '✅ Copied';
+            setTimeout(() => btnElement.innerHTML = original, 1500);
+        } catch (err) {
+            console.error('Failed to copy', err);
+        }
+    }
+
+    /**
+     * SMART DETECTIONS
+     */
+    function getSmartActions(text) {
+        const t = text.trim();
+        const actions = [];
+        
+        // Is URL?
+        if (/^https?:\/\/[^\s]+$/.test(t)) {
+            actions.push(`<button onclick="window.open('${t}', '_blank')">🔗 Open Link</button>`);
+        }
+        // Is Email?
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) {
+            actions.push(`<button onclick="window.location.href='mailto:${t}'">✉️ Send Email</button>`);
+        }
+        // Draft generic email
+        if (t.length > 20 && !/^https?:\/\//.test(t)) {
+            actions.push(`<button onclick="window.location.href='mailto:?subject=Note&body=${encodeURIComponent(t)}'">📝 Draft as Email</button>`);
+        }
+        
+        return actions.join('');
+    }
+
+    /**
+     * RENDER LOGIC
+     */
+    function renderInbox() {
+        const container = document.getElementById('inboxList');
+        
+        // Filter & Search
+        let filtered = state.items;
+        
+        if (state.searchQuery) {
+            const q = state.searchQuery.toLowerCase();
+            filtered = filtered.filter(i => i.text.toLowerCase().includes(q));
+        }
+        
+        if (state.currentFilter === 'pinned') filtered = filtered.filter(i => i.pinned);
+        if (state.currentFilter === 'tasks') filtered = filtered.filter(i => i.isTask);
+
+        // Sort: Pinned first, then newest
+        filtered.sort((a, b) => {
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
+            return b.timestamp - a.timestamp;
         });
 
-        // Initialize checks
-        checkBrowserSupport();
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No clips found</h3>
+                    <p>Start capturing or adjust your search filters.</p>
+                </div>
+            `;
+            return;
+        }
 
-    </script>
+        container.innerHTML = filtered.map(item => {
+            const date = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+            const safeText = item.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            return `
+            <div class="clip-card ${item.pinned ? 'pinned' : ''} ${item.isTask && item.isDone ? 'task-done' : ''}">
+                <div class="card-header">
+                    <div class="card-meta">
+                        <span>🕒 ${date}</span>
+                        ${item.isTask ? '<span class="badge">Task</span>' : ''}
+                    </div>
+                    <div class="card-actions">
+                        <button class="icon-btn" onclick="copyToClipboard(\`${safeText.replace(/`/g, '\\`')}\`, this)" title="Copy">📋</button>
+                        <button class="icon-btn" onclick="togglePin('${item.id}')" title="Pin">${item.pinned ? '📌' : '📍'}</button>
+                        <button class="icon-btn danger-text" onclick="deleteClip('${item.id}')" title="Delete">🗑️</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    ${item.isTask ? `<input type="checkbox" class="task-checkbox" ${item.isDone ? 'checked' : ''} onchange="toggleTaskDone('${item.id}')">` : ''}
+                    <div class="clip-text">${safeText}</div>
+                </div>
+                <div class="card-footer">
+                    <button onclick="toggleTaskMode('${item.id}')">${item.isTask ? '✖ Remove Task' : '✓ Turn to Task'}</button>
+                    ${getSmartActions(item.text)}
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * EVENT LISTENERS & SETUP
+     */
+    document.getElementById('btnToggleEngine').addEventListener('click', toggleMonitoring);
+    
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderInbox();
+    });
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            state.currentFilter = e.target.dataset.filter;
+            renderInbox();
+        });
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+        if(confirm("Are you sure you want to delete all unpinned clips?")) {
+            state.items = state.items.filter(i => i.pinned);
+            saveState();
+            renderInbox();
+        }
+    });
+
+    document.getElementById('btnExport').addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.items));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", "clipboard_inbox_backup.json");
+        dlAnchorElem.click();
+    });
+
+    // Pause monitoring when tab is backgrounded to respect system resources
+    document.addEventListener('visibilitychange', () => {
+        if (state.isMonitoring) {
+            if (document.hidden) {
+                clearInterval(state.intervalId);
+                updateStatus('Paused (Hidden)', 'warning');
+            } else {
+                updateStatus('Listening...', 'running');
+                state.intervalId = setInterval(readClipboard, 800);
+            }
+        }
+    });
+
+    // Initial render
+    renderInbox();
+
+</script>
 </body>
 </html>
