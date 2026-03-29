@@ -40,7 +40,6 @@ html, body {
   -webkit-user-select: none;
 }
 
-/* ── HEADER BAR ── */
 .header {
   position: fixed; top: 0; left: 0; right: 0;
   height: 48px;
@@ -53,7 +52,6 @@ html, body {
   z-index: 100;
   transition: opacity 0.4s;
 }
-.header.hidden { opacity: 0; pointer-events: none; }
 
 .header-left, .header-right { display: flex; align-items: center; gap: 12px; }
 
@@ -72,10 +70,8 @@ html, body {
 
 .logo {
   font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
+  font-weight: 700; font-size: 14px;
+  letter-spacing: 2px; text-transform: uppercase;
   color: var(--ui-text-bright);
   position: absolute; left: 50%; transform: translateX(-50%);
 }
@@ -84,300 +80,194 @@ html, body {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   color: var(--ui-text);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.2s;
-  letter-spacing: 0.3px;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 11px; font-family: inherit;
+  cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px;
 }
 .hdr-btn:hover { background: rgba(255,255,255,0.1); color: var(--ui-text-bright); }
 
-/* ── BOARD ── */
 .board-container {
   position: fixed;
   top: 48px; left: 0; right: 0; bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   padding: 24px;
 }
 
 .board {
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
   gap: var(--row-gap);
   background: var(--board-bg);
-  padding: 28px 32px;
-  border-radius: 12px;
+  padding: 28px 32px; border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.04);
-  box-shadow:
-    0 0 0 1px rgba(0,0,0,0.5),
-    0 20px 60px rgba(0,0,0,0.6),
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 20px 60px rgba(0,0,0,0.6),
     inset 0 1px 0 rgba(255,255,255,0.03);
 }
 
-.board-row {
-  display: flex;
-  gap: var(--cell-gap);
-}
+.board-row { display: flex; gap: var(--cell-gap); }
 
-/* ── SPLIT-FLAP CELL ── */
 .sf-cell {
-  width: var(--cw);
-  height: var(--ch);
-  position: relative;
-  perspective: 400px;
-  border-radius: var(--cell-radius);
-  overflow: visible;
+  width: var(--cw); height: var(--ch);
+  position: relative; perspective: 400px;
+  border-radius: var(--cell-radius); overflow: visible;
 }
 
 .sf-static {
-  position: absolute;
-  left: 0; right: 0;
+  position: absolute; left: 0; right: 0;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
 }
 
 .sf-static.top {
-  top: 0;
-  height: 50%;
+  top: 0; height: 50%;
   background: linear-gradient(180deg, var(--cell-top) 0%, var(--cell-face) 100%);
   border-radius: var(--cell-radius) var(--cell-radius) 0 0;
   border-bottom: 1px solid var(--split-line);
 }
 
 .sf-static.bot {
-  bottom: 0;
-  height: 50%;
+  bottom: 0; height: 50%;
   background: linear-gradient(180deg, var(--cell-face) 0%, var(--cell-bot) 100%);
   border-radius: 0 0 var(--cell-radius) var(--cell-radius);
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .sf-char {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: var(--font-size);
-  line-height: var(--ch);
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: var(--font-size); line-height: var(--ch);
   color: var(--char-color);
   text-shadow: 0 0 8px var(--char-glow);
-  position: absolute;
-  width: 100%;
-  text-align: center;
+  position: absolute; width: 100%; text-align: center;
 }
 
 .sf-static.top .sf-char { top: 0; }
 .sf-static.bot .sf-char { bottom: 0; }
 
-/* ── FLIP ELEMENTS ── */
 .sf-flap {
-  position: absolute;
-  left: 0; right: 0;
-  height: 50%;
+  position: absolute; left: 0; right: 0; height: 50%;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
   z-index: 10;
 }
 
 .sf-flap.falling {
-  top: 0;
-  transform-origin: bottom center;
+  top: 0; transform-origin: bottom center;
   background: linear-gradient(180deg, var(--cell-top) 0%, var(--cell-face) 100%);
   border-radius: var(--cell-radius) var(--cell-radius) 0 0;
   animation: flapFall var(--flip-duration) ease-in forwards;
 }
 
 .sf-flap.rising {
-  bottom: 0;
-  transform-origin: top center;
+  bottom: 0; transform-origin: top center;
   background: linear-gradient(180deg, var(--cell-face) 0%, var(--cell-bot) 100%);
   border-radius: 0 0 var(--cell-radius) var(--cell-radius);
   transform: rotateX(90deg);
   animation: flapRise var(--flip-duration) ease-out forwards;
 }
 
-.sf-flap .sf-char {
-  position: absolute;
-  width: 100%;
-  text-align: center;
-}
+.sf-flap .sf-char { position: absolute; width: 100%; text-align: center; }
 .sf-flap.falling .sf-char { top: 0; }
 .sf-flap.rising .sf-char { bottom: 0; }
 
-@keyframes flapFall {
-  0% { transform: rotateX(0deg); }
-  100% { transform: rotateX(-90deg); }
-}
+@keyframes flapFall { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-90deg); } }
+@keyframes flapRise { 0% { transform: rotateX(90deg); } 100% { transform: rotateX(0deg); } }
 
-@keyframes flapRise {
-  0% { transform: rotateX(90deg); }
-  100% { transform: rotateX(0deg); }
-}
-
-/* ── PAIRING PANEL ── */
+/* ── OVERLAY ── */
 .overlay {
   position: fixed; inset: 0;
   background: rgba(6,6,10,0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   display: flex; align-items: center; justify-content: center;
   z-index: 200;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.3s;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
 }
 .overlay.open { opacity: 1; pointer-events: all; }
 
 .pair-panel {
   background: #12121a;
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 36px;
-  max-width: 520px;
-  width: 90%;
+  border-radius: 16px; padding: 36px;
+  max-width: 520px; width: 90%;
   box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  max-height: 90vh; overflow-y: auto;
 }
 
 .pair-panel h2 {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 20px;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--ui-text-bright);
-  margin-bottom: 8px;
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: 20px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--ui-text-bright); margin-bottom: 8px;
 }
 
-.pair-panel p {
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ui-text);
-  margin-bottom: 20px;
+.pair-panel > p {
+  font-size: 13px; line-height: 1.6; color: var(--ui-text); margin-bottom: 20px;
 }
 
-.pair-panel .step-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #000;
-  font-size: 12px;
-  font-weight: 700;
-  margin-right: 8px;
-  flex-shrink: 0;
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: #000;
+  font-size: 12px; font-weight: 700; margin-right: 8px; flex-shrink: 0;
 }
 
 .pair-step {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: 16px;
-  font-size: 13px;
-  color: var(--ui-text);
-  line-height: 1.5;
+  display: flex; align-items: flex-start; margin-bottom: 16px;
+  font-size: 13px; color: var(--ui-text); line-height: 1.5;
 }
 
 .pair-step-text { flex: 1; }
 
 .pair-textarea {
-  width: 100%;
-  height: 80px;
+  width: 100%; height: 80px;
   background: rgba(0,0,0,0.4);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
   color: var(--ui-text-bright);
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  padding: 10px;
-  resize: none;
-  margin-top: 8px;
-  outline: none;
+  font-family: 'Courier New', monospace; font-size: 11px;
+  padding: 10px; resize: none; margin-top: 8px; outline: none;
   transition: border-color 0.2s;
 }
 .pair-textarea:focus { border-color: var(--accent); }
 .pair-textarea::placeholder { color: rgba(255,255,255,0.2); }
 
 .pair-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 8px;
-  margin-right: 8px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border-radius: 8px; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  margin-top: 8px; margin-right: 8px;
 }
 
-.pair-btn.primary {
-  background: var(--accent);
-  color: #000;
-}
+.pair-btn.primary { background: var(--accent); color: #000; }
 .pair-btn.primary:hover { background: #ffd633; }
-
 .pair-btn.secondary {
-  background: rgba(255,255,255,0.08);
-  color: var(--ui-text-bright);
+  background: rgba(255,255,255,0.08); color: var(--ui-text-bright);
   border: 1px solid rgba(255,255,255,0.1);
 }
 .pair-btn.secondary:hover { background: rgba(255,255,255,0.14); }
+.pair-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
-.pair-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pair-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 20px 0; }
 
-.pair-divider {
-  height: 1px;
-  background: rgba(255,255,255,0.06);
-  margin: 20px 0;
+.pair-status-msg { font-size: 12px; color: var(--pairing); margin-top: 10px; min-height: 18px; }
+
+.pair-debug {
+  font-size: 10px; color: var(--ui-text); opacity: 0.4;
+  margin-top: 6px; font-family: 'Courier New', monospace;
+  word-break: break-all;
 }
 
-.pair-status-msg {
-  font-size: 12px;
-  color: var(--pairing);
-  margin-top: 10px;
-  min-height: 18px;
-}
-
-/* ── DEMO BADGE ── */
 .demo-badge {
-  position: fixed;
-  bottom: 20px; right: 20px;
+  position: fixed; bottom: 20px; right: 20px;
   background: rgba(245,197,24,0.12);
   border: 1px solid rgba(245,197,24,0.25);
   color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  z-index: 50;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  padding: 6px 14px; border-radius: 6px;
+  cursor: pointer; transition: all 0.2s; z-index: 50;
 }
 .demo-badge:hover { background: rgba(245,197,24,0.2); }
 .demo-badge.hidden { display: none; }
 
-/* ── FULLSCREEN ── */
-:fullscreen .header, :-webkit-full-screen .header { top: 0; }
-:fullscreen .board-container, :-webkit-full-screen .board-container { top: 0; }
-:fullscreen .header.autohide, :-webkit-full-screen .header.autohide {
-  opacity: 0; transition: opacity 0.5s;
-}
-:fullscreen .header.autohide:hover, :-webkit-full-screen .header.autohide:hover { opacity: 1; }
-
-/* ── RESPONSIVE ── */
 @media (max-width: 600px) {
   .board { padding: 16px 12px; border-radius: 8px; }
   .pair-panel { padding: 24px; }
@@ -386,7 +276,6 @@ html, body {
 </head>
 <body>
 
-<!-- HEADER -->
 <header class="header" id="header">
   <div class="header-left">
     <div class="status-dot" id="statusDot"></div>
@@ -394,26 +283,24 @@ html, body {
   </div>
   <span class="logo">Split·Flap</span>
   <div class="header-right">
-    <button class="hdr-btn" id="btnPair" onclick="togglePairPanel()">Pair</button>
-    <button class="hdr-btn" id="btnFullscreen" onclick="goFullscreen()">⛶</button>
+    <button class="hdr-btn" onclick="togglePairPanel()">Pair</button>
+    <button class="hdr-btn" onclick="goFullscreen()">⛶</button>
   </div>
 </header>
 
-<!-- BOARD -->
 <div class="board-container" id="boardContainer">
   <div class="board" id="board"></div>
 </div>
 
-<!-- PAIRING OVERLAY -->
 <div class="overlay" id="pairOverlay">
   <div class="pair-panel">
     <h2>Pair a Controller</h2>
-    <p>Connect a phone or laptop to control this display in real-time — no server needed.</p>
+    <p>Connect a phone or laptop to control this display — no server needed.</p>
 
     <div class="pair-step">
       <span class="step-num">1</span>
       <div class="pair-step-text">
-        Generate an invite code on this display, then copy it.
+        Generate an invite code, then copy it to the controller page.
         <br>
         <button class="pair-btn primary" id="btnGenOffer" onclick="generateOffer()">Generate Invite Code</button>
         <button class="pair-btn secondary" id="btnCopyOffer" onclick="copyOffer()" style="display:none">Copy Code</button>
@@ -426,7 +313,7 @@ html, body {
     <div class="pair-step">
       <span class="step-num">2</span>
       <div class="pair-step-text">
-        Paste the response code from the controller here.
+        Paste the response code from the controller, then click Connect.
         <textarea class="pair-textarea" id="answerArea" placeholder="Paste response code from controller…"></textarea>
         <button class="pair-btn primary" id="btnAcceptAnswer" onclick="acceptAnswer()">Connect</button>
       </div>
@@ -440,54 +327,63 @@ html, body {
     </div>
 
     <div class="pair-status-msg" id="pairStatus"></div>
+    <div class="pair-debug" id="pairDebug"></div>
   </div>
 </div>
 
-<!-- DEMO BUTTON -->
 <div class="demo-badge" id="demoBadge" onclick="runDemo()">▶ Demo</div>
 
 <script>
-/* ═══════════════════════════════════════════
-   SPLIT-FLAP DISPLAY — CORE ENGINE
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   SPLIT-FLAP DISPLAY
+   ═══════════════════════════════════════════════════════════════ */
 
 const CHARS = ' ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,:!?-/#@';
 const DEFAULT_ROWS = 4;
 const DEFAULT_COLS = 20;
-const FLIP_MS = 55; // per half-flip
 
 let boardState = { rows: DEFAULT_ROWS, cols: DEFAULT_COLS, lines: [] };
-let cells = []; // 2D array of SplitFlapCell instances
-let pc = null; // RTCPeerConnection
-let dc = null; // RTCDataChannel
-let connectionState = 'disconnected'; // disconnected | pairing | connected
+let cells = [];
+let pc = null;   // RTCPeerConnection
+let dc = null;   // RTCDataChannel
+let connState = 'disconnected';
 let wakeLock = null;
 let demoTimer = null;
 
-/* ── CHARACTER HELPERS ── */
+/* ─── Logging ─── */
+function log(...args) { console.log('[Display]', ...args); }
+
+/* ─── Safe base64 for SDP (handles Unicode) ─── */
+function encodeB64(obj) {
+  const json = JSON.stringify(obj);
+  const bytes = new TextEncoder().encode(json);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function decodeB64(str) {
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/* ═══ CHARACTER HELPERS ═══ */
 function sanitizeChar(ch) {
   if (!ch || ch.length === 0) return ' ';
   const c = ch.toUpperCase();
   return CHARS.includes(c) ? c : ' ';
 }
+function charIndex(ch) { const i = CHARS.indexOf(ch); return i >= 0 ? i : 0; }
+function nextChar(ch) { return CHARS[(charIndex(ch) + 1) % CHARS.length]; }
 
-function charIndex(ch) {
-  const i = CHARS.indexOf(ch);
-  return i >= 0 ? i : 0;
-}
-
-function nextChar(ch) {
-  const i = charIndex(ch);
-  return CHARS[(i + 1) % CHARS.length];
-}
-
-/* ── SPLIT-FLAP CELL ── */
+/* ═══ SPLIT-FLAP CELL ═══ */
 class SplitFlapCell {
   constructor(parentEl) {
     this.current = ' ';
     this.target = ' ';
     this.animating = false;
-    this.queue = [];
 
     this.el = document.createElement('div');
     this.el.className = 'sf-cell';
@@ -513,110 +409,83 @@ class SplitFlapCell {
 
   setImmediate(ch) {
     const c = sanitizeChar(ch);
-    this.current = c;
-    this.target = c;
-    this.topChar.textContent = c;
-    this.botChar.textContent = c;
+    this.current = c; this.target = c;
+    this.topChar.textContent = c; this.botChar.textContent = c;
   }
 
   setTarget(ch) {
     const c = sanitizeChar(ch);
     if (c === this.current && !this.animating) return;
     this.target = c;
-    if (!this.animating) this._startCycle();
+    if (!this.animating) this._cycle();
   }
 
-  _startCycle() {
+  _cycle() {
     if (this.current === this.target) { this.animating = false; return; }
     this.animating = true;
-    const next = nextChar(this.current);
-    this._flipTo(next, () => {
-      this.current = next;
-      if (this.current === this.target) {
-        this.animating = false;
-      } else {
-        this._startCycle();
-      }
+    const nxt = nextChar(this.current);
+    this._flip(nxt, () => {
+      this.current = nxt;
+      this.current === this.target ? (this.animating = false) : this._cycle();
     });
   }
 
-  _flipTo(newChar, onDone) {
-    // Create falling flap (top half, old char)
+  _flip(newCh, done) {
     const falling = document.createElement('div');
     falling.className = 'sf-flap falling';
     const fc = document.createElement('span');
-    fc.className = 'sf-char';
-    fc.textContent = this.current;
+    fc.className = 'sf-char'; fc.textContent = this.current;
     falling.appendChild(fc);
 
-    // Create rising flap (bottom half, new char)
     const rising = document.createElement('div');
     rising.className = 'sf-flap rising';
     const rc = document.createElement('span');
-    rc.className = 'sf-char';
-    rc.textContent = newChar;
+    rc.className = 'sf-char'; rc.textContent = newCh;
     rising.appendChild(rc);
 
     this.el.appendChild(falling);
-
     falling.addEventListener('animationend', () => {
-      this.topChar.textContent = newChar;
+      this.topChar.textContent = newCh;
       falling.remove();
       this.el.appendChild(rising);
-
       rising.addEventListener('animationend', () => {
-        this.botChar.textContent = newChar;
+        this.botChar.textContent = newCh;
         rising.remove();
-        onDone();
+        done();
       }, { once: true });
     }, { once: true });
   }
 }
 
-/* ── BOARD MANAGEMENT ── */
+/* ═══ BOARD ═══ */
 function buildBoard(rows, cols) {
   const board = document.getElementById('board');
   board.innerHTML = '';
   cells = [];
 
-  // Calculate cell size
-  const container = document.getElementById('boardContainer');
-  const cw = container.clientWidth;
-  const ch = container.clientHeight;
-  const padX = 80, padY = 80;
-  const gapX = 3, gapY = 14;
-  const availW = cw - padX;
-  const availH = ch - padY;
+  const ct = document.getElementById('boardContainer');
+  const availW = ct.clientWidth - 80;
+  const availH = ct.clientHeight - 80;
 
-  let cellW = Math.floor((availW - (cols - 1) * gapX) / cols);
+  let cellW = Math.floor((availW - (cols - 1) * 3) / cols);
   let cellH = Math.floor(cellW * 1.4);
-  const maxH = Math.floor((availH - (rows - 1) * gapY) / rows);
-  if (cellH > maxH) {
-    cellH = maxH;
-    cellW = Math.floor(cellH / 1.4);
-  }
-  cellW = Math.min(cellW, 110);
-  cellH = Math.min(cellH, 154);
-  cellW = Math.max(cellW, 28);
-  cellH = Math.max(cellH, 40);
+  const maxH = Math.floor((availH - (rows - 1) * 14) / rows);
+  if (cellH > maxH) { cellH = maxH; cellW = Math.floor(cellH / 1.4); }
+  cellW = Math.min(Math.max(cellW, 28), 110);
+  cellH = Math.min(Math.max(cellH, 40), 154);
 
-  const fontSize = Math.floor(cellH * 0.7);
   document.documentElement.style.setProperty('--cw', cellW + 'px');
   document.documentElement.style.setProperty('--ch', cellH + 'px');
-  document.documentElement.style.setProperty('--font-size', fontSize + 'px');
+  document.documentElement.style.setProperty('--font-size', Math.floor(cellH * 0.7) + 'px');
 
   for (let r = 0; r < rows; r++) {
     const rowEl = document.createElement('div');
     rowEl.className = 'board-row';
-    const rowCells = [];
-    for (let c = 0; c < cols; c++) {
-      const cell = new SplitFlapCell(rowEl);
-      rowCells.push(cell);
-    }
-    cells.push(rowCells);
+    const rc = [];
+    for (let c = 0; c < cols; c++) rc.push(new SplitFlapCell(rowEl));
+    cells.push(rc);
     board.appendChild(rowEl);
   }
-
   boardState.rows = rows;
   boardState.cols = cols;
 }
@@ -624,10 +493,9 @@ function buildBoard(rows, cols) {
 function updateBoard(lines) {
   boardState.lines = lines;
   for (let r = 0; r < cells.length; r++) {
-    const text = (lines[r] || '').toUpperCase();
+    const txt = (lines[r] || '').toUpperCase();
     for (let c = 0; c < cells[r].length; c++) {
-      const ch = c < text.length ? text[c] : ' ';
-      cells[r][c].setTarget(sanitizeChar(ch));
+      cells[r][c].setTarget(sanitizeChar(c < txt.length ? txt[c] : ' '));
     }
   }
   saveState();
@@ -635,198 +503,243 @@ function updateBoard(lines) {
 
 function setImmediateBoard(lines) {
   for (let r = 0; r < cells.length; r++) {
-    const text = (lines[r] || '').toUpperCase();
+    const txt = (lines[r] || '').toUpperCase();
     for (let c = 0; c < cells[r].length; c++) {
-      const ch = c < text.length ? text[c] : ' ';
-      cells[r][c].setImmediate(sanitizeChar(ch));
+      cells[r][c].setImmediate(sanitizeChar(c < txt.length ? txt[c] : ' '));
     }
   }
 }
 
-/* ── PERSISTENCE ── */
+/* ═══ PERSISTENCE ═══ */
 function saveState() {
-  try {
-    localStorage.setItem('sf-display-state', JSON.stringify(boardState));
-  } catch(e) {}
+  try { localStorage.setItem('sf-display', JSON.stringify(boardState)); } catch(e) {}
 }
-
 function loadState() {
   try {
-    const s = localStorage.getItem('sf-display-state');
-    if (s) {
-      const parsed = JSON.parse(s);
-      if (parsed && parsed.rows && parsed.cols) return parsed;
-    }
-  } catch(e) {}
-  return null;
+    const s = JSON.parse(localStorage.getItem('sf-display'));
+    return (s && s.rows && s.cols) ? s : null;
+  } catch(e) { return null; }
 }
 
-/* ── WEBRTC ── */
-const RTC_CONFIG = {
+/* ═══ CONNECTION STATE ═══ */
+function setConnState(state) {
+  connState = state;
+  document.getElementById('statusDot').className = 'status-dot ' + state;
+  document.getElementById('statusLabel').textContent =
+    { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' }[state] || state;
+  document.getElementById('demoBadge').classList.toggle('hidden', state === 'connected');
+}
+
+function setPairStatus(msg) { document.getElementById('pairStatus').textContent = msg; }
+
+function showDebug() {
+  const sig = pc ? pc.signalingState : '—';
+  const ice = pc ? pc.iceConnectionState : '—';
+  const gat = pc ? pc.iceGatheringState : '—';
+  document.getElementById('pairDebug').textContent = `sig:${sig} · ice:${ice} · gather:${gat}`;
+}
+
+/* ═══ WEBRTC ═══ */
+const RTC_CFG = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
   ]
 };
 
-function setConnectionState(state) {
-  connectionState = state;
-  const dot = document.getElementById('statusDot');
-  const label = document.getElementById('statusLabel');
-  dot.className = 'status-dot ' + state;
-  const labels = { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' };
-  label.textContent = labels[state] || state;
-
-  document.getElementById('demoBadge').classList.toggle('hidden', state === 'connected');
+function cleanupPC() {
+  if (dc) { try { dc.close(); } catch(e) {} dc = null; }
+  if (pc) { try { pc.close(); } catch(e) {} pc = null; }
 }
 
 async function generateOffer() {
+  const btn = document.getElementById('btnGenOffer');
+  const btnCopy = document.getElementById('btnCopyOffer');
+  const offerEl = document.getElementById('offerArea');
+  const answerEl = document.getElementById('answerArea');
+
   try {
-    if (pc) { pc.close(); pc = null; dc = null; }
+    cleanupPC();
 
-    pc = new RTCPeerConnection(RTC_CONFIG);
+    btn.disabled = true;
+    btn.textContent = 'Generating…';
+    offerEl.value = '';
+    answerEl.value = '';
+    btnCopy.style.display = 'none';
+
+    pc = new RTCPeerConnection(RTC_CFG);
+    log('PC created');
+
+    // Attach all state listeners
+    pc.onsignalingstatechange = () => { log('signalingState →', pc.signalingState); showDebug(); };
+    pc.oniceconnectionstatechange = () => {
+      log('iceConnectionState →', pc.iceConnectionState);
+      showDebug();
+      const s = pc.iceConnectionState;
+      if (s === 'connected' || s === 'completed') setConnState('connected');
+      else if (s === 'failed' || s === 'closed') setConnState('disconnected');
+    };
+    pc.onicegatheringstatechange = () => { log('iceGatheringState →', pc.iceGatheringState); showDebug(); };
+
+    // DISPLAY is the offerer → creates DataChannel
     dc = pc.createDataChannel('splitflap', { ordered: true });
-    setupDataChannel(dc);
+    wireDataChannel(dc);
+    log('DataChannel created');
 
-    pc.oniceconnectionstatechange = handleICEState;
-
+    // Create offer & set as local description
     const offer = await pc.createOffer();
+    log('Offer created');
+
     await pc.setLocalDescription(offer);
+    log('setLocalDescription done, signalingState:', pc.signalingState);
 
-    setConnectionState('pairing');
-    setPairStatus('Gathering network info…');
+    setConnState('pairing');
+    setPairStatus('Gathering network candidates…');
+    showDebug();
 
-    // Wait for ICE gathering to complete
-    await waitForICE(pc);
+    // Wait for ICE gathering to finish
+    await gatherICE(pc);
+    log('ICE gathering complete, signalingState:', pc.signalingState);
 
-    const sdp = JSON.stringify(pc.localDescription);
-    const code = btoa(unescape(encodeURIComponent(sdp)));
-    document.getElementById('offerArea').value = code;
-    document.getElementById('btnCopyOffer').style.display = '';
-    setPairStatus('Invite code ready — copy it and paste in the controller.');
-  } catch (e) {
-    console.error('Offer generation failed:', e);
+    // Double-check state
+    if (!pc || pc.signalingState !== 'have-local-offer') {
+      throw new Error('Peer connection left expected state: ' + (pc ? pc.signalingState : 'null'));
+    }
+
+    // Serialize the full local description (with candidates baked in)
+    const code = encodeB64(pc.localDescription.toJSON());
+    offerEl.value = code;
+    btnCopy.style.display = '';
+    setPairStatus('Invite code ready — copy it to the controller.');
+    showDebug();
+  } catch(e) {
+    log('generateOffer error:', e);
     setPairStatus('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Invite Code';
   }
 }
 
 async function acceptAnswer() {
-  try {
-    const raw = document.getElementById('answerArea').value.trim();
-    if (!raw) { setPairStatus('Paste the response code first.'); return; }
+  const btn = document.getElementById('btnAcceptAnswer');
+  const raw = document.getElementById('answerArea').value.trim();
 
-    const sdp = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+  if (!raw) { setPairStatus('Paste the response code from the controller first.'); return; }
+
+  if (!pc) {
+    setPairStatus('Generate an invite code first (step 1).');
+    return;
+  }
+
+  // ── STATE GUARD ──
+  const sig = pc.signalingState;
+  log('acceptAnswer: signalingState =', sig);
+  showDebug();
+
+  if (sig !== 'have-local-offer') {
+    setPairStatus(
+      `Display is in "${sig}" state — expected "have-local-offer". ` +
+      'Click Reset then generate a new invite code.'
+    );
+    return;
+  }
+
+  try {
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+
+    const desc = decodeB64(raw);
+    log('Decoded answer SDP, type:', desc.type);
+
+    if (desc.type !== 'answer') {
+      setPairStatus('That looks like an invite code, not a response code. Paste the response from the controller.');
+      return;
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(desc));
+    log('setRemoteDescription done, signalingState:', pc.signalingState);
     setPairStatus('Connecting…');
-  } catch (e) {
-    console.error('Accept answer failed:', e);
-    setPairStatus('Invalid response code. Try again.');
+    showDebug();
+  } catch(e) {
+    log('acceptAnswer error:', e);
+    setPairStatus('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect';
   }
 }
 
-function waitForICE(conn) {
-  return new Promise((resolve) => {
+function gatherICE(conn) {
+  return new Promise(resolve => {
     if (conn.iceGatheringState === 'complete') { resolve(); return; }
-    const check = () => {
-      if (conn.iceGatheringState === 'complete') {
-        conn.removeEventListener('icegatheringstatechange', check);
-        resolve();
-      }
-    };
-    conn.addEventListener('icegatheringstatechange', check);
-    // Fallback timeout
-    setTimeout(resolve, 5000);
+
+    let done = false;
+    const finish = () => { if (done) return; done = true; resolve(); };
+
+    // Method 1: null candidate = gathering done
+    conn.addEventListener('icecandidate', e => {
+      if (e.candidate === null) { log('ICE: null candidate → done'); finish(); }
+    });
+
+    // Method 2: state event
+    conn.addEventListener('icegatheringstatechange', () => {
+      if (conn.iceGatheringState === 'complete') { log('ICE: gatheringState → complete'); finish(); }
+    });
+
+    // Method 3: safety timeout
+    setTimeout(() => { log('ICE: timeout (8s)'); finish(); }, 8000);
   });
 }
 
-function setupDataChannel(channel) {
-  channel.onopen = () => {
-    setConnectionState('connected');
+function wireDataChannel(ch) {
+  ch.onopen = () => {
+    log('DataChannel open');
+    setConnState('connected');
     setPairStatus('Connected!');
+    showDebug();
     if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-    // Auto-close pair panel after short delay
-    setTimeout(() => {
-      document.getElementById('pairOverlay').classList.remove('open');
-    }, 800);
-    // Send current board state to controller
-    sendMessage({ type: 'board_config', rows: boardState.rows, cols: boardState.cols, lines: boardState.lines });
+    setTimeout(() => document.getElementById('pairOverlay').classList.remove('open'), 800);
+    sendMsg({ type: 'board_config', rows: boardState.rows, cols: boardState.cols, lines: boardState.lines });
   };
-
-  channel.onmessage = (e) => {
-    try {
-      const msg = JSON.parse(e.data);
-      handleMessage(msg);
-    } catch(err) { console.warn('Bad message:', err); }
+  ch.onmessage = e => {
+    try { handleMsg(JSON.parse(e.data)); } catch(err) { log('bad msg', err); }
   };
-
-  channel.onclose = () => {
-    setConnectionState('disconnected');
-    setPairStatus('Connection closed.');
-  };
-
-  channel.onerror = (e) => {
-    console.error('DataChannel error:', e);
-  };
+  ch.onclose = () => { log('DataChannel closed'); setConnState('disconnected'); };
+  ch.onerror = e => { log('DataChannel error', e); };
 }
 
-function handleICEState() {
-  if (!pc) return;
-  const s = pc.iceConnectionState;
-  if (s === 'connected' || s === 'completed') setConnectionState('connected');
-  else if (s === 'disconnected' || s === 'failed' || s === 'closed') setConnectionState('disconnected');
-}
-
-function handleMessage(msg) {
-  switch (msg.type) {
-    case 'state_update':
-      if (msg.rows && msg.cols && (msg.rows !== boardState.rows || msg.cols !== boardState.cols)) {
-        buildBoard(msg.rows, msg.cols);
-      }
-      if (msg.lines) updateBoard(msg.lines);
-      break;
-
-    case 'ping':
-      sendMessage({ type: 'pong', ts: Date.now() });
-      break;
-
-    case 'config':
-      if (msg.rows && msg.cols) {
-        buildBoard(msg.rows, msg.cols);
-        if (msg.lines) updateBoard(msg.lines);
-      }
-      break;
+function handleMsg(msg) {
+  if (msg.type === 'state_update') {
+    if (msg.rows && msg.cols && (msg.rows !== boardState.rows || msg.cols !== boardState.cols)) {
+      buildBoard(msg.rows, msg.cols);
+    }
+    if (msg.lines) updateBoard(msg.lines);
+  } else if (msg.type === 'ping') {
+    sendMsg({ type: 'pong', ts: Date.now() });
   }
 }
 
-function sendMessage(obj) {
-  if (dc && dc.readyState === 'open') {
-    dc.send(JSON.stringify(obj));
-  }
+function sendMsg(obj) {
+  if (dc && dc.readyState === 'open') dc.send(JSON.stringify(obj));
 }
 
 function resetConnection() {
-  if (dc) { try { dc.close(); } catch(e){} dc = null; }
-  if (pc) { try { pc.close(); } catch(e){} pc = null; }
-  setConnectionState('disconnected');
+  cleanupPC();
+  setConnState('disconnected');
   document.getElementById('offerArea').value = '';
   document.getElementById('answerArea').value = '';
   document.getElementById('btnCopyOffer').style.display = 'none';
-  setPairStatus('Reset complete.');
+  setPairStatus('Reset. Generate a new invite code to start over.');
+  showDebug();
 }
 
-function setPairStatus(msg) {
-  document.getElementById('pairStatus').textContent = msg;
-}
-
-/* ── UI CONTROLS ── */
-function togglePairPanel() {
-  document.getElementById('pairOverlay').classList.toggle('open');
-}
+/* ═══ UI ═══ */
+function togglePairPanel() { document.getElementById('pairOverlay').classList.toggle('open'); }
 
 async function copyOffer() {
-  const text = document.getElementById('offerArea').value;
   try {
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(document.getElementById('offerArea').value);
     setPairStatus('Copied to clipboard!');
   } catch(e) {
     document.getElementById('offerArea').select();
@@ -836,87 +749,62 @@ async function copyOffer() {
 
 function goFullscreen() {
   const el = document.documentElement;
-  if (!document.fullscreenElement) {
+  if (!document.fullscreenElement)
     (el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen).call(el);
-  } else {
+  else
     (document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen).call(document);
-  }
 }
 
 async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
-    }
-  } catch(e) {}
+  try { if ('wakeLock' in navigator) { wakeLock = await navigator.wakeLock.request('screen'); } } catch(e) {}
 }
 
-/* ── DEMO MODE ── */
-const DEMO_MESSAGES = [
-  ['   BERLIN  HBF   ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME', ''],
-  ['   WELCOME TO THE ', ' SPLIT-FLAP DISPLAY ', '    CONNECT YOUR    ', '     CONTROLLER     '],
-  ['  FLIGHT   DEST   ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '],
+/* ═══ DEMO ═══ */
+const DEMOS = [
+  ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '],
+  ['   WELCOME TO THE   ', ' SPLIT-FLAP DISPLAY ', '    CONNECT YOUR    ', '     CONTROLLER     '],
+  ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '],
   ['                    ', '   HELLO, WORLD!    ', '                    ', '   HAVE A NICE DAY  '],
 ];
-let demoIndex = 0;
+let demoIdx = 0;
 
 function runDemo() {
-  if (connectionState === 'connected') return;
+  if (connState === 'connected') return;
   if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
-  showDemoMessage();
-  demoTimer = setInterval(showDemoMessage, 6000);
+  showDemoMsg();
+  demoTimer = setInterval(showDemoMsg, 6000);
 }
 
-function showDemoMessage() {
-  const msg = DEMO_MESSAGES[demoIndex % DEMO_MESSAGES.length];
-  demoIndex++;
-  updateBoard(msg);
+function showDemoMsg() {
+  updateBoard(DEMOS[demoIdx % DEMOS.length]);
+  demoIdx++;
 }
 
-/* ── WINDOW RESIZE ── */
-let resizeTimeout;
+/* ═══ RESIZE ═══ */
+let rsz;
 window.addEventListener('resize', () => {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(() => {
-    const lines = boardState.lines;
+  clearTimeout(rsz);
+  rsz = setTimeout(() => {
+    const ln = boardState.lines;
     buildBoard(boardState.rows, boardState.cols);
-    if (lines && lines.length) setImmediateBoard(lines);
+    if (ln && ln.length) setImmediateBoard(ln);
   }, 250);
 });
 
-/* ── ALSO HANDLE INCOMING CONNECTIONS (controller-initiated) ── */
-// The display always creates the offer, so we don't need ondatachannel on display side.
-// But we keep it as a fallback.
-function setupPCListeners() {
-  if (!pc) return;
-  pc.ondatachannel = (e) => {
-    dc = e.channel;
-    setupDataChannel(dc);
-  };
-}
-
-/* ── INIT ── */
-function init() {
-  const saved = loadState();
-  const rows = saved ? saved.rows : DEFAULT_ROWS;
-  const cols = saved ? saved.cols : DEFAULT_COLS;
-  buildBoard(rows, cols);
-
-  if (saved && saved.lines && saved.lines.length) {
-    setImmediateBoard(saved.lines);
-    boardState.lines = saved.lines;
+/* ═══ INIT ═══ */
+(function init() {
+  const s = loadState();
+  buildBoard(s ? s.rows : DEFAULT_ROWS, s ? s.cols : DEFAULT_COLS);
+  if (s && s.lines && s.lines.length) {
+    setImmediateBoard(s.lines);
+    boardState.lines = s.lines;
   }
-
   requestWakeLock();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') requestWakeLock();
   });
-
-  setConnectionState('disconnected');
-}
-
-init();
+  setConnState('disconnected');
+})();
 </script>
 </body>
 </html>
