@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Split-Flap Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #08080e;
+  --card-bg: #111118;
+  --card-border: rgba(255,255,255,0.06);
+  --input-bg: #0c0c14;
+  --accent: #f5c518;
+  --accent-dim: rgba(245,197,24,0.15);
+  --text: #b0b0c0;
+  --text-bright: #e0e0ec;
+  --text-dim: #606070;
+  --connected: #22c55e;
+  --disconnected: #ef4444;
+  --pairing: #f59e0b;
+  --radius: 12px;
+}
+
+html, body {
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── LAYOUT ── */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 16px 100px;
+}
+
+/* ── HEADER ── */
+.app-header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,8,14,0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 16px 0 12px;
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-bright);
+}
+
+.conn-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(239,68,68,0.1);
+  color: var(--disconnected);
+  border: 1px solid rgba(239,68,68,0.2);
+  transition: all 0.3s;
+}
+.conn-badge .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor;
+}
+.conn-badge.connected {
+  background: rgba(34,197,94,0.1);
+  color: var(--connected);
+  border-color: rgba(34,197,94,0.2);
+}
+.conn-badge.pairing {
+  background: rgba(245,158,11,0.1);
+  color: var(--pairing);
+  border-color: rgba(245,158,11,0.2);
+}
+
+/* ── CARDS ── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+
+/* ── PAIRING ── */
+.pair-flow { display: flex; flex-direction: column; gap: 12px; }
+
+.pair-step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.pair-step-num {
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #000;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pair-ta {
+  width: 100%;
+  height: 72px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-bright);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 10px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.pair-ta:focus { border-color: var(--accent); }
+.pair-ta::placeholder { color: rgba(255,255,255,0.15); }
+
+.pair-actions { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+
+.pair-status {
+  font-size: 12px;
+  min-height: 18px;
+  color: var(--pairing);
+  margin-top: 6px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+.btn-primary:hover { background: #ffd633; }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-ghost {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+}
+.btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-bright); }
+
+.btn-danger {
+  background: rgba(239,68,68,0.1);
+  color: var(--disconnected);
+  border: 1px solid rgba(239,68,68,0.15);
+}
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-send {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 10px;
+}
+
+/* ── INPUTS ── */
+.field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-bright);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.text-input:focus { border-color: var(--accent); }
+.text-input::placeholder {
+  color: rgba(255,255,255,0.12);
+  text-transform: none;
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.row-inputs { display: flex; flex-direction: column; gap: 10px; }
+
+.row-input-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.row-num {
+  font-family: 'Oswald', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--accent);
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.config-row {
+  display: flex; gap: 10px; margin-bottom: 16px;
+}
+
+.config-field { flex: 1; }
+
+.config-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text-bright);
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.config-input:focus { border-color: var(--accent); }
+
+/* ── PRESETS ── */
+.presets-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.preset-btn {
+  padding: 10px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.preset-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-bright); }
+.preset-btn:active { transform: scale(0.97); }
+
+/* ── TOGGLE ── */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.toggle-label { font-size: 13px; color: var(--text); }
+
+.toggle {
+  position: relative;
+  width: 44px; height: 24px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  padding: 0;
+}
+.toggle.on { background: var(--accent); }
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* ── SECTION DIVIDER ── */
+.divider {
+  height: 1px;
+  background: var(--card-border);
+  margin: 12px 0;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  padding: 24px 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+/* ── KEYBOARD HINT ── */
+.kbd-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+.kbd { 
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <span class="app-title">Split·Flap Controller</span>
+    <div class="conn-badge" id="connBadge">
+      <span class="dot"></span>
+      <span id="connLabel">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- PAIRING CARD -->
+  <div class="card" id="pairCard">
+    <div class="card-title">Pair with Display</div>
+    <div class="pair-flow">
+
+      <div>
+        <div class="pair-step-label"><span class="pair-step-num">1</span> Paste the invite code from the display</div>
+        <textarea class="pair-ta" id="offerInput" placeholder="Paste invite code here…"></textarea>
+        <div class="pair-actions">
+          <button class="btn btn-primary" id="btnCreateAnswer" onclick="createAnswer()">Generate Response</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div>
+        <div class="pair-step-label"><span class="pair-step-num">2</span> Copy response code back to the display</div>
+        <textarea class="pair-ta" id="answerOutput" placeholder="Response code will appear here…" readonly></textarea>
+        <div class="pair-actions">
+          <button class="btn btn-ghost" id="btnCopyAnswer" onclick="copyAnswer()" style="display:none">Copy Response</button>
+        </div>
+      </div>
+
+      <div class="pair-actions" style="margin-top: 4px;">
+        <button class="btn btn-danger" onclick="resetConn()">Reset</button>
+      </div>
+
+      <div class="pair-status" id="pairStatus"></div>
+    </div>
+  </div>
+
+  <!-- MESSAGE CARD -->
+  <div class="card" id="msgCard">
+    <div class="card-title">Board Message</div>
+
+    <div class="config-row">
+      <div class="config-field">
+        <div class="field-label">Rows</div>
+        <input type="number" class="config-input" id="cfgRows" value="4" min="1" max="12" onchange="onConfigChange()">
+      </div>
+      <div class="config-field">
+        <div class="field-label">Columns</div>
+        <input type="number" class="config-input" id="cfgCols" value="20" min="4" max="50" onchange="onConfigChange()">
+      </div>
+    </div>
+
+    <div class="row-inputs" id="rowInputs"></div>
+
+    <div style="margin-top: 16px;">
+      <button class="btn btn-primary btn-send" id="btnSend" onclick="sendUpdate()">
+        Send to Display
+      </button>
+      <div class="kbd-hint">
+        <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to send
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="toggle-row">
+      <span class="toggle-label">Live update (send on every keystroke)</span>
+      <button class="toggle" id="toggleLive" onclick="toggleLive()"></button>
+    </div>
+  </div>
+
+  <!-- PRESETS CARD -->
+  <div class="card">
+    <div class="card-title">Quick Presets</div>
+    <div class="presets-grid" id="presetsGrid"></div>
+  </div>
+
+  <!-- SETTINGS CARD -->
+  <div class="card">
+    <div class="card-title">Settings</div>
+    <div class="toggle-row">
+      <span class="toggle-label">Collapse pairing after connect</span>
+      <button class="toggle on" id="toggleAutoCollapse" onclick="this.classList.toggle('on')"></button>
+    </div>
+  </div>
+
+  <div class="footer">Split·Flap — static file, zero servers</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   SPLIT-FLAP CONTROLLER
+   ═══════════════════════════════════════════ */
+
+let pc = null;
+let dc = null;
+let connState = 'disconnected';
+let liveMode = false;
+let rows = 4, cols = 20;
+
+/* ── PRESETS ── */
+const PRESETS = [
+  { label: '✈ Departures', rows: 4, cols: 20, lines: ['  FLIGHT   DEST     ', 'LH 1830  NEW YORK   ', 'AF 442   PARIS CDG  ', 'BA 937   LONDON LHR '] },
+  { label: '🚆 Train Station', rows: 4, cols: 20, lines: ['   BERLIN  HBF      ', 'ICE 1234  PLATFORM 3', '14:25  ON TIME      ', '                    '] },
+  { label: '👋 Welcome', rows: 4, cols: 20, lines: ['                    ', '      WELCOME!      ', '                    ', '   HAVE A NICE DAY  '] },
+  { label: '⏰ Current Time', rows: 4, cols: 20, lines: null },
+  { label: '📋 Meeting Room', rows: 4, cols: 20, lines: ['  CONFERENCE ROOM A ', '  MEETING IN SESSION', '  DO NOT DISTURB    ', '                    '] },
+  { label: '🎉 Event', rows: 4, cols: 20, lines: ['                    ', '    PRODUCT LAUNCH  ', '    MARCH 2026      ', '   ALL ARE WELCOME  '] },
+  { label: '☕ Café Menu', rows: 4, cols: 20, lines: [' ESPRESSO     3.50  ', ' CAPPUCCINO   4.00  ', ' FLAT WHITE   4.50  ', ' MATCHA       5.00  '] },
+  { label: '🧹 Clear Board', rows: 4, cols: 20, lines: ['', '', '', ''] },
+];
+
+/* ── INIT ── */
+function init() {
+  loadSaved();
+  buildRowInputs();
+  buildPresets();
+  setConnState('disconnected');
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      sendUpdate();
+    }
+  });
+}
+
+function loadSaved() {
+  try {
+    const s = localStorage.getItem('sf-ctrl-state');
+    if (s) {
+      const p = JSON.parse(s);
+      rows = p.rows || 4;
+      cols = p.cols || 20;
+      document.getElementById('cfgRows').value = rows;
+      document.getElementById('cfgCols').value = cols;
+      // Lines restored in buildRowInputs
+      if (p.lines) {
+        setTimeout(() => {
+          const inputs = document.querySelectorAll('.row-text-input');
+          p.lines.forEach((line, i) => {
+            if (inputs[i]) inputs[i].value = line;
+          });
+        }, 0);
+      }
+    }
+  } catch(e) {}
+}
+
+function saveState() {
+  try {
+    const inputs = document.querySelectorAll('.row-text-input');
+    const lines = Array.from(inputs).map(i => i.value);
+    localStorage.setItem('sf-ctrl-state', JSON.stringify({ rows, cols, lines }));
+  } catch(e) {}
+}
+
+/* ── ROW INPUTS ── */
+function buildRowInputs() {
+  const container = document.getElementById('rowInputs');
+  container.innerHTML = '';
+  for (let i = 0; i < rows; i++) {
+    const group = document.createElement('div');
+    group.className = 'row-input-group';
+
+    const num = document.createElement('span');
+    num.className = 'row-num';
+    num.textContent = i + 1;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'text-input row-text-input';
+    input.maxLength = cols;
+    input.placeholder = `Row ${i + 1} — up to ${cols} characters`;
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'characters');
+    input.setAttribute('spellcheck', 'false');
+    input.addEventListener('input', () => {
+      saveState();
+      if (liveMode) sendUpdate();
+    });
+
+    group.appendChild(num);
+    group.appendChild(input);
+    container.appendChild(group);
+  }
+}
+
+function onConfigChange() {
+  rows = Math.max(1, Math.min(12, parseInt(document.getElementById('cfgRows').value) || 4));
+  cols = Math.max(4, Math.min(50, parseInt(document.getElementById('cfgCols').value) || 20));
+  document.getElementById('cfgRows').value = rows;
+  document.getElementById('cfgCols').value = cols;
+  buildRowInputs();
+  saveState();
+}
+
+/* ── PRESETS ── */
+function buildPresets() {
+  const grid = document.getElementById('presetsGrid');
+  PRESETS.forEach((p, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn';
+    btn.textContent = p.label;
+    btn.onclick = () => applyPreset(i);
+    grid.appendChild(btn);
+  });
+}
+
+function applyPreset(index) {
+  const p = PRESETS[index];
+  let lines = p.lines;
+
+  // Special: current time
+  if (lines === null) {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+    lines = [
+      '                    ',
+      `      ${h}:${m}:${s}       `,
+      '                    ',
+      dateStr.substring(0, 20).padStart(Math.floor((20 + dateStr.substring(0, 20).length) / 2)).padEnd(20),
+    ];
+  }
+
+  if (p.rows) { rows = p.rows; document.getElementById('cfgRows').value = rows; }
+  if (p.cols) { cols = p.cols; document.getElementById('cfgCols').value = cols; }
+  buildRowInputs();
+
+  const inputs = document.querySelectorAll('.row-text-input');
+  lines.forEach((line, i) => {
+    if (inputs[i]) inputs[i].value = line;
+  });
+
+  saveState();
+  sendUpdate();
+}
+
+/* ── CONNECTION ── */
+function setConnState(state) {
+  connState = state;
+  const badge = document.getElementById('connBadge');
+  const label = document.getElementById('connLabel');
+  badge.className = 'conn-badge ' + state;
+  const labels = { disconnected: 'Disconnected', pairing: 'Pairing…', connected: 'Connected' };
+  label.textContent = labels[state] || state;
+}
+
+function setPairStatus(msg) {
+  document.getElementById('pairStatus').textContent = msg;
+}
+
+/* ── WEBRTC ── */
+const RTC_CONFIG = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+async function createAnswer() {
+  try {
+    const raw = document.getElementById('offerInput').value.trim();
+    if (!raw) { setPairStatus('Paste the invite code from the display first.'); return; }
+
+    if (pc) { pc.close(); pc = null; dc = null; }
+
+    pc = new RTCPeerConnection(RTC_CONFIG);
+    setConnState('pairing');
+    setPairStatus('Processing invite code…');
+
+    pc.ondatachannel = (e) => {
+      dc = e.channel;
+      setupDC(dc);
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      if (!pc) return;
+      const s = pc.iceConnectionState;
+      if (s === 'connected' || s === 'completed') setConnState('connected');
+      else if (s === 'disconnected' || s === 'failed' || s === 'closed') setConnState('disconnected');
+    };
+
+    const offerSDP = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    await pc.setRemoteDescription(new RTCSessionDescription(offerSDP));
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    setPairStatus('Gathering network info…');
+
+    // Wait for ICE
+    await waitForICE(pc);
+
+    const sdp = JSON.stringify(pc.localDescription);
+    const code = btoa(unescape(encodeURIComponent(sdp)));
+    document.getElementById('answerOutput').value = code;
+    document.getElementById('btnCopyAnswer').style.display = '';
+    setPairStatus('Response code ready — copy it and paste in the display.');
+  } catch (e) {
+    console.error('Create answer failed:', e);
+    setPairStatus('Invalid invite code. Check and try again.');
+    setConnState('disconnected');
+  }
+}
+
+function waitForICE(conn) {
+  return new Promise((resolve) => {
+    if (conn.iceGatheringState === 'complete') { resolve(); return; }
+    const check = () => {
+      if (conn.iceGatheringState === 'complete') {
+        conn.removeEventListener('icegatheringstatechange', check);
+        resolve();
+      }
+    };
+    conn.addEventListener('icegatheringstatechange', check);
+    setTimeout(resolve, 5000);
+  });
+}
+
+function setupDC(channel) {
+  channel.onopen = () => {
+    setConnState('connected');
+    setPairStatus('Connected! You can now control the display.');
+
+    // Auto-collapse pairing card
+    if (document.getElementById('toggleAutoCollapse').classList.contains('on')) {
+      document.getElementById('pairCard').style.display = 'none';
+    }
+
+    // Send current state
+    sendUpdate();
+  };
+
+  channel.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'board_config') {
+        // Sync config from display
+        if (msg.rows) { rows = msg.rows; document.getElementById('cfgRows').value = rows; }
+        if (msg.cols) { cols = msg.cols; document.getElementById('cfgCols').value = cols; }
+        if (msg.lines && msg.lines.length) {
+          buildRowInputs();
+          const inputs = document.querySelectorAll('.row-text-input');
+          msg.lines.forEach((line, i) => {
+            if (inputs[i]) inputs[i].value = line;
+          });
+        }
+      }
+    } catch(err) {}
+  };
+
+  channel.onclose = () => {
+    setConnState('disconnected');
+    setPairStatus('Connection closed.');
+    document.getElementById('pairCard').style.display = '';
+  };
+}
+
+async function copyAnswer() {
+  const text = document.getElementById('answerOutput').value;
+  try {
+    await navigator.clipboard.writeText(text);
+    setPairStatus('Copied! Paste this in the display page.');
+  } catch(e) {
+    document.getElementById('answerOutput').select();
+    setPairStatus('Select all and copy manually.');
+  }
+}
+
+function resetConn() {
+  if (dc) { try { dc.close(); } catch(e){} dc = null; }
+  if (pc) { try { pc.close(); } catch(e){} pc = null; }
+  setConnState('disconnected');
+  document.getElementById('offerInput').value = '';
+  document.getElementById('answerOutput').value = '';
+  document.getElementById('btnCopyAnswer').style.display = 'none';
+  document.getElementById('pairCard').style.display = '';
+  setPairStatus('Reset. Ready to pair again.');
+}
+
+/* ── SEND ── */
+function sendUpdate() {
+  const inputs = document.querySelectorAll('.row-text-input');
+  const lines = Array.from(inputs).map(i => i.value);
+
+  const msg = {
+    type: 'state_update',
+    rows: rows,
+    cols: cols,
+    lines: lines,
+  };
+
+  if (dc && dc.readyState === 'open') {
+    dc.send(JSON.stringify(msg));
+  }
+  saveState();
+}
+
+function toggleLive() {
+  liveMode = !liveMode;
+  document.getElementById('toggleLive').classList.toggle('on', liveMode);
+}
+
+/* ── STARTUP ── */
+init();
+</script>
+</body>
+</html>
