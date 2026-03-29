@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Clipboard Manager & Viewer</title>
+    <meta name="description" content="A fast, secure clipboard viewer online. Manage your clipboard storage, save your copy paste history, and organize text directly in your browser.">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .app-layout { display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 32px; }
+        .textarea-container textarea {
+            width: 100%; height: 150px; padding: 16px; border-radius: 8px;
+            border: 1px solid var(--border-color); font-family: inherit; font-size: 1rem;
+            resize: vertical; margin-bottom: 16px; transition: border-color 0.2s;
+        }
+        .textarea-container textarea:focus { outline: none; border-color: var(--primary); }
+        .controls { display: flex; gap: 12px; margin-bottom: 32px; }
+        .history-list { list-style: none; }
+        .history-item { 
+            background: var(--surface-color); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 16px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center; box-shadow: var(--shadow-sm);
+        }
+        .item-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
+        .item-actions button {
+            background: none; border: none; color: var(--primary);
+            cursor: pointer; font-weight: 500; margin-left: 12px; font-size: 0.875rem;
+        }
+        .item-actions button.delete { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Clipboard Hub</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="app.html">App</a>
+                <a href="devices.html">Devices</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <header>
+            <h1>Online Clipboard Manager</h1>
+            <p>Your secure <strong>clipboard viewer online</strong>. Paste text here, and we'll save it to your local <strong>clipboard storage</strong>. Everything runs securely in your browser; perfect as a <strong>clipboard viewer for Windows 11</strong>, Mac, or ChromeOS.</p>
+        </header>
+
+        <section class="app-layout">
+            <div class="card textarea-container">
+                <textarea id="clipboardInput" placeholder="Type or paste text here to save your clipboard copy paste history..."></textarea>
+                <div class="controls">
+                    <button class="btn" id="saveBtn">Save to History</button>
+                    <button class="btn btn-secondary" id="readBtn">Read from System Clipboard</button>
+                    <button class="btn btn-secondary" id="clearBtn" style="color: #ef4444;">Clear All</button>
+                </div>
+            </div>
+
+            <div>
+                <h2>Your Saved Clips</h2>
+                <ul class="history-list" id="historyList">
+                    </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Clipboard Hub & Manager. LocalStorage active.</p>
+    </footer>
+
+    <script>
+        const input = document.getElementById('clipboardInput');
+        const list = document.getElementById('historyList');
+        
+        // Load history from localStorage
+        let history = JSON.parse(localStorage.getItem('clipHistory')) || [];
+
+        function renderHistory() {
+            list.innerHTML = '';
+            if (history.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">No clips saved yet.</p>';
+                return;
+            }
+            history.forEach((text, index) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <span class="item-text" title="${text}">${text}</span>
+                    <div class="item-actions">
+                        <button onclick="copyItem(${index})">Copy</button>
+                        <button class="delete" onclick="deleteItem(${index})">Delete</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function saveState() {
+            localStorage.setItem('clipHistory', JSON.stringify(history));
+            renderHistory();
+        }
+
+        // Save typed/pasted text
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            const val = input.value.trim();
+            if (val) {
+                history.unshift(val); // Add to top
+                input.value = '';
+                saveState();
+            }
+        });
+
+        // Read from System Clipboard (Requires User Permission)
+        document.getElementById('readBtn').addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    input.value = text;
+                }
+            } catch (err) {
+                alert('Unable to read clipboard. Please ensure you have granted browser permissions.');
+            }
+        });
+
+        // Global Action functions
+        window.copyItem = async (index) => {
+            try {
+                await navigator.clipboard.writeText(history[index]);
+            } catch (err) {
+                console.error('Failed to copy', err);
+            }
+        };
+
+        window.deleteItem = (index) => {
+            history.splice(index, 1);
+            saveState();
+        };
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if(confirm('Clear all saved clips?')) {
+                history = [];
+                saveState();
+            }
+        });
+
+        // Initial Render
+        renderHistory();
+    </script>
+</body>
+</html>
