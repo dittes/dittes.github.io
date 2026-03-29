@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipboard Viewer</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f5;
+            --card-bg: #ffffff;
+            --text-main: #18181b;
+            --text-muted: #71717a;
+            --border-color: #e4e4e7;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --radius: 8px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.idle { background: #e4e4e7; color: #3f3f46; }
+        .badge.running { background: #d1fae5; color: #065f46; }
+        .badge.error, .badge.denied { background: #fee2e2; color: #991b1b; }
+        .badge.warning { background: #fef3c7; color: #92400e; }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.2s;
+            background-color: #e4e4e7;
+            color: var(--text-main);
+        }
+
+        button:hover:not(:disabled) { background-color: #d4d4d8; }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.primary { background-color: var(--primary); color: white; }
+        button.primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+
+        button.danger { background-color: var(--danger); color: white; }
+        button.danger:hover:not(:disabled) { background-color: var(--danger-hover); }
+
+        .settings {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.875rem;
+            resize: vertical;
+            background-color: #fafafa;
+            color: var(--text-main);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+
+        .history-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #fafafa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.8rem;
+            word-break: break-word;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        .history-timestamp {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            font-family: var(--font-family);
+        }
+
+        .empty-history {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-style: italic;
+        }
+
+        .note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            background: #f8fafc;
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        @media (max-width: 480px) {
+            .controls { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Clipboard Viewer</h1>
+            <span id="statusBadge" class="badge idle">Idle</span>
+        </header>
+
+        <div class="controls">
+            <button id="btnStart" class="primary">Start Monitoring</button>
+            <button id="btnStop" class="danger" disabled>Stop Monitoring</button>
+            <button id="btnReadOnce">Read Once</button>
+            <button id="btnCopy">Copy Shown Text</button>
+        </div>
+
+        <div class="settings">
+            <label for="pollInterval">Poll Interval (ms):</label>
+            <input type="number" id="pollInterval" value="700" min="250" max="5000">
+        </div>
+
+        <textarea id="mainTextarea" readonly placeholder="Clipboard text will appear here..."></textarea>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2>History</h2>
+                <button id="btnClearHistory">Clear History</button>
+            </div>
+            <div id="historyList" class="history-list">
+                <div class="empty-history">No history yet.</div>
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>Note:</strong> Best experienced in Chromium-based browsers. Safari/Firefox may require repeated user interaction due to stricter security policies. Requires HTTPS or localhost.
+        </div>
+    </div>
+
+    <script>
+        // State management
+        const state = {
+            isMonitoring: false,
+            lastText: '',
+            intervalMs: 700,
+            timerId: null,
+            history: [] // { text: string, timestamp: string }
+        };
+
+        // DOM Elements
+        const el = {
+            statusBadge: document.getElementById('statusBadge'),
+            btnStart: document.getElementById('btnStart'),
+            btnStop: document.getElementById('btnStop'),
+            btnReadOnce: document.getElementById('btnReadOnce'),
+            btnCopy: document.getElementById('btnCopy'),
+            btnClearHistory: document.getElementById('btnClearHistory'),
+            pollInterval: document.getElementById('pollInterval'),
+            mainTextarea: document.getElementById('mainTextarea'),
+            historyList: document.getElementById('historyList')
+        };
+
+        // Utilities
+        function setStatus(text, type) {
+            el.statusBadge.textContent = text;
+            el.statusBadge.className = `badge ${type}`;
+        }
+
+        function getTimestamp() {
+            return new Date().toLocaleTimeString();
+        }
+
+        function renderHistory() {
+            if (state.history.length === 0) {
+                el.historyList.innerHTML = '<div class="empty-history">No history yet.</div>';
+                return;
+            }
+
+            el.historyList.innerHTML = '';
+            state.history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'history-timestamp';
+                timeSpan.textContent = item.timestamp;
+                
+                const textNode = document.createTextNode(item.text);
+                
+                div.appendChild(timeSpan);
+                div.appendChild(textNode);
+                el.historyList.appendChild(div);
+            });
+        }
+
+        function addToHistory(text) {
+            if (!text) return;
+            
+            // Prevent consecutive duplicates in history
+            if (state.history.length > 0 && state.history[0].text === text) {
+                return;
+            }
+
+            state.history.unshift({ text, timestamp: getTimestamp() });
+            
+            if (state.history.length > 20) {
+                state.history = state.history.slice(0, 20);
+            }
+            
+            renderHistory();
+        }
+
+        function handleNewText(text) {
+            if (text && text !== state.lastText) {
+                state.lastText = text;
+                el.mainTextarea.value = text;
+                addToHistory(text);
+            } else if (!text && state.lastText !== '') {
+                // Clipboard was cleared
+                state.lastText = '';
+                el.mainTextarea.value = '';
+            }
+        }
+
+        function checkBrowserSupport() {
+            if (!window.isSecureContext) {
+                setStatus('Insecure Context', 'error');
+                el.mainTextarea.value = 'Error: Clipboard API requires a secure context (HTTPS or localhost).';
+                return false;
+            }
+            if (!navigator.clipboard || !navigator.clipboard.readText) {
+                setStatus('Unsupported', 'error');
+                el.mainTextarea.value = 'Error: Your browser does not support the modern Clipboard API (navigator.clipboard.readText).';
+                return false;
+            }
+            return true;
+        }
+
+        function handleClipboardError(err) {
+            console.warn('Clipboard read failed:', err);
+            if (err.name === 'NotAllowedError') {
+                setStatus('Permission Denied', 'denied');
+                el.mainTextarea.value = 'Error: Permission to read clipboard was denied.';
+                stopMonitoring();
+            } else if (err.name === 'DataError') {
+                setStatus('Empty/Non-text', 'warning');
+                // Don't stop monitoring, just ignore non-text data
+            } else {
+                setStatus('Error', 'error');
+                el.mainTextarea.value = `Error reading clipboard: ${err.message}`;
+            }
+        }
+
+        // Core Functions
+        async function readClipboardOnce() {
+            if (!checkBrowserSupport()) return false;
+            
+            try {
+                const text = await navigator.clipboard.readText();
+                handleNewText(text);
+                if (!state.isMonitoring) {
+                    setStatus('Read Success', 'running');
+                    setTimeout(() => setStatus('Idle', 'idle'), 2000);
+                }
+                return true;
+            } catch (err) {
+                handleClipboardError(err);
+                return false;
+            }
+        }
+
+        async function poll() {
+            if (!state.isMonitoring || document.hidden) return;
+
+            try {
+                const text = await navigator.clipboard.readText();
+                handleNewText(text);
+                setStatus('Running', 'running');
+            } catch (err) {
+                handleClipboardError(err);
+            }
+
+            if (state.isMonitoring) {
+                state.timerId = setTimeout(poll, state.intervalMs);
+            }
+        }
+
+        async function startMonitoring() {
+            if (!checkBrowserSupport()) return;
+
+            // Optional enhancement: Check permission gracefully if supported
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const perm = await navigator.permissions.query({ name: 'clipboard-read' });
+                    if (perm.state === 'denied') {
+                        setStatus('Permission Denied', 'denied');
+                        el.mainTextarea.value = 'Error: Clipboard permission is denied in browser settings.';
+                        return;
+                    }
+                } catch (e) {
+                    // Ignore, not all browsers support 'clipboard-read' query
+                }
+            }
+
+            // Attempt first read to trigger prompt / validate access
+            const success = await readClipboardOnce();
+            if (!success) return; // readClipboardOnce handles its own error states
+
+            state.isMonitoring = true;
+            el.btnStart.disabled = true;
+            el.btnStop.disabled = false;
+            
+            // Start loop
+            state.timerId = setTimeout(poll, state.intervalMs);
+        }
+
+        function stopMonitoring() {
+            state.isMonitoring = false;
+            clearTimeout(state.timerId);
+            state.timerId = null;
+            
+            el.btnStart.disabled = false;
+            el.btnStop.disabled = true;
+            
+            if (el.statusBadge.className.includes('running')) {
+                setStatus('Idle', 'idle');
+            }
+        }
+
+        async function copyShownText() {
+            const text = el.mainTextarea.value;
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                const prevStatus = el.statusBadge.textContent;
+                const prevClass = el.statusBadge.className.replace('badge ', '');
+                
+                setStatus('Copied!', 'running');
+                
+                setTimeout(() => {
+                    if (state.isMonitoring) {
+                        setStatus('Running', 'running');
+                    } else if (el.statusBadge.textContent === 'Copied!') {
+                        setStatus(prevStatus, prevClass);
+                    }
+                }, 2000);
+            } catch (err) {
+                setStatus('Copy Failed', 'error');
+                console.error('Failed to write to clipboard:', err);
+            }
+        }
+
+        // Event Listeners
+        el.btnStart.addEventListener('click', startMonitoring);
+        el.btnStop.addEventListener('click', stopMonitoring);
+        el.btnReadOnce.addEventListener('click', readClipboardOnce);
+        el.btnCopy.addEventListener('click', copyShownText);
+        
+        el.btnClearHistory.addEventListener('click', () => {
+            state.history = [];
+            renderHistory();
+        });
+
+        el.pollInterval.addEventListener('change', (e) => {
+            let val = parseInt(e.target.value, 10);
+            if (isNaN(val) || val < 250) val = 250;
+            if (val > 5000) val = 5000;
+            e.target.value = val;
+            state.intervalMs = val;
+        });
+
+        // Handle page visibility
+        document.addEventListener('visibilitychange', () => {
+            if (state.isMonitoring) {
+                if (document.hidden) {
+                    clearTimeout(state.timerId);
+                    setStatus('Paused (Hidden)', 'warning');
+                } else {
+                    setStatus('Running', 'running');
+                    poll(); // Resume polling immediately
+                }
+            }
+        });
+
+        // Initialize checks
+        checkBrowserSupport();
+
+    </script>
+</body>
+</html>
