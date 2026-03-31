@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mülltrennspiel – Lerne Mülltrennung spielerisch! 🗑️♻️</title>
+<meta name="description" content="Sortiere Müll-Emojis in die richtige Tonne! Ein lustiges Lernspiel zur deutschen Mülltrennung mit Gelber Tonne, Biotonne, Restmüll, Altpapier und Glascontainer.">
+<meta property="og:title" content="Mülltrennspiel – Kannst du Müll richtig trennen?">
+<meta property="og:description" content="Teste dein Wissen über die deutsche Mülltrennung! Sortiere Emojis in die richtige Tonne.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0d1117;
+    --bg-mid: #161b22;
+    --bg-light: #1a2332;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --text-faint: #484f58;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.2);
+    --gelb: #F5C518;
+    --gelb-dark: #C9A000;
+    --blau: #2E78D2;
+    --blau-dark: #1B5BA8;
+    --braun: #7B5B3A;
+    --braun-dark: #5A3E22;
+    --schwarz: #2D2D2D;
+    --schwarz-dark: #111;
+    --glas: #2E8B57;
+    --glas-dark: #1B6B40;
+    --success: #3fb950;
+    --error: #f85149;
+    --streak: #ff8c00;
+    --link: #58a6ff;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, var(--bg-deep) 0%, var(--bg-mid) 40%, var(--bg-light) 100%);
+    font-family: 'Nunito', sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 24px 18px 40px; }
+
+  /* ── Floating BG ── */
+  .bg-emoji {
+    position: fixed; opacity: 0.04; pointer-events: none; z-index: 0;
+    animation: bgF var(--dur) ease-in-out infinite;
+    animation-delay: var(--del);
+  }
+
+  /* ── Animations ── */
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+  @keyframes bounce { 0% { transform: scale(1); } 30% { transform: scale(1.12); } 60% { transform: scale(.95); } 100% { transform: scale(1); } }
+  @keyframes popIn { 0% { opacity: 0; transform: scale(.7); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes slideUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  @keyframes gradShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+  @keyframes bgF { 0%,100% { transform: translate(0,0) rotate(0); } 33% { transform: translate(10px,-15px) rotate(5deg); } 66% { transform: translate(-8px,10px) rotate(-3deg); } }
+  @keyframes stagger { 0% { opacity: 0; transform: scale(.7); } 100% { opacity: 1; transform: scale(1); } }
+
+  /* ── Typo ── */
+  .ff { font-family: 'Fredoka', sans-serif; }
+  .title-gradient {
+    font-family: 'Fredoka', sans-serif; font-size: clamp(36px,7vw,56px); font-weight: 700;
+    background: linear-gradient(135deg, var(--gelb), var(--glas), var(--blau));
+    background-size: 200% 200%; animation: gradShift 4s ease infinite;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Buttons ── */
+  .action-btn {
+    cursor: pointer; border: none; border-radius: 18px; font-weight: 700;
+    font-family: 'Fredoka', sans-serif; font-size: 22px; padding: 20px 44px;
+    color: #fff; transition: all .25s ease; display: inline-block;
+  }
+  .action-btn:hover { transform: translateY(-3px) scale(1.04); }
+  .action-btn:active { transform: translateY(0) scale(.97); }
+  .btn-green { background: linear-gradient(135deg, var(--glas), #238636); box-shadow: 0 6px 24px rgba(46,139,87,.35); }
+  .btn-blue { background: linear-gradient(135deg, var(--blau), var(--blau-dark)); box-shadow: 0 6px 24px rgba(46,120,210,.3); }
+  .btn-dark { background: linear-gradient(135deg, #30363d, #21262d); box-shadow: 0 6px 24px rgba(0,0,0,.3); }
+  .btn-gold { background: linear-gradient(135deg, var(--gelb), var(--gelb-dark)); color: #1a1a1a; box-shadow: 0 6px 24px rgba(245,197,24,.3); }
+
+  /* ── Level cards ── */
+  .level-card {
+    cursor: pointer; border: 2px solid var(--border); border-radius: 16px;
+    background: var(--surface); transition: all .25s; text-align: center;
+    padding: 20px 14px;
+  }
+  .level-card:hover { background: rgba(255,255,255,.08); border-color: var(--border-hover); transform: translateY(-3px); }
+  .level-card.selected { border-color: var(--gelb); background: rgba(245,197,24,.1); }
+
+  /* ── Bin buttons ── */
+  .bin-btn {
+    cursor: pointer; border: none; border-radius: 20px; padding: 22px 14px;
+    text-align: center; transition: all .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bin-btn:hover { transform: translateY(-4px) scale(1.03); box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+  .bin-btn:active { transform: translateY(-1px) scale(.97); }
+  .bin-btn.shake { animation: shake .4s ease; }
+  .bin-btn.bounce { animation: bounce .5s ease; }
+
+  /* ── Hint button ── */
+  .hint-btn {
+    cursor: pointer; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+    color: var(--text-dim); border-radius: 24px; transition: all .2s;
+    font-family: 'Nunito', sans-serif; padding: 10px 22px; font-size: 17px;
+  }
+  .hint-btn:hover { background: rgba(255,255,255,.14); color: var(--text); }
+
+  /* ── Cards / panels ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; }
+  .level-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; max-width: 440px; margin: 0 auto; }
+  .bins-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; max-width: 480px; margin: 0 auto; }
+
+  /* ── Feedback zone ── */
+  .feedback-zone {
+    height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px;
+  }
+  .feedback-box {
+    text-align: center; padding: 14px 28px; border-radius: 18px; animation: popIn .25s ease;
+    width: 100%; max-width: 620px;
+  }
+  .feedback-ok { background: rgba(46,139,87,.15); border: 1px solid rgba(46,139,87,.3); }
+  .feedback-no { background: rgba(248,81,73,.12); border: 1px solid rgba(248,81,73,.25); }
+
+  /* ── Progress bar ── */
+  .progress-track { height: 8px; border-radius: 4px; background: rgba(255,255,255,.06); margin-bottom: 20px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; transition: width .5s ease; background: linear-gradient(90deg, var(--glas), var(--gelb)); }
+
+  /* ── Item display ── */
+  .item-display {
+    text-align: center; margin-bottom: 12px; padding: 24px 20px;
+    background: var(--surface); border-radius: 24px; border: 1px solid var(--border);
+    min-height: 230px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  }
+  .item-emoji {
+    font-size: 88px; line-height: 1; margin-bottom: 10px;
+    animation: float 2.5s ease-in-out infinite;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,.3));
+  }
+  .item-inner { animation: popIn .35s ease; }
+
+  /* ── Streak badge ── */
+  .streak-badge {
+    background: linear-gradient(135deg, var(--gelb), var(--streak));
+    color: #1a1a1a; padding: 6px 18px; border-radius: 24px;
+    font-size: 18px; font-weight: 700; font-family: 'Fredoka', sans-serif;
+    animation: pulse 1s ease-in-out infinite;
+  }
+
+  /* ── Footer ── */
+  .footer { position: relative; z-index: 2; text-align: center; padding: 24px 18px 32px; border-top: 1px solid rgba(255,255,255,.04); }
+  .footer-btn {
+    cursor: pointer; color: var(--text-faint); font-size: 15px;
+    background: none; border: none; font-family: inherit; transition: color .2s;
+  }
+  .footer-btn:hover { color: var(--text-dim); }
+  .impressum-box {
+    margin-top: 16px; padding: 22px 28px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 16px; line-height: 1.9; color: var(--text-dim);
+    display: inline-block; text-align: left; animation: popIn .3s ease; max-width: 440px;
+  }
+  .impressum-box a { color: var(--link); text-decoration: none; }
+  .impressum-box a:hover { text-decoration: underline; }
+
+  /* ── Stat card ── */
+  .stat-card {
+    padding: 20px 10px; border-radius: 18px; background: var(--surface);
+    border: 1px solid var(--border); text-align: center;
+    animation: stagger .4s ease both;
+  }
+
+  /* ── Misc ── */
+  .hidden { display: none !important; }
+  .text-center { text-align: center; }
+  .mb-4 { margin-bottom: 4px; }
+  .mb-8 { margin-bottom: 8px; }
+  .mb-10 { margin-bottom: 10px; }
+  .mb-12 { margin-bottom: 12px; }
+  .mb-14 { margin-bottom: 14px; }
+  .mb-30 { margin-bottom: 30px; }
+  .mb-32 { margin-bottom: 32px; }
+  .mb-36 { margin-bottom: 36px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-18 { margin-top: 18px; }
+  .mt-44 { margin-top: 44px; }
+
+  .screen { animation: slideUp .6s ease; }
+</style>
+</head>
+<body>
+
+<!-- ═══ BG Emojis ═══ -->
+<div id="bgEmojis"></div>
+
+<div class="wrap">
+  <!-- ════════════════════════════════════ START ════════════════════════════════════ -->
+  <div id="startScreen" class="screen text-center">
+    <div style="font-size:80px;margin-top:16px;margin-bottom:8px;animation:float 3s ease-in-out infinite">🗑️♻️</div>
+    <h1 class="title-gradient mb-8">Mülltrennspiel</h1>
+    <p style="color:var(--text-dim);font-size:20px;margin-bottom:40px;line-height:1.5">
+      Sortiere den Müll in die richtige Tonne!<br>
+      <span style="font-size:16px">Lerne spielerisch die deutsche Mülltrennung 🇩🇪</span>
+    </p>
+    <p style="font-size:15px;color:var(--text-dim);margin-bottom:14px;text-transform:uppercase;letter-spacing:2px;font-weight:700">Schwierigkeitsgrad</p>
+    <div class="level-grid mb-36" id="levelGrid"></div>
+    <button class="action-btn btn-green" style="font-size:24px;padding:22px 56px" onclick="startGame()">🎮 Spiel starten!</button>
+    <div class="card mt-44" style="padding:24px 28px;text-align:left;font-size:18px;line-height:1.8;color:var(--text-dim)">
+      <div class="ff" style="font-weight:700;color:var(--text);margin-bottom:10px;font-size:22px">🎯 So geht's:</div>
+      Ein Müll-Emoji erscheint oben — klicke auf die richtige Tonne unten!
+      Richtige Antworten geben Punkte. Bei einer Serie gibt es Bonus-Multiplikatoren.
+      Bei Fehlern siehst du einen Lern-Tipp. Schaffe alle Teile vor Ablauf der Zeit!
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ PLAY ════════════════════════════════════ -->
+  <div id="playScreen" class="screen hidden">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;gap:20px;align-items:center">
+        <div>
+          <div style="font-size:14px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Punkte</div>
+          <div id="scoreDisplay" class="ff" style="font-size:34px;font-weight:800;color:var(--gelb)">0</div>
+        </div>
+        <div id="streakBadge" class="streak-badge hidden">🔥 <span id="streakNum">0</span>x Streak</div>
+      </div>
+      <div id="timerDisplay" class="ff" style="font-size:36px;font-weight:800;color:var(--link)">⏱ 60s</div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-track"><div id="progressFill" class="progress-fill" style="width:0%"></div></div>
+
+    <!-- Item display — fixed height -->
+    <div class="item-display">
+      <div style="font-size:15px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:2px;font-weight:700">
+        Teil <span id="partNum">1</span> von <span id="partTotal">8</span>
+      </div>
+      <div id="itemInner" class="item-inner">
+        <div id="itemEmoji" class="item-emoji"></div>
+        <div id="itemName" class="ff" style="font-size:28px;font-weight:700;color:var(--text);margin-bottom:10px"></div>
+      </div>
+      <button class="hint-btn" id="hintBtn" onclick="toggleHint()">💡 Tipp anzeigen</button>
+      <div id="hintText" class="hidden" style="margin-top:10px;font-size:18px;color:var(--gelb);font-weight:600"></div>
+    </div>
+
+    <!-- Feedback — FIXED height, no layout shift -->
+    <div class="feedback-zone">
+      <div id="feedbackContent">
+        <div id="feedbackIdle" class="ff" style="font-size:20px;color:var(--text-faint);font-weight:600">⬇️ Wähle die richtige Tonne!</div>
+        <div id="feedbackBox" class="feedback-box hidden"></div>
+      </div>
+    </div>
+
+    <!-- Bins -->
+    <div class="bins-grid" id="binsGrid"></div>
+  </div>
+
+  <!-- ════════════════════════════════════ RESULT ════════════════════════════════════ -->
+  <div id="resultScreen" class="screen hidden text-center">
+    <div id="gradeIcon" style="font-size:72px;margin-bottom:10px;margin-top:20px"></div>
+    <h2 id="gradeText" class="ff" style="font-size:40px;font-weight:700;margin-bottom:4px"></h2>
+    <p id="resultLevel" style="color:var(--text-dim);font-size:20px;margin-bottom:32px"></p>
+    <div class="stats-grid mb-32" id="statsGrid"></div>
+    <div id="funFact" class="card" style="padding:20px 26px;margin-bottom:30px;font-size:17px;line-height:1.7;color:var(--text-dim);text-align:left;background:rgba(46,139,87,.08);border-color:rgba(46,139,87,.15)"></div>
+    <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap" id="resultButtons"></div>
+    <div id="shareMsg" class="ff hidden" style="margin-top:14px;font-size:19px;color:var(--success);font-weight:700"></div>
+    <div id="nextLevelWrap" class="hidden mt-18"></div>
+  </div>
+</div>
+
+<!-- ═══ Footer ═══ -->
+<div class="footer">
+  <button class="footer-btn" id="impressumBtn" onclick="toggleImpressum()">Impressum</button>
+  <div id="impressumBox" class="impressum-box hidden">
+    <div class="ff" style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:18px">Impressum</div>
+    <div>Andreas Dittes</div>
+    <div>Bautzener Str. 35</div>
+    <div>10829 Berlin</div>
+    <div style="margin-top:10px">
+      E-Mail: <a href="mailto:muelltrennspiel@dittes.info">muelltrennspiel@dittes.info</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════
+const BINS = [
+  { id:"gelb", label:"Gelbe Tonne", subtitle:"Verpackungen", color:"#F5C518", dark:"#C9A000", text:"#1a1a1a", icon:"♻️" },
+  { id:"blau", label:"Blaue Tonne", subtitle:"Papier & Pappe", color:"#2E78D2", dark:"#1B5BA8", text:"#fff", icon:"📄" },
+  { id:"braun", label:"Biotonne", subtitle:"Bioabfall", color:"#7B5B3A", dark:"#5A3E22", text:"#fff", icon:"🌱" },
+  { id:"schwarz", label:"Restmüll", subtitle:"Restabfall", color:"#2D2D2D", dark:"#111", text:"#fff", icon:"🗑️" },
+  { id:"glas", label:"Glascontainer", subtitle:"Altglas", color:"#2E8B57", dark:"#1B6B40", text:"#fff", icon:"🫙" },
+];
+
+const ALL_ITEMS = [
+  {emoji:"🥤",name:"Plastikbecher",bin:"gelb",hint:"Kunststoffverpackung → Gelbe Tonne"},
+  {emoji:"🧴",name:"Shampooflasche",bin:"gelb",hint:"Kunststoffverpackung → Gelbe Tonne"},
+  {emoji:"🥫",name:"Konservendose",bin:"gelb",hint:"Metallverpackung → Gelbe Tonne"},
+  {emoji:"🧃",name:"Getränkekarton",bin:"gelb",hint:"Verbundverpackung → Gelbe Tonne"},
+  {emoji:"🛍️",name:"Plastiktüte",bin:"gelb",hint:"Kunststoff → Gelbe Tonne"},
+  {emoji:"🫗",name:"Joghurtbecher",bin:"gelb",hint:"Kunststoffverpackung → Gelbe Tonne"},
+  {emoji:"🧈",name:"Butterverpackung",bin:"gelb",hint:"Verbundverpackung → Gelbe Tonne"},
+  {emoji:"🫧",name:"Spülmittelflasche",bin:"gelb",hint:"Kunststoffverpackung → Gelbe Tonne"},
+  {emoji:"🧽",name:"Alufolie (Verp.)",bin:"gelb",hint:"Alu-Verpackung → Gelbe Tonne"},
+  {emoji:"🥡",name:"Styroporschale",bin:"gelb",hint:"Verpackungsmaterial → Gelbe Tonne"},
+  {emoji:"📰",name:"Zeitung",bin:"blau",hint:"Altpapier → Blaue Tonne"},
+  {emoji:"📦",name:"Pappkarton",bin:"blau",hint:"Pappe → Blaue Tonne"},
+  {emoji:"📕",name:"Altes Buch",bin:"blau",hint:"Papier → Blaue Tonne"},
+  {emoji:"✉️",name:"Briefumschlag",bin:"blau",hint:"Papier → Blaue Tonne"},
+  {emoji:"🗞️",name:"Prospekt",bin:"blau",hint:"Altpapier → Blaue Tonne"},
+  {emoji:"📄",name:"Druckerpapier",bin:"blau",hint:"Papier → Blaue Tonne"},
+  {emoji:"📓",name:"Schulheft",bin:"blau",hint:"Papier → Blaue Tonne"},
+  {emoji:"🗂️",name:"Eierkarton",bin:"blau",hint:"Pappe → Blaue Tonne"},
+  {emoji:"🏷️",name:"Papiertragetasche",bin:"blau",hint:"Papier → Blaue Tonne"},
+  {emoji:"🍌",name:"Bananenschale",bin:"braun",hint:"Organischer Abfall → Biotonne"},
+  {emoji:"🍎",name:"Apfelrest",bin:"braun",hint:"Obstabfall → Biotonne"},
+  {emoji:"🥚",name:"Eierschalen",bin:"braun",hint:"Organisch → Biotonne"},
+  {emoji:"☕",name:"Kaffeefilter",bin:"braun",hint:"Organisch kompostierbar → Biotonne"},
+  {emoji:"🥬",name:"Welker Salat",bin:"braun",hint:"Gemüseabfall → Biotonne"},
+  {emoji:"🌻",name:"Verwelkte Blumen",bin:"braun",hint:"Pflanzenreste → Biotonne"},
+  {emoji:"🍞",name:"Altes Brot",bin:"braun",hint:"Lebensmittelrest → Biotonne"},
+  {emoji:"🥔",name:"Kartoffelschalen",bin:"braun",hint:"Gemüseabfall → Biotonne"},
+  {emoji:"🍊",name:"Orangenschale",bin:"braun",hint:"Obstabfall → Biotonne"},
+  {emoji:"🫖",name:"Teebeutel",bin:"braun",hint:"Organisch → Biotonne"},
+  {emoji:"🚬",name:"Zigarettenstummel",bin:"schwarz",hint:"Nicht recycelbar → Restmüll"},
+  {emoji:"💡",name:"Glühbirne",bin:"schwarz",hint:"Kein Altglas! → Restmüll"},
+  {emoji:"🪥",name:"Alte Zahnbürste",bin:"schwarz",hint:"Keine Verpackung → Restmüll"},
+  {emoji:"👶",name:"Windel",bin:"schwarz",hint:"Hygieneartikel → Restmüll"},
+  {emoji:"🧹",name:"Staubsaugerbeutel",bin:"schwarz",hint:"Restabfall → Restmüll"},
+  {emoji:"📸",name:"Altes Foto",bin:"schwarz",hint:"Beschichtetes Papier → Restmüll"},
+  {emoji:"🕯️",name:"Kerzenstummel",bin:"schwarz",hint:"Wachs → Restmüll"},
+  {emoji:"🧸",name:"Kaputtes Spielzeug",bin:"schwarz",hint:"Nicht-Verpackung → Restmüll"},
+  {emoji:"🧻",name:"Taschentuch",bin:"schwarz",hint:"Benutztes Hygienepapier → Restmüll"},
+  {emoji:"🩹",name:"Pflaster",bin:"schwarz",hint:"Hygieneartikel → Restmüll"},
+  {emoji:"🍷",name:"Weinflasche",bin:"glas",hint:"Glasverpackung → Glascontainer"},
+  {emoji:"🍺",name:"Bierflasche (o. Pfand)",bin:"glas",hint:"Glasflasche → Glascontainer"},
+  {emoji:"🫙",name:"Marmeladenglas",bin:"glas",hint:"Verpackungsglas → Glascontainer"},
+  {emoji:"🧴",name:"Parfümflakon",bin:"glas",hint:"Glasverpackung → Glascontainer"},
+  {emoji:"🍶",name:"Essigflasche",bin:"glas",hint:"Glasflasche → Glascontainer"},
+  {emoji:"🍾",name:"Sektflasche",bin:"glas",hint:"Glasverpackung → Glascontainer"},
+  {emoji:"🥃",name:"Senfglas",bin:"glas",hint:"Glasverpackung → Glascontainer"},
+  {emoji:"🫒",name:"Olivenglas",bin:"glas",hint:"Glasverpackung → Glascontainer"},
+];
+
+const LEVELS = [
+  {name:"Anfänger",items:8,time:60},
+  {name:"Fortgeschritten",items:12,time:50},
+  {name:"Profi",items:15,time:45},
+  {name:"Meister",items:18,time:40},
+];
+
+const LEVEL_ICONS = ["🌱","🌿","🌳","🏆"];
+
+const CORRECT_MSGS = ["Super! 🎉","Richtig! ✨","Perfekt! 💪","Genau! 👏","Klasse! 🌟","Sehr gut! 🏆","Bravo! 🎊","Top! 🔥","Stark! 💚"];
+const WRONG_MSGS = ["Knapp daneben! 😅","Nächstes Mal! 🤔","Fast! 😬","Ups! 🙈","Nicht ganz! 💭"];
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let selectedLevel = 0;
+let items = [];
+let idx = 0;
+let score = 0;
+let streak = 0;
+let bestStreak = 0;
+let timeLeft = 60;
+let totalOk = 0;
+let totalFail = 0;
+let timerInterval = null;
+let fbTimeout = null;
+let feedbackActive = false;
+let hintVisible = false;
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function shuffle(a) { const b=[...a]; for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];} return b; }
+function pick(a) { return a[Math.floor(Math.random()*a.length)]; }
+function $(id) { return document.getElementById(id); }
+function show(id) { $(id).classList.remove('hidden'); }
+function hide(id) { $(id).classList.add('hidden'); }
+
+function generateRound(count) {
+  const perBin = Math.max(1, Math.floor(count / BINS.length));
+  let pool = [];
+  for (const bin of BINS) pool.push(...shuffle(ALL_ITEMS.filter(i => i.bin === bin.id)).slice(0, perBin));
+  while (pool.length < count) { const e = ALL_ITEMS[Math.floor(Math.random()*ALL_ITEMS.length)]; if (!pool.find(p=>p.name===e.name)) pool.push(e); }
+  return shuffle(pool).slice(0, count);
+}
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+function init() {
+  // BG emojis
+  const bgEmojis = ["♻️","🍌","📰","🍷","🗑️","🥫","📦","🍎"];
+  const bgContainer = $('bgEmojis');
+  bgEmojis.forEach((e, i) => {
+    const d = document.createElement('div');
+    d.className = 'bg-emoji';
+    d.textContent = e;
+    d.style.fontSize = `${22 + (i % 3) * 10}px`;
+    d.style.top = `${10 + (i * 12) % 85}%`;
+    d.style.left = `${5 + (i * 14) % 90}%`;
+    d.style.setProperty('--dur', `${6 + i * 1.3}s`);
+    d.style.setProperty('--del', `${i * 0.7}s`);
+    bgContainer.appendChild(d);
+  });
+
+  // Level cards
+  const lg = $('levelGrid');
+  LEVELS.forEach((l, i) => {
+    const btn = document.createElement('div');
+    btn.className = `level-card${i === 0 ? ' selected' : ''}`;
+    btn.id = `lvl${i}`;
+    btn.innerHTML = `
+      <div style="font-size:30px;margin-bottom:4px">${LEVEL_ICONS[i]}</div>
+      <div class="ff" style="font-weight:700;font-size:20px">${l.name}</div>
+      <div style="font-size:15px;color:var(--text-dim);margin-top:4px">${l.items} Teile · ${l.time}s</div>
+    `;
+    btn.onclick = () => selectLevel(i);
+    lg.appendChild(btn);
+  });
+
+  // Bin buttons
+  const bg = $('binsGrid');
+  BINS.forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'bin-btn';
+    btn.id = `bin-${b.id}`;
+    btn.style.background = `linear-gradient(145deg, ${b.color}, ${b.dark})`;
+    btn.style.color = b.text;
+    btn.style.boxShadow = `0 4px 16px ${b.color}33`;
+    btn.innerHTML = `
+      <div style="font-size:38px;margin-bottom:4px">${b.icon}</div>
+      <div class="ff" style="font-size:20px;font-weight:700">${b.label}</div>
+      <div style="font-size:14px;opacity:.85;margin-top:3px">${b.subtitle}</div>
+    `;
+    btn.onclick = () => pickBin(b.id);
+    bg.appendChild(btn);
+  });
+}
+
+function selectLevel(i) {
+  document.querySelectorAll('.level-card').forEach(c => c.classList.remove('selected'));
+  $(`lvl${i}`).classList.add('selected');
+  selectedLevel = i;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCREENS
+// ══════════════════════════════════════════════════════════════
+function showScreen(name) {
+  ['startScreen','playScreen','resultScreen'].forEach(id => {
+    const el = $(id);
+    if (id === name + 'Screen') { el.classList.remove('hidden'); el.style.animation = 'none'; el.offsetHeight; el.style.animation = 'slideUp .5s ease'; }
+    else el.classList.add('hidden');
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// GAME
+// ══════════════════════════════════════════════════════════════
+function startGame() {
+  const lvl = LEVELS[selectedLevel];
+  items = generateRound(lvl.items);
+  idx = 0; score = 0; streak = 0; bestStreak = 0;
+  totalOk = 0; totalFail = 0; timeLeft = lvl.time;
+  feedbackActive = false; hintVisible = false;
+  showScreen('play');
+  renderItem();
+  updateHUD();
+  clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+}
+
+function tick() {
+  timeLeft--;
+  updateTimer();
+  if (timeLeft <= 0) { clearInterval(timerInterval); showResult(); }
+}
+
+function renderItem() {
+  const item = items[idx];
+  $('partNum').textContent = idx + 1;
+  $('partTotal').textContent = items.length;
+  $('itemEmoji').textContent = item.emoji;
+  $('itemName').textContent = item.name;
+  $('hintText').textContent = item.hint;
+  hide('hintText');
+  $('hintBtn').textContent = '💡 Tipp anzeigen';
+  hintVisible = false;
+
+  // Re-trigger animation
+  const inner = $('itemInner');
+  inner.style.animation = 'none';
+  inner.offsetHeight;
+  inner.style.animation = 'popIn .35s ease';
+
+  // Progress
+  const pct = (idx / items.length) * 100;
+  $('progressFill').style.width = pct + '%';
+
+  // Reset feedback
+  showIdleFeedback();
+}
+
+function showIdleFeedback() {
+  show('feedbackIdle');
+  hide('feedbackBox');
+}
+
+function showFeedback(type, msg, pts, streakBonus, hint) {
+  hide('feedbackIdle');
+  const box = $('feedbackBox');
+  box.className = `feedback-box ${type === 'ok' ? 'feedback-ok' : 'feedback-no'}`;
+  let html = `<div class="ff" style="font-size:24px;font-weight:700;color:${type === 'ok' ? 'var(--success)' : 'var(--error)'}">${msg}`;
+  if (pts) html += `<span style="margin-left:10px;font-size:20px">+${pts}</span>`;
+  html += '</div>';
+  if (streakBonus) html += `<div style="font-size:18px;color:var(--gelb);font-weight:600;margin-top:2px">${streakBonus}</div>`;
+  if (hint) html += `<div style="font-size:17px;color:var(--text-dim);margin-top:5px">${hint}</div>`;
+  box.innerHTML = html;
+  show('feedbackBox');
+  box.style.animation = 'none';
+  box.offsetHeight;
+  box.style.animation = 'popIn .25s ease';
+}
+
+function updateHUD() {
+  $('scoreDisplay').textContent = score;
+  updateTimer();
+  if (streak >= 2) { show('streakBadge'); $('streakNum').textContent = streak; }
+  else hide('streakBadge');
+}
+
+function updateTimer() {
+  const el = $('timerDisplay');
+  el.textContent = `⏱ ${timeLeft}s`;
+  el.style.color = timeLeft <= 10 ? 'var(--error)' : timeLeft <= 20 ? 'var(--gelb)' : 'var(--link)';
+  el.style.animation = timeLeft <= 10 ? 'pulse .5s ease-in-out infinite' : 'none';
+}
+
+function toggleHint() {
+  hintVisible = !hintVisible;
+  if (hintVisible) { show('hintText'); $('hintBtn').textContent = '💡 Tipp ausblenden'; }
+  else { hide('hintText'); $('hintBtn').textContent = '💡 Tipp anzeigen'; }
+}
+
+function pickBin(binId) {
+  if (feedbackActive || idx >= items.length) return;
+  feedbackActive = true;
+  const item = items[idx];
+  const correct = item.bin === binId;
+  const binEl = $(`bin-${binId}`);
+
+  if (fbTimeout) clearTimeout(fbTimeout);
+
+  if (correct) {
+    const sb = streak >= 4 ? 3 : streak >= 2 ? 2 : 1;
+    const pts = 10 * sb;
+    score += pts; streak++; bestStreak = Math.max(bestStreak, streak); totalOk++;
+    binEl.classList.add('bounce');
+    setTimeout(() => binEl.classList.remove('bounce'), 500);
+    showFeedback('ok', pick(CORRECT_MSGS), pts, sb > 1 ? `${sb}x Streak!` : null, null);
+  } else {
+    streak = 0; totalFail++;
+    binEl.classList.add('shake');
+    setTimeout(() => binEl.classList.remove('shake'), 500);
+    showFeedback('no', pick(WRONG_MSGS), null, null, item.hint);
+  }
+
+  updateHUD();
+
+  fbTimeout = setTimeout(() => {
+    feedbackActive = false;
+    if (idx + 1 >= items.length) { clearInterval(timerInterval); showResult(); }
+    else { idx++; renderItem(); }
+  }, correct ? 1200 : 2400);
+}
+
+// ══════════════════════════════════════════════════════════════
+// RESULT
+// ══════════════════════════════════════════════════════════════
+function showResult() {
+  showScreen('result');
+  const acc = totalOk + totalFail > 0 ? Math.round((totalOk / (totalOk + totalFail)) * 100) : 0;
+
+  let grade, color;
+  if (acc >= 95) { grade = "🏆 Müll-Meister!"; color = "var(--gelb)"; }
+  else if (acc >= 80) { grade = "🌟 Trenn-Profi!"; color = "var(--glas)"; }
+  else if (acc >= 60) { grade = "👍 Guter Anfang!"; color = "var(--blau)"; }
+  else { grade = "📚 Weiter üben!"; color = "var(--gelb-dark)"; }
+
+  const parts = grade.split(' ');
+  $('gradeIcon').textContent = parts[0];
+  $('gradeText').textContent = parts.slice(1).join(' ');
+  $('gradeText').style.color = color;
+  $('resultLevel').textContent = `Level: ${LEVELS[selectedLevel].name}`;
+
+  // Stats
+  const stats = [
+    {l:"Punkte",v:score,i:"⭐",c:"var(--gelb)"},
+    {l:"Genauigkeit",v:`${acc}%`,i:"🎯",c:"var(--glas)"},
+    {l:"Richtig",v:totalOk,i:"✅",c:"var(--success)"},
+    {l:"Falsch",v:totalFail,i:"❌",c:"var(--error)"},
+    {l:"Beste Serie",v:bestStreak,i:"🔥",c:"var(--streak)"},
+    {l:"Restzeit",v:`${timeLeft}s`,i:"⏱",c:"var(--link)"},
+  ];
+  const sg = $('statsGrid');
+  sg.innerHTML = '';
+  stats.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'stat-card';
+    d.style.animationDelay = `${i * 0.07}s`;
+    d.innerHTML = `
+      <div style="font-size:28px">${s.i}</div>
+      <div class="ff" style="font-size:32px;font-weight:800;color:${s.c}">${s.v}</div>
+      <div style="font-size:15px;color:var(--text-dim)">${s.l}</div>
+    `;
+    sg.appendChild(d);
+  });
+
+  // Fun fact
+  $('funFact').innerHTML = `<span style="font-weight:700;color:var(--success)">💡 Wusstest du? </span>` +
+    (acc >= 80
+      ? 'Jeder Deutsche produziert im Schnitt 433 kg Hausmüll pro Jahr. Durch richtige Mülltrennung können über 60% der Wertstoffe recycelt werden!'
+      : 'Die Fehlwurfquote beim Gelben Sack liegt bundesweit bei ca. 60%. Übung macht den Meister — genau wie bei diesem Spiel!');
+
+  // Buttons
+  const rb = $('resultButtons');
+  rb.innerHTML = '';
+  [
+    {label:'🔄 Nochmal', cls:'btn-green', fn: () => startGame()},
+    {label:'📤 Teilen', cls:'btn-blue', fn: shareResult},
+    {label:'🏠 Start', cls:'btn-dark', fn: () => showScreen('start')},
+  ].forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = `action-btn ${b.cls}`;
+    btn.textContent = b.label;
+    btn.onclick = b.fn;
+    rb.appendChild(btn);
+  });
+
+  // Next level
+  const nlw = $('nextLevelWrap');
+  if (selectedLevel < LEVELS.length - 1 && acc >= 70) {
+    nlw.innerHTML = '';
+    const btn = document.createElement('button');
+    btn.className = 'action-btn btn-gold';
+    btn.textContent = `⬆️ Nächstes Level: ${LEVELS[selectedLevel + 1].name}`;
+    btn.onclick = () => { selectedLevel++; startGame(); };
+    nlw.appendChild(btn);
+    show('nextLevelWrap');
+  } else {
+    hide('nextLevelWrap');
+  }
+}
+
+async function shareResult() {
+  const acc = totalOk + totalFail > 0 ? Math.round((totalOk / (totalOk + totalFail)) * 100) : 0;
+  const text = `🗑️♻️ Mülltrennspiel\n\nIch habe ${score} Punkte im Level „${LEVELS[selectedLevel].name}" erreicht!\n🎯 ${acc}% Genauigkeit · 🔥 ${bestStreak}x beste Serie\n\nKannst du das schlagen? Spiel jetzt:`;
+  const url = window.location.href;
+
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Mülltrennspiel', text, url }); } catch {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(text + '\n' + url);
+      showShareMsg('Link kopiert! 📋');
+    } catch {
+      showShareMsg('Teile den Link manuell!');
+    }
+  }
+}
+
+function showShareMsg(msg) {
+  const el = $('shareMsg');
+  el.textContent = msg;
+  show('shareMsg');
+  el.style.animation = 'none';
+  el.offsetHeight;
+  el.style.animation = 'popIn .3s ease';
+  setTimeout(() => hide('shareMsg'), 2500);
+}
+
+function toggleImpressum() {
+  const box = $('impressumBox');
+  const btn = $('impressumBtn');
+  if (box.classList.contains('hidden')) {
+    show('impressumBox');
+    btn.textContent = 'Impressum schließen ✕';
+  } else {
+    hide('impressumBox');
+    btn.textContent = 'Impressum';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
