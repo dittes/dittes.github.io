@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Identity Detector</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="container">
+      <h1>Brand Identity Detector</h1>
+      <p>Analyze and extract brand identity systems statically from the browser. <br>Accurate detection requires the Bookmarklet mode to bypass CORS limitations.</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card tabs-container">
+      <div class="tabs-nav">
+        <button class="tab-btn active" data-target="mode-bookmarklet">1. Analyze Current Page</button>
+        <button class="tab-btn" data-target="mode-url">2. Analyze URL</button>
+        <button class="tab-btn" data-target="mode-image">3. Image / Screenshot</button>
+      </div>
+
+      <div class="tab-content active" id="mode-bookmarklet">
+        <h3>High-Fidelity Analysis</h3>
+        <p>This is the most accurate mode. It inspects live DOM, computed styles, and variables directly on the page.</p>
+        <div class="bookmarklet-box">
+          <p>Drag this button to your bookmarks bar. Click it when viewing the website you want to analyze.</p>
+          <a href="#" id="bookmarklet-link" class="btn btn-primary" title="Drag me to your bookmarks bar">Brand Detector</a>
+        </div>
+      </div>
+
+      <div class="tab-content" id="mode-url">
+        <h3>Best-Effort URL Fetch</h3>
+        <p>Attempts to fetch and parse HTML metadata. <strong>Note:</strong> Most modern sites will block this via CORS security policies.</p>
+        <div class="input-group">
+          <input type="url" id="url-input" placeholder="https://example.com" class="input">
+          <button id="url-analyze-btn" class="btn btn-primary">Analyze</button>
+        </div>
+        <div id="url-status" class="status-message"></div>
+      </div>
+
+      <div class="tab-content" id="mode-image">
+        <h3>Asset Analysis</h3>
+        <p>Upload a screenshot or logo to extract the color palette locally in your browser.</p>
+        <div class="file-dropzone" id="file-dropzone">
+          <p>Drag & Drop an image here or click to upload</p>
+          <input type="file" id="file-input" accept="image/*" hidden>
+        </div>
+        <canvas id="image-canvas" hidden></canvas>
+      </div>
+    </div>
+
+    <div id="results-container" class="results-grid hidden">
+      <div class="results-header">
+        <h2>Analysis Results</h2>
+        <div class="actions">
+          <button id="export-json" class="btn">Export JSON</button>
+          <button id="export-css" class="btn">Copy CSS Vars</button>
+        </div>
+      </div>
+
+      <div class="card result-card" id="card-logo">
+        <h3>Logo Candidates</h3>
+        <div class="card-content"></div>
+      </div>
+
+      <div class="card result-card" id="card-fonts">
+        <h3>Typography</h3>
+        <div class="card-content"></div>
+      </div>
+
+      <div class="card result-card" id="card-colors">
+        <h3>Color Palette</h3>
+        <div class="card-content"></div>
+      </div>
+
+      <div class="card result-card" id="card-signals">
+        <h3>Brand Signals</h3>
+        <div class="card-content"></div>
+      </div>
+
+      <div class="card result-card full-width" id="card-evidence">
+        <h3>Evidence & Limitations</h3>
+        <div class="card-content"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <div class="container">
+      <p><strong>Truthfulness & Privacy:</strong> This is a completely static application. Everything runs in your browser. No data is sent to any server. URL mode is naturally restricted by CORS policies. Tainted canvas security prevents pixel-extraction of cross-origin assets.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
