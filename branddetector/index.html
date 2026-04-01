@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brand Identity Detector</title>
+    <meta
+      name="description"
+      content="Browser-only brand identity inspection for logos, fonts, colors, favicons, theme-color, schema.org logo, and screenshot-based palette extraction."
+    />
+    <link rel="stylesheet" href="./assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <div class="brand-lockup__badge">B</div>
+          <div>
+            <div class="eyebrow">Static browser tool</div>
+            <h1>Brand Identity Detector</h1>
+          </div>
+        </div>
+        <div class="topbar__actions">
+          <button class="ghost-btn" id="copySummaryBtn" type="button">Copy summary</button>
+          <button class="ghost-btn" id="copyCssBtn" type="button">Copy CSS tokens</button>
+          <button class="primary-btn" id="downloadJsonBtn" type="button">Download JSON</button>
+        </div>
+      </header>
+
+      <main class="container">
+        <section class="hero card">
+          <div class="hero__copy">
+            <div class="eyebrow">Heuristic inspection, not fake omniscience</div>
+            <h2>Detect brand signals from the page itself, from a fetchable URL, or from uploaded screenshots.</h2>
+            <p>
+              This tool separates high-confidence live page inspection from weak cross-origin URL analysis and from image-based palette extraction. It shows the evidence behind every finding.
+            </p>
+          </div>
+          <div class="hero__truth">
+            <div class="notice notice--info">
+              <strong>Truthfulness rule</strong>
+              <p>
+                A static browser app cannot fully inspect arbitrary third-party pages. CORS, cross-origin stylesheets, tainted canvas rules, and CSP can block access. Blocked steps are shown explicitly.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="input-panel card">
+          <div class="section-header">
+            <div>
+              <div class="eyebrow">Analysis modes</div>
+              <h3>Choose how to inspect brand identity</h3>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Analysis modes">
+            <button class="tab is-active" data-tab="current-page" role="tab" aria-selected="true">Analyze This Page</button>
+            <button class="tab" data-tab="url" role="tab" aria-selected="false">Analyze URL</button>
+            <button class="tab" data-tab="image" role="tab" aria-selected="false">Screenshot / Assets</button>
+          </div>
+
+          <div class="tab-panels">
+            <section class="tab-panel is-active" data-panel="current-page">
+              <div class="mode-grid">
+                <div class="mode-main">
+                  <h4>Strongest mode</h4>
+                  <p>
+                    Generate a bookmarklet that runs in the target page context. That allows direct access to live DOM, computed styles, visible elements, and loaded fonts on the page you are analyzing.
+                  </p>
+
+                  <div class="bookmarklet-box">
+                    <label class="field-label" for="receiverUrl">Receiver URL</label>
+                    <div class="inline-field">
+                      <input id="receiverUrl" type="text" readonly />
+                      <button id="copyReceiverUrlBtn" class="ghost-btn" type="button">Copy</button>
+                    </div>
+                  </div>
+
+                  <div class="bookmarklet-box">
+                    <div class="field-label">Bookmarklet</div>
+                    <div class="bookmarklet-row">
+                      <a id="bookmarkletLink" class="bookmarklet-link" href="#">Analyze Brand Identity</a>
+                      <button id="copyBookmarkletBtn" class="ghost-btn" type="button">Copy code</button>
+                    </div>
+                    <textarea id="bookmarkletCode" class="code-area" readonly spellcheck="false"></textarea>
+                  </div>
+                </div>
+
+                <aside class="mode-side card card--nested">
+                  <h4>How it works</h4>
+                  <ol class="steps">
+                    <li>Open this app from a hosted static URL.</li>
+                    <li>Drag the bookmarklet to your bookmarks bar.</li>
+                    <li>Open the site you want to inspect.</li>
+                    <li>Click the bookmarklet.</li>
+                    <li>The app opens in a new tab and receives the result via <code>postMessage</code>.</li>
+                  </ol>
+                  <div class="notice notice--warn compact">
+                    <strong>Limitations</strong>
+                    <p>Some sites block injected scripts with CSP. That is a real browser restriction, not a bug in the app.</p>
+                  </div>
+                </aside>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="url">
+              <div class="mode-grid">
+                <div class="mode-main">
+                  <h4>Best-effort cross-origin fetch</h4>
+                  <p>
+                    Paste a URL. The app tries to fetch and parse whatever the browser is actually allowed to read. When access is blocked, the blocked step is reported directly.
+                  </p>
+                  <form id="urlForm" class="url-form">
+                    <label class="field-label" for="urlInput">Website URL</label>
+                    <div class="inline-field">
+                      <input id="urlInput" type="url" placeholder="https://example.com" inputmode="url" />
+                      <button id="analyzeUrlBtn" class="primary-btn" type="submit">Analyze URL</button>
+                    </div>
+                  </form>
+                  <div id="urlModeStatus" class="status-box muted">No URL analyzed yet.</div>
+                </div>
+
+                <aside class="mode-side card card--nested">
+                  <h4>URL mode can usually detect</h4>
+                  <ul class="simple-list">
+                    <li>favicon and touch icons</li>
+                    <li>manifest icons if fetchable</li>
+                    <li>meta theme-color</li>
+                    <li>Open Graph image</li>
+                    <li>schema.org logo</li>
+                    <li>some inline and readable CSS hints</li>
+                  </ul>
+                </aside>
+              </div>
+            </section>
+
+            <section class="tab-panel" data-panel="image">
+              <div class="mode-grid image-mode-grid">
+                <div class="mode-main">
+                  <h4>Local image analysis</h4>
+                  <p>
+                    Upload a homepage screenshot, logo file, or icon asset. The app extracts a palette locally in the browser and can suggest a logo crop from the screenshot.
+                  </p>
+
+                  <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload images">
+                    <input id="imageInput" type="file" accept="image/*" multiple hidden />
+                    <div class="dropzone__content">
+                      <strong>Drop image files here</strong>
+                      <span>or click to browse</span>
+                    </div>
+                  </div>
+
+                  <div id="imagePreviewArea" class="image-preview-area is-empty">
+                    <div class="empty-state">
+                      <h5>No screenshot loaded</h5>
+                      <p>Image mode works fully offline once the app is loaded.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <aside class="mode-side card card--nested">
+                  <h4>Image mode limitations</h4>
+                  <ul class="simple-list">
+                    <li>exact font identification is not reliable from screenshots alone</li>
+                    <li>logo auto-crop is heuristic only</li>
+                    <li>palette extraction depends on screenshot quality and scale</li>
+                  </ul>
+                </aside>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="results-section">
+          <div class="section-header">
+            <div>
+              <div class="eyebrow">Results</div>
+              <h3>Brand identity findings</h3>
+            </div>
+            <div id="resultMeta" class="result-meta muted">No result yet.</div>
+          </div>
+
+          <div class="results-grid">
+            <article class="card result-card" id="logoCard"></article>
+            <article class="card result-card" id="fontsCard"></article>
+            <article class="card result-card" id="colorsCard"></article>
+            <article class="card result-card" id="signalsCard"></article>
+            <article class="card result-card" id="confidenceCard"></article>
+            <article class="card result-card" id="exportCard"></article>
+          </div>
+        </section>
+
+        <section class="card evidence-section">
+          <div class="section-header">
+            <div>
+              <div class="eyebrow">Evidence</div>
+              <h3>Raw findings, sources, and blocked steps</h3>
+            </div>
+          </div>
+          <div id="evidencePanel" class="evidence-panel"></div>
+        </section>
+
+        <section class="card help-section">
+          <div class="section-header">
+            <div>
+              <div class="eyebrow">What works and what does not</div>
+              <h3>Static app limitations explained honestly</h3>
+            </div>
+          </div>
+          <div class="help-grid">
+            <div>
+              <h4>Works well</h4>
+              <ul class="simple-list">
+                <li>bookmarklet-based inspection on the actual page context</li>
+                <li>metadata and manifest extraction when a URL is fetchable</li>
+                <li>local screenshot and logo palette analysis</li>
+                <li>exporting tokens and summaries</li>
+              </ul>
+            </div>
+            <div>
+              <h4>Weak or blocked by browser rules</h4>
+              <ul class="simple-list">
+                <li>reading arbitrary cross-origin HTML and CSS without CORS</li>
+                <li>inspecting cross-origin stylesheets from another site</li>
+                <li>drawing third-party images to canvas without tainting</li>
+                <li>exact font identification from screenshots only</li>
+                <li>pages with strict Content Security Policy that block injected scripts</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <script type="module" src="./assets/js/app.js"></script>
+  </body>
+</html>
